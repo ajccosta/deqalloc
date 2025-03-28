@@ -66,5 +66,6 @@ FetchContent_Declare(
   GIT_TAG        master
 )
 FetchContent_MakeAvailable(rapidcheck)
+target_compile_options(rapidcheck PUBLIC -fconcepts)
 include_directories(${rapidcheck_SOURCE_DIR})
 add_subdirectory(unit)

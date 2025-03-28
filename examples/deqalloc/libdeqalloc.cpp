@@ -37,7 +37,7 @@ using namespace HL;
 class TopHeap : public SizeHeap<UniqueHeap<ZoneHeap<MmapHeap, 65536> > > {};
 
 class TheCustomHeapType :
-  public ANSIWrapper<KingsleyHeap<AdaptHeap<DLList, TopHeap>, TopHeap> > {};
+  public ANSIWrapper<LockedHeap<PosixLockType, KingsleyHeap<AdaptHeap<DLList, TopHeap>, TopHeap>>> {};
 
 inline static TheCustomHeapType * getCustomHeap() {
   static char thBuf[sizeof(TheCustomHeapType)];
