@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 3.10)
 project(deqalloc LANGUAGES CXX)
 
-# Set C++14 standard
-set(CMAKE_CXX_STANDARD 14)
+# Set C++17 standard
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Enable optimization with debugging symbols
@@ -12,8 +12,6 @@ set(CMAKE_BUILD_TYPE RelWithDebInfo)
 # Generate position-independent code; required for shared libraries on many platforms
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
-# Common definitions
-add_definitions(-DNDEBUG -D_REENTRANT=1)
 
 # Include directories
 include_directories(. ../.. ../../util)
@@ -47,6 +45,7 @@ endif()
 
 # Create shared library
 add_library(deqalloc SHARED ${ALL_SOURCES})
+target_compile_definitions(deqalloc PUBLIC -DNDEBUG -D_REENTRANT=1)
 
 # Let CMake handle platform-specific library settings
 set_target_properties(deqalloc PROPERTIES 
@@ -59,6 +58,7 @@ if(Threads_FOUND)
     target_link_libraries(deqalloc Threads::Threads)
 endif()
 
+#include rapidcheck unit test library
 include(FetchContent)
 FetchContent_Declare(
   rapidcheck
