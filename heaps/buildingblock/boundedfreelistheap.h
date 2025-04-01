@@ -22,6 +22,7 @@ public:
   }
 
   inline void * malloc (size_t sz) {
+    assert(sz >= sizeof(void*)); //Cannot allocate nodes smaller then pointer types
     // Check the free list first.
     void * ptr = _freelist.get();
     if (!ptr) {

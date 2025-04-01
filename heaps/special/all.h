@@ -2,6 +2,7 @@
 #include "nestedheap.h"
 #include "xallocheap.h"
 #include "zoneheap.h"
+#include "listheap.h"
 
 // Deprecated:
 //#include "obstack.h"
