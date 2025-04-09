@@ -32,6 +32,8 @@ void testHeap(unsigned short n) {
       void* ptr = heap->malloc(sz);
       ptrs_to_free[i] = ptr;
       RC_ASSERT((uintptr_t)ptr != 0);
+      int* ptr_i = (int*) ptr;
+      ptr_i[0] = 0xBEEF;
     }
     for(int i = 0; i < n; i++) {
       heap->free(ptrs_to_free[i]);
@@ -70,6 +72,8 @@ class TwoListHeapUT : public
               SizeHeap<
                 ZoneHeap<MmapHeap, 65536>>>>> {};
 
+class SegmentHeapUT : public SegmentHeap<> {};
+
 int main() {
   //rc::check("Single threaded malloc free", [](unsigned short n) {
   //  RC_PRE(n > 0);
@@ -92,18 +96,24 @@ int main() {
   //  run_multi_threaded<unsigned short>(f, n);
   //});
 
-  rc::check("BoundedFreeListHeap", [](unsigned short n) {
+  //rc::check("BoundedFreeListHeap", [](unsigned short n) {
+  //  RC_PRE(n > 0);
+  //  testHeap<BoundedFreeListHeapUT>(n);
+  //});
+
+  //rc::check("Deqalloc", [](unsigned short n) {
+  //  RC_PRE(n > 0);
+  //  testHeap<DeqallocUT>(n);
+  //});
+
+  //rc::check("TwoListHeap", [](unsigned short n) {
+  //  RC_PRE(n > 0);
+  //  testHeap<TwoListHeapUT>(n);
+  //});
+
+  rc::check("SegmentHeap", [](unsigned short n) {
     RC_PRE(n > 0);
-    testHeap<BoundedFreeListHeapUT>(n);
+    testHeap<SegmentHeapUT>(n);
   });
 
-  rc::check("Deqalloc", [](unsigned short n) {
-    RC_PRE(n > 0);
-    testHeap<DeqallocUT>(n);
-  });
-
-  rc::check("HalvedBoundedFreeListHeap", [](unsigned short n) {
-    RC_PRE(n > 0);
-    testHeap<TwoListHeapUT>(n);
-  });
 }
