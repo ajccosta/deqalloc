@@ -116,4 +116,11 @@ int main() {
     testHeap<SegmentHeapUT>(n);
   });
 
+  //rc::check("Multi threaded SegmentHeap", [](unsigned short n) {
+  //  RC_PRE(n > 0);
+  //  auto f = [&](unsigned short n){
+  //    testHeap<SegmentHeapUT>(n);
+  //  };
+  //  run_multi_threaded<unsigned short>(f, n);
+  //});
 }
