@@ -42,6 +42,10 @@ namespace HL {
 
       //SegmentSize must be multiple of page size
       static_assert(SegmentSize % CPUInfo::PageSize == 0);
+      //SegmentSize must be power of 2
+      static_assert((SegmentSize & (SegmentSize-1)) == 0);
+      //Naturally SegmentSize can't be 0
+      static_assert(SegmentSize > 0);
 
     private:
 
@@ -105,7 +109,7 @@ namespace HL {
           curr = seglist.load(std::memory_order_relaxed);
           header->next_segment = curr;
         } while(!seglist.compare_exchange_strong(curr,
-            header->next_segment,
+            header,
             std::memory_order_seq_cst));
       }
 
@@ -205,7 +209,8 @@ namespace HL {
       inline void* malloc(size_t sz) {
         header_t* header;
         void* p = nullptr;
-        header = seglist.load(std::memory_order_seq_cst);
+        //TODO: look for non-empty segments to allocate from?
+        header = seglist.load(std::memory_order_relaxed);
         if(header != nullptr) //Segments available, try to pop from them
           p = header->popNode();
         if(p == nullptr) { //Need to allocate new segment
