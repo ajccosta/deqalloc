@@ -29,7 +29,8 @@
  * @author André Costa
  */
 
-#define DEFAULT_SEGMENT_SIZE 4 * 1024 * 1024 //4MiB
+//#define DEFAULT_SEGMENT_SIZE 4 * 1024 * 1024 //4MiB
+#define DEFAULT_SEGMENT_SIZE 4 * 1024 //4MiB
 
 
 namespace HL {
@@ -71,35 +72,72 @@ namespace HL {
       };
 
       struct header_t {
+        //Auxiliary struct to allow pointer to list and number of nodes to be modified atomically
+        struct alignas(8) list_size_t {
+          uint32_t num_nodes; //How many nodes are left in this segment
+          uint32_t node_index; //What is the index of this node inside the segment
+        };
+        //list_size_t must fit in a word
+        static_assert(sizeof(list_size_t) <= 8);
+
         header_t* next_segment; //linked list of segments of size sz
         //TODO when sz is larger than SegmentSize we should treat differently?
         size_t sz; //size of nodes inside this segment
-        std::atomic_uint_fast32_t num_nodes; //number of nodes left inside this segment
-        std::atomic<node_t*> head; //points to first element in node list
+        std::atomic<list_size_t> head; //points to first element in node list
 
         //keep trying to pop node until list is empty
         void* popNode() {
-          node_t* h;
+          list_size_t h, new_h;
+          node_t *node, *node_next;
           do {
-            h = head.load(std::memory_order_seq_cst);
-          } while(h != nullptr && !head.compare_exchange_strong(h, h->next));
-          if(h != nullptr) {
-            [[maybe_unused]] size_t p = num_nodes.fetch_sub(1);
-            //this assertion can fail if a node has been pushed but num_nodes has not yet been updated
-            assert(p >= 1); //there was atleast one node in the list
-          }
-          return h;
+            h = head.load(std::memory_order_relaxed);
+            auto [num_nodes, index] = h;
+            if(num_nodes == 0) {
+              node = nullptr;
+              break;
+            }
+            node = getNodePointer(getBase(), index, sz);
+            node_next = node->next;
+            uint32_t new_index = getIndexFromNodePointer(getBase(), node_next, sz);
+            new_h = list_size_t{num_nodes-1, new_index};
+          } while(!head.compare_exchange_strong(h, new_h));
+          return node;
         }
 
         //returns the number of elements left in the list
-        std::pair<size_t,node_t*> pushNode(void* ptr) {
-          node_t* h;
-          node_t* n = (node_t*) ptr;
+        size_t pushNode(void* ptr) {
+          uint32_t num_nodes;
+          node_t *node = (node_t*) ptr;
+          uint32_t new_index = getIndexFromNodePointer(getBase(), node, sz);
+          list_size_t h, new_h;
           do {
-            h = head.load(std::memory_order_seq_cst);
-            n->next = h;
-          } while(!head.compare_exchange_strong(h, n));
-          return {num_nodes.fetch_add(1) + 1, h};
+            h = head.load(std::memory_order_relaxed);
+            auto [num_nodes, index] = h;
+            new_h = list_size_t{num_nodes+1, new_index};
+            node->next = getNodePointer(getBase(), index, sz);
+          } while(!head.compare_exchange_strong(h, new_h));
+          return num_nodes+1;
+        }
+
+        inline bool emptyList() {
+          list_size_t old = head.load(std::memory_order_relaxed);
+          list_size_t list_size_t_null = {0,0};
+          return head.compare_exchange_strong(old, list_size_t_null);
+        }
+
+        //get node pointer from segment base, node index and size of nodes
+        static inline node_t* getNodePointer(void* base, uint32_t index, size_t sz) {
+          return (node_t*)(((uintptr_t)base) + sizeof(header_t) + index * sz);
+        }
+
+        //get node index from segment base, node ptr and size of nodes
+        static inline uint32_t getIndexFromNodePointer(void* base, node_t* nodeptr, size_t sz) {
+          return (((uintptr_t)nodeptr) - (((uintptr_t)base) + sizeof(header_t)))/sz;
+        }
+
+        //returns base pointer to segment. assumes that header is in first bytes of segment
+        inline void* getBase() {
+          return this;
         }
       };
 
@@ -180,8 +218,9 @@ namespace HL {
         header->sz = sz;
         //Initialize linked list
         size_t numObjects = getNumObjects(sz);
-        header->head.store(initializeList(base + sizeof(header_t), sz, numObjects));
-        header->num_nodes.store(numObjects);
+        initializeList(base + sizeof(header_t), sz, numObjects);
+        typename header_t::list_size_t h = {(uint32_t)numObjects, 0};
+        header->head.store(h);
         registerSegment(base);
         return header;
       }
@@ -223,11 +262,11 @@ namespace HL {
 
       inline void free(void* ptr) {
         header_t* header = (header_t*) getBasePointer(ptr);
-        auto [num_nodes, h] = header->pushNode(ptr);
+        size_t num_nodes = header->pushNode(ptr);
         if(num_nodes == getNumObjects(header->sz)) {
           //Segment is full again, attempt to deallocate it
           //First, make sure no one else allocates from this segment
-          if(header->head.compare_exchange_strong(h, nullptr)) {
+          if(header->emptyList()) {
             freeSegment(header);
           } // else, someone else changed list first, give up
         }
