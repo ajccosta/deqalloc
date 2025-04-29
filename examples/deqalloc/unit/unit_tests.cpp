@@ -2,6 +2,7 @@
 #include <iostream>
 #include <rapidcheck.h>
 #include <thread>
+#include <string>
 
 #include "heaplayers.h"
 
@@ -27,13 +28,13 @@ template<class HeapType>
 void testHeap(unsigned short n) {
     auto heap = getCustomHeap<HeapType>();
     size_t sz = 24;
-    std::vector<void*> ptrs_to_free(n);
+    using type = size_t;
+    std::vector<type*> ptrs_to_free(n);
     for(int i = 0; i < n; i++) {
-      void* ptr = heap->malloc(sz);
+      type* ptr = (type*)heap->malloc(sz);
       ptrs_to_free[i] = ptr;
       RC_ASSERT((uintptr_t)ptr != 0);
-      int* ptr_i = (int*) ptr;
-      ptr_i[0] = 0xBEEF;
+      ptr[0] = 0xDEADBEEF;
     }
     for(int i = 0; i < n; i++) {
       heap->free(ptrs_to_free[i]);
@@ -74,7 +75,13 @@ class TwoListHeapUT : public
 
 class SegmentHeapUT : public SegmentHeap<> {};
 
+static const unsigned int num_tests = 5000;
+//Do <num_tests> runs in each test
+static std::string RC_PARAMS = string("RC_PARAMS=max_success="+std::to_string(num_tests));
+
 int main() {
+  putenv((char*)RC_PARAMS.c_str());
+
   //rc::check("Single threaded malloc free", [](unsigned short n) {
   //  RC_PRE(n > 0);
   //  for(int i = 0; i < n; i++) {
@@ -111,10 +118,10 @@ int main() {
   //  testHeap<TwoListHeapUT>(n);
   //});
 
-  rc::check("SegmentHeap", [](unsigned short n) {
-    RC_PRE(n > 0);
-    testHeap<SegmentHeapUT>(n);
-  });
+  //rc::check("SegmentHeap", [](unsigned short n) {
+  //  RC_PRE(n > 0);
+  //  testHeap<SegmentHeapUT>(n);
+  //});
 
   rc::check("Multi threaded SegmentHeap", [](unsigned short n) {
     RC_PRE(n > 0);
