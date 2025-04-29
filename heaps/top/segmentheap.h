@@ -20,7 +20,9 @@
 
 #include "heaps/top/mmapheap.h"
 #include "threads/cpuinfo.h"
+#include "threads/epoch.h"
 #include <atomic>
+#include <limits>
 
 /**
  * @class SegmentHeap
@@ -61,7 +63,7 @@ namespace HL {
       PosixLockType MyMapLock;
 
       //Get the maximum number of objects in this segment
-      static inline size_t getNumObjects(size_t sz) {
+      static inline size_t getMaxNumObjects(size_t sz) {
         size_t remaining_sz = SegmentSize - sizeof(header_t);
         size_t numObjects = remaining_sz / sz;
         return numObjects;
@@ -80,6 +82,8 @@ namespace HL {
         //list_size_t must fit in a word
         static_assert(sizeof(list_size_t) <= 8);
 
+        static inline uint32_t node_index_null = std::numeric_limits<uint32_t>::max();
+
         header_t* next_segment; //linked list of segments of size sz
         //TODO when sz is larger than SegmentSize we should treat differently?
         size_t sz; //size of nodes inside this segment
@@ -89,30 +93,46 @@ namespace HL {
         void* popNode() {
           list_size_t h, new_h;
           node_t *node, *node_next;
+          bool shouldfail;
           do {
             h = head.load(std::memory_order_relaxed);
             auto [num_nodes, index] = h;
+            assert(num_nodes >= 0 && num_nodes <= getMaxNumObjects(sz));
             if(num_nodes == 0) {
-              node = nullptr;
-              break;
+              return nullptr;
             }
             node = getNodePointer(getBase(), index, sz);
+            assert(node != nullptr); //we checked for num_nodes=0 so this should never happen
             node_next = node->next;
             uint32_t new_index = getIndexFromNodePointer(getBase(), node_next, sz);
+            shouldfail = !((new_index >= 0 && new_index <= getMaxNumObjects(sz))
+              || new_index == node_index_null);
             new_h = list_size_t{num_nodes-1, new_index};
           } while(!head.compare_exchange_strong(h, new_h));
+          //CAS succeeded.
+          //shouldfail is true if new_index pointed to memory outside of our segment.
+          //This means that, before this thread was able to pop a node, another thread
+          // succeeded and wrote something to that node. That's fine, but we should not
+          // be able to pop that node, i.e., our CAS must fail.
+          assert(!shouldfail);
           return node;
         }
 
         //returns the number of elements left in the list
         size_t pushNode(void* ptr) {
+          //ptr is in segment list
+          assert(getBase() + sizeof(header_t) <= ptr && ptr < getBase() + SegmentSize);
           uint32_t num_nodes;
           node_t *node = (node_t*) ptr;
           uint32_t new_index = getIndexFromNodePointer(getBase(), node, sz);
+          assert((new_index >= 0 && new_index <= getMaxNumObjects(sz)) || new_index == node_index_null);
           list_size_t h, new_h;
           do {
             h = head.load(std::memory_order_relaxed);
             auto [num_nodes, index] = h;
+            //Pushing this node maintains invariant
+            assert(num_nodes+1 >= 0 && num_nodes+1 <= getMaxNumObjects(sz));
+            assert((index >= 0 && index <= getMaxNumObjects(sz)) || index == node_index_null);
             new_h = list_size_t{num_nodes+1, new_index};
             node->next = getNodePointer(getBase(), index, sz);
           } while(!head.compare_exchange_strong(h, new_h));
@@ -127,11 +147,13 @@ namespace HL {
 
         //get node pointer from segment base, node index and size of nodes
         static inline node_t* getNodePointer(void* base, uint32_t index, size_t sz) {
+          if(index == node_index_null) return nullptr;
           return (node_t*)(((uintptr_t)base) + sizeof(header_t) + index * sz);
         }
 
         //get node index from segment base, node ptr and size of nodes
         static inline uint32_t getIndexFromNodePointer(void* base, node_t* nodeptr, size_t sz) {
+          if(nodeptr == nullptr) return node_index_null;
           return (((uintptr_t)nodeptr) - (((uintptr_t)base) + sizeof(header_t)))/sz;
         }
 
@@ -179,22 +201,37 @@ namespace HL {
       // guarateed to be unique because we always allocate segments of the same size and it is impossible
       // to fit another 8KB segment between the range 0KB-4KB.
       void* getBasePointer(void* ptr) {
+        //The "larger" base (8KB in the above example)
         void* alignedBase_1 = getAlignedBase(ptr);
+        //The "larger" base's end (12KB-1 in the above example)
         void* alignedBaseEnd_1 = getSegmentEnd(alignedBase_1);
+        //The "smaller" base (4KB in the above example)
         void* alignedBase_2 = alignedBase_1 - SegmentSize;
-        void* alignedBaseEnd_2 = getSegmentEnd(alignedBase_1);
+        //The "smaller" base's end (8KB-1 in the above example)
+        void* alignedBaseEnd_2 = getSegmentEnd(alignedBase_2);
         assert(alignedBase_2 == getAlignedBase(alignedBase_1-1));
         MyMapLock.lock();
         auto search = MyMap.find(alignedBase_1);
-        if (search != MyMap.end() && 
-          ptr >= alignedBase_1 && ptr <= alignedBaseEnd_1) {}
-        else {
+        void* segmentBaseAddr;
+        if (search == MyMap.end()) {
+          //Did not find segment in map, the correct segment 
+          // is guaranteed to be aligned to alignedBase_2
           search = MyMap.find(alignedBase_2);
-          assert(search != MyMap.end());
+          segmentBaseAddr = search->second;
+        } else {
+          //Found a segment, but need to confirm it is the correct one
+          segmentBaseAddr = search->second;
+          //Does ptr belong inside this segment?
+          if(!(segmentBaseAddr <= ptr && ptr < segmentBaseAddr + SegmentSize)) {
+            //We did not find the correct segment, look at the alignedBase_2
+            search = MyMap.find(alignedBase_2);
+            segmentBaseAddr = search->second;
+          }
         }
+        //ptr belongs to segment list (i.e., fits inside segment and is not in the header)
+        assert(segmentBaseAddr + sizeof(header_t) <= ptr && ptr < segmentBaseAddr + SegmentSize);
         MyMapLock.unlock();
-        const auto& value = search->second;
-        return value;
+        return segmentBaseAddr;
       }
 
       //Initializes node list in this segment
@@ -217,7 +254,7 @@ namespace HL {
         header_t* header = (header_t*) base; //use first bytes of segment as header
         header->sz = sz;
         //Initialize linked list
-        size_t numObjects = getNumObjects(sz);
+        size_t numObjects = getMaxNumObjects(sz);
         initializeList(base + sizeof(header_t), sz, numObjects);
         typename header_t::list_size_t h = {(uint32_t)numObjects, 0};
         header->head.store(h);
@@ -227,12 +264,14 @@ namespace HL {
 
       //Frees segment starting at base
       void freeSegment(void* base) {
+        MyMapLock.lock();
+        MyMap.erase(base);
         SizedMmapHeap::free(base, SegmentSize);
+        MyMapLock.unlock();
       }
 
       //Returns the last address of segment whose start is base
       static inline void* getSegmentEnd(void* base) {
-        assert(base == getAlignedBase(base));
         return base + SegmentSize - 1;
       }
 
@@ -263,7 +302,7 @@ namespace HL {
       inline void free(void* ptr) {
         header_t* header = (header_t*) getBasePointer(ptr);
         size_t num_nodes = header->pushNode(ptr);
-        if(num_nodes == getNumObjects(header->sz)) {
+        if(num_nodes == getMaxNumObjects(header->sz)) {
           //Segment is full again, attempt to deallocate it
           //First, make sure no one else allocates from this segment
           if(header->emptyList()) {
