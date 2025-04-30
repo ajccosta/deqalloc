@@ -77,13 +77,61 @@ namespace HL {
       struct header_t {
         //Auxiliary struct to allow pointer to list and number of nodes to be modified atomically
         struct alignas(8) list_size_t {
-          uint32_t num_nodes; //How many nodes are left in this segment
-          uint32_t node_index; //What is the index of this node inside the segment
+          private:
+            //Number of bits for ABA tags
+            static constexpr uint64_t tagbits = 16;
+            static constexpr uint64_t tagmax = (1<<tagbits)-1;
+            //Odd number of tag bits wastes a bit and confuses logic
+            static_assert(tagbits % 2 == 0);
+
+            //Number of bits to represent number of nodes and node indexes
+            static constexpr uint64_t rest_bits = (64-tagbits)/2;
+            static constexpr uint64_t restmax = (1<<rest_bits)-1;
+
+            //MSB <tagbits> bits used for tag, then store num_nodes, then node_index
+            //(verilog syntax)
+            //[tagbits+(rest_bits*2)-1:(rest_bits*2)] tag
+            //[(rest_bits*2)-1:rest_bits] num_nodes
+            //[rest_bits-1:0] node_index
+            uint64_t node_repr;
+
+          public:
+            list_size_t(uint64_t tag, uint64_t num_nodes, uint64_t node_index) :
+              node_repr(getRepr(tag, num_nodes, node_index)) {}
+
+            list_size_t() = default;
+
+            static inline uint64_t node_index_null = restmax;
+
+            inline uint64_t getTag() { return node_repr >> (64 - tagbits); }
+            inline uint64_t getNumNodes() { return ((~(tagmax << (64 - tagbits))) & node_repr) >> rest_bits; }
+            inline uint64_t getNodeIndex() { return restmax & node_repr; }
+            inline std::tuple<uint64_t,uint64_t,uint64_t> getAll() { return {getTag(), getNumNodes(), getNodeIndex()}; }
+
+          private:
+            inline uint64_t getRepr(uint64_t tag, uint64_t num_nodes, uint64_t node_index) {
+              return tagRepr(tag) | numNodesRepr(num_nodes) | nodeIndexRepr(node_index);
+            }
+
+            static inline uint64_t tagRepr(uint64_t tag) {
+              assert(tag <= tagmax);
+              return tag << (64 - tagbits);
+            }
+
+            static inline uint64_t numNodesRepr(uint64_t num_nodes) {
+              assert(num_nodes <= restmax);
+              return num_nodes << rest_bits;
+            }
+
+            static inline uint64_t nodeIndexRepr(uint64_t node_index) {
+              return node_index;
+            }
         };
         //list_size_t must fit in a word
         static_assert(sizeof(list_size_t) <= 8);
-
-        static inline uint32_t node_index_null = std::numeric_limits<uint32_t>::max();
+        static_assert(is_trivially_copyable_v<list_size_t>);
+        static_assert(is_trivially_constructible_v<list_size_t>);
+        static_assert(std::atomic<list_size_t>::is_always_lock_free);
 
         alignas(8) header_t* next_segment = nullptr; //linked list of segments of size sz
         header_t *segment_retire_next = nullptr;
@@ -98,7 +146,7 @@ namespace HL {
           bool shouldfail;
           do {
             h = head.load(std::memory_order_relaxed);
-            auto [num_nodes, index] = h;
+            auto [tag, num_nodes, index] = h.getAll();
             assert(num_nodes >= 0 && num_nodes <= getMaxNumObjects(sz));
             if(num_nodes == 0) {
               return nullptr;
@@ -108,8 +156,8 @@ namespace HL {
             node_next = node->next;
             uint32_t new_index = getIndexFromNodePointer(getBase(), node_next, sz);
             shouldfail = !((new_index >= 0 && new_index <= getMaxNumObjects(sz))
-              || new_index == node_index_null);
-            new_h = list_size_t{num_nodes-1, new_index};
+              || new_index == list_size_t::node_index_null);
+            new_h = list_size_t(tag+1, num_nodes-1, new_index);
           } while(!head.compare_exchange_strong(h, new_h));
           //CAS succeeded.
           //shouldfail is true if new_index pointed to memory outside of our segment.
@@ -124,28 +172,29 @@ namespace HL {
         size_t pushNode(void* ptr) {
           //ptr is in segment list
           assert(getBase() + sizeof(header_t) <= ptr && ptr < getBase() + SegmentSize);
-          uint32_t num_nodes_;
+          uint64_t num_nodes_;
           node_t *node = (node_t*) ptr;
-          uint32_t new_index = getIndexFromNodePointer(getBase(), node, sz);
-          assert((new_index >= 0 && new_index <= getMaxNumObjects(sz)) || new_index == node_index_null);
+          uint64_t new_index = getIndexFromNodePointer(getBase(), node, sz);
+          assert((new_index >= 0 && new_index <= getMaxNumObjects(sz)) ||
+            new_index == list_size_t::node_index_null);
           list_size_t h, new_h;
           do {
             h = head.load(std::memory_order_relaxed);
-            auto [num_nodes, index] = h;
-            num_nodes_ = num_nodes;
+            auto [tag, num_nodes, index] = h.getAll();
             //Pushing this node maintains invariant
             assert(num_nodes+1 >= 0 && num_nodes+1 <= getMaxNumObjects(sz));
-            assert((index >= 0 && index <= getMaxNumObjects(sz)) || index == node_index_null);
-            new_h = list_size_t{num_nodes+1, new_index};
+            assert((index >= 0 && index <= getMaxNumObjects(sz))
+              || index == list_size_t::node_index_null);
+            new_h = list_size_t(tag+1, num_nodes+1, new_index);
             node->next = getNodePointer(getBase(), index, sz);
           } while(!head.compare_exchange_strong(h, new_h));
           return num_nodes_+1;
         }
 
         inline bool emptyList() {
-          list_size_t list_size_t_null = {0,0};
           list_size_t old = head.load(std::memory_order_relaxed);
-          auto [num_nodes, index] = old;
+          auto [tag, num_nodes, index] = old.getAll();
+          list_size_t list_size_t_null = list_size_t(tag+1, 0, 0);
           if(num_nodes == getMaxNumObjects(sz))
             return head.compare_exchange_strong(old, list_size_t_null);
           else
@@ -154,13 +203,13 @@ namespace HL {
 
         //get node pointer from segment base, node index and size of nodes
         static inline node_t* getNodePointer(void* base, uint32_t index, size_t sz) {
-          if(index == node_index_null) return nullptr;
+          if(index == list_size_t::node_index_null) return nullptr;
           return (node_t*)(((uintptr_t)base) + sizeof(header_t) + index * sz);
         }
 
         //get node index from segment base, node ptr and size of nodes
         static inline uint32_t getIndexFromNodePointer(void* base, node_t* nodeptr, size_t sz) {
-          if(nodeptr == nullptr) return node_index_null;
+          if(nodeptr == nullptr) return list_size_t::node_index_null;
           return (((uintptr_t)nodeptr) - (((uintptr_t)base) + sizeof(header_t)))/sz;
         }
 
@@ -257,7 +306,7 @@ namespace HL {
         //Initialize linked list
         size_t numObjects = getMaxNumObjects(sz);
         initializeList(base + sizeof(header_t), sz, numObjects);
-        typename header_t::list_size_t h = {(uint32_t)numObjects, 0};
+        typename header_t::list_size_t h = typename header_t::list_size_t(0, numObjects, 0);
         header->head.store(h);
         registerSegment(base);
         return header;
