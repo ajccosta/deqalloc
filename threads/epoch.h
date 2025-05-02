@@ -1,31 +1,31 @@
 // ***************************
-// micro-epoch  (Author: Guy Blelloch)
+// micro-epoch  (Author: Guy Blelloch; modified by: André Costa)
 // epoch based delayed reclamation 
 // the interface consists of three functions
 //   template <typename F>
 //   uepoch::with_epoch(const F& f) : takes a lambda or function f
 //      with no arguments and with or without a result, and runs it in
-//      protected mode
-//   uepoch::delay(std::function<void(void)> f) : takes a function f and
-//      delays running it until everyone who was in a with_epoch at
-//      the time of the delay has now exited
-//   uepoch::clear() : forces all delayed functions to run. not safe to run
-//      concurrently with the other two functions
+//      protected mode; and takes in a lambda or function advance, that
+//      called in the case that an epoch advancement is detected in the
+//      current thread (allows for custom epoch advancement).
 // with_epoch can be safely nested (all but the outermost is ignored)
 //
+// This implementation is tailored to SegmentHeap's needs. We use a
+//   custom advance function because we want to try to avoid performing
+//   any allocations. This way, SegmentHeap can use fields in its header
+//   to keep track of the epoch bags.
+//
 // Example:
-//     uepoch::delay([&] {delete y;});
-//     auto r = uepoch::with_epoch([&] { ... x = y->left; ... return z;});
-// If the delay is called concurrently with the with_epoch the deletion
-// of y is delayed until the with_epoch finishes.
+//     auto r = uepoch::with_epoch(
+//        [&] { ... x = y->left; ... return z;},
+//        [&] { free(safe); old=current; current.empty(); }
+//     );
 // ***************************
 
 #ifndef UEPOCH_H_
 #define UEPOCH_H_
 
 #include <atomic>
-#include <forward_list>
-#include <functional>
 
 #include <iostream>
 
@@ -39,6 +39,7 @@ namespace uepoch {
 
     extern inline int thread_id() {
       static thread_local int id{num_threads().fetch_add(1)};
+      assert(id < max_threads);
       return id; }
 
     // the main structure
@@ -51,10 +52,6 @@ namespace uepoch {
 
       // the various delayed lists for each thread
       struct alignas(256) thread_state {
-        using list = std::forward_list<std::function<void(void)>>;
-        list current; // delayed functions from current epoch
-        list old;  // delayed functions from previous epoch
-        list safe; // delayed functions that are safe to call
         long epoch = 0; // epoch on last delay
         long count = 0; // number of calls to delay since last epoch update
         thread_state() {}
@@ -66,7 +63,7 @@ namespace uepoch {
       thread_state pools[max_threads];
   
       epoch_state() {}
-      ~epoch_state() {clear();}
+      ~epoch_state() {}
 
       // adds current epoch to the announcement slot of this thread
       std::pair<bool,int> announce() {
@@ -97,39 +94,18 @@ namespace uepoch {
         current_epoch.compare_exchange_strong(current_e, current_e+1);
       }
 
-      void advance_epoch(int i) {
+      template <typename AdvanceThunk>
+      void advance_epoch(int i, const AdvanceThunk& advance) {
         thread_state& pid = pools[i];
-        if (pid.epoch + 1 < current_epoch.load()) {
-          pid.safe.splice_after(pid.safe.cbefore_begin(), pid.old);
-          pid.old.swap(pid.current);
-          pid.epoch = current_epoch.load();
+        auto curr_ep = current_epoch.load();
+        if (pid.epoch + 1 < curr_ep) {
+          advance();
+          pid.epoch = curr_ep;
         }
         long heuristic_threshold = 2 * num_threads();
         if (++pid.count == heuristic_threshold) { 
           pid.count = 0;
           update_epoch();
-        }
-      }
-
-    public:
-      void clear() {
-        update_epoch();
-        for (long i = 0; i < max_threads; i++) {
-          for (auto& x : pools[i].old) x();
-          for (auto& x : pools[i].current) x();
-          for (auto& x : pools[i].safe) x();
-          pools[i].old.clear(); pools[i].current.clear();
-          pools[i].safe.clear();
-        }
-      }
-
-      void delay(std::function<void(void)> f) {
-        auto i = thread_id();
-        advance_epoch(i);
-        pools[i].current.push_front(std::move(f));
-        if (!pools[i].safe.empty()) {
-          pools[i].safe.front()();
-          pools[i].safe.pop_front();
         }
       }
     }; // end struct epoch_state
@@ -140,25 +116,23 @@ namespace uepoch {
     }
   } // end namespace internal
 
-  template <typename Thunk>
-  auto with_epoch(const Thunk& f) {
+  //f: what to execute inside an epoch
+  //advance: what to execute in case of an epoch advancement
+  template <typename Thunk, typename AdvanceThunk>
+  auto with_epoch(const Thunk& f, const AdvanceThunk& advance) {
     auto& epoch = internal::get_epoch();
     auto [not_in_epoch, id] = epoch.announce();
     if constexpr (std::is_void_v<std::invoke_result_t<Thunk>>) {
       f();
+      epoch.advance_epoch(id, advance);
       if (not_in_epoch) epoch.unannounce(id);
     } else {
       auto v = f();
+      epoch.advance_epoch(id, advance);
       if (not_in_epoch) epoch.unannounce(id);
       return v;
     }
   }
-
-  inline void delay(std::function<void(void)> f) {
-    internal::get_epoch().delay(std::move(f));
-  }
-
-  inline void clear() {internal::get_epoch().clear();}
 } // end namespace epoch
 
 #endif //PARLAY_EPOCH_H_

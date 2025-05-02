@@ -21,6 +21,7 @@
 #include "heaps/top/mmapheap.h"
 #include "threads/cpuinfo.h"
 #include "threads/epoch.h"
+#include "threads/structures/HarrisLinkedList.h"
 #include <atomic>
 #include <limits>
 
@@ -84,7 +85,8 @@ namespace HL {
 
         static inline uint32_t node_index_null = std::numeric_limits<uint32_t>::max();
 
-        header_t* next_segment; //linked list of segments of size sz
+        alignas(8) header_t* next_segment = nullptr; //linked list of segments of size sz
+        header_t *segment_retire_next = nullptr;
         //TODO when sz is larger than SegmentSize we should treat differently?
         size_t sz; //size of nodes inside this segment
         std::atomic<list_size_t> head; //points to first element in node list
@@ -122,7 +124,7 @@ namespace HL {
         size_t pushNode(void* ptr) {
           //ptr is in segment list
           assert(getBase() + sizeof(header_t) <= ptr && ptr < getBase() + SegmentSize);
-          uint32_t num_nodes;
+          uint32_t num_nodes_;
           node_t *node = (node_t*) ptr;
           uint32_t new_index = getIndexFromNodePointer(getBase(), node, sz);
           assert((new_index >= 0 && new_index <= getMaxNumObjects(sz)) || new_index == node_index_null);
@@ -130,19 +132,24 @@ namespace HL {
           do {
             h = head.load(std::memory_order_relaxed);
             auto [num_nodes, index] = h;
+            num_nodes_ = num_nodes;
             //Pushing this node maintains invariant
             assert(num_nodes+1 >= 0 && num_nodes+1 <= getMaxNumObjects(sz));
             assert((index >= 0 && index <= getMaxNumObjects(sz)) || index == node_index_null);
             new_h = list_size_t{num_nodes+1, new_index};
             node->next = getNodePointer(getBase(), index, sz);
           } while(!head.compare_exchange_strong(h, new_h));
-          return num_nodes+1;
+          return num_nodes_+1;
         }
 
         inline bool emptyList() {
-          list_size_t old = head.load(std::memory_order_relaxed);
           list_size_t list_size_t_null = {0,0};
-          return head.compare_exchange_strong(old, list_size_t_null);
+          list_size_t old = head.load(std::memory_order_relaxed);
+          auto [num_nodes, index] = old;
+          if(num_nodes == getMaxNumObjects(sz))
+            return head.compare_exchange_strong(old, list_size_t_null);
+          else
+            return false; //Someone allocated from this list before we were able to empty it, abort
         }
 
         //get node pointer from segment base, node index and size of nodes
@@ -163,16 +170,10 @@ namespace HL {
         }
       };
 
+      //Insert segment into linked list of segments
       void insertSegment(header_t* header) {
-        header_t * curr;
-        do { //insert new segment at head of the segment list
-          curr = seglist.load(std::memory_order_relaxed);
-          header->next_segment = curr;
-        } while(!seglist.compare_exchange_strong(curr,
-            header,
-            std::memory_order_seq_cst));
+        seglist.add(&header->next_segment);
       }
-
 
       //Register newly created segment in map
       //Base: pointer to first byte in segment; sz: size of segment
@@ -262,12 +263,66 @@ namespace HL {
         return header;
       }
 
-      //Frees segment starting at base
-      void freeSegment(void* base) {
+      //Frees segment by removing it from MyMap and giving it back to SizedMmapHeap
+      void freeSegment(header_t* header) {
         MyMapLock.lock();
-        MyMap.erase(base);
-        SizedMmapHeap::free(base, SegmentSize);
+        MyMap.erase(header);
+        SizedMmapHeap::free(header, SegmentSize);
         MyMapLock.unlock();
+      }
+
+      //Empties segment, removes it from segment list and adds it to be retired later
+      //Emptying the segment first is useful because we can assume that no other thread will
+      //  allocate from it while it is in the retired list. Otherwise, before we were able to
+      //  retire the segment, some other thread might have allocated from it. If that is the case,
+      //  we cannot free the segment when the SMR method tells us it is safe to do so, we must wait
+      //  for the segment to be full again. After it is full the segment can be free'd, because no
+      //  other thread is able to allocate from it anymore. However, the thread that "filled" it last
+      //  must check that the segment is full and that it has been retired, which means that both
+      //  strategies incur some overhead. Emptying before retiring is simpler so we stick with that.
+      void retireSegment(header_t* header) {
+        if(!header->emptyList()) return;
+        seglist.remove(&header->next_segment, [&](header_t* h){this->addToRetireList(h);});
+      }
+
+      struct thread_state {
+        header_t* retire_current = nullptr; //segments added in current epoch e
+        header_t* retire_old = nullptr; //segments in epoch e-1
+        thread_state() {}
+      };
+
+      //Each thread keeps its own retire list of segments, per segment heap
+      inline thread_state& get_thread_state() const  {
+        //static thread_local __attribute__((tls_model("initial-exec"))) thread_state ts{}; ;
+        static thread_local thread_state ts{};
+        return ts;
+      }
+
+      void addToRetireList(header_t* header) {
+        //Since we are guaranteed that only a thread can successfuly retire a segment,
+        //  we can use the segment_retire_next field without synchronization.
+        thread_state& ts = get_thread_state();
+        //segment_retire_next should only be written once
+        // in the entire lifetime of a segment (and by a single thread)
+        assert(header->segment_retire_next == nullptr);
+        header->segment_retire_next = ts.retire_current;
+        ts.retire_current = header;
+      }
+
+      void advanceEpoch() {
+        thread_state& ts = get_thread_state();
+        //Reclaim safe
+        header_t *h, *to_free;
+        h = ts.retire_old; //old are now safe (epoch was advanced)
+        while(h != nullptr){
+          to_free = h;
+          h = h->segment_retire_next;
+          freeSegment(to_free);
+        }
+        //Move current to old
+        ts.retire_old = ts.retire_current;
+        //Empty current
+        ts.retire_current = nullptr;
       }
 
       //Returns the last address of segment whose start is base
@@ -285,36 +340,43 @@ namespace HL {
     public:
 
       inline void* malloc(size_t sz) {
-        header_t* header;
-        void* p = nullptr;
-        //TODO: look for non-empty segments to allocate from?
-        header = seglist.load(std::memory_order_relaxed);
-        if(header != nullptr) //Segments available, try to pop from them
-          p = header->popNode();
-        if(p == nullptr) { //Need to allocate new segment
-          header = allocateSegment(sz);
-          p = header->popNode(); 
-          insertSegment(header); //publish new segment
-        }
-        return reinterpret_cast<void*>(p);
+        return uepoch::with_epoch([&] {
+          header_t* header;
+          void* p = nullptr;
+          //TODO: look for non-empty segments to allocate from?
+          header = seglist.peek();
+          if(header != nullptr) //Segments available, try to pop from them
+            p = header->popNode();
+          if(p == nullptr) { //Need to allocate new segment
+            header = allocateSegment(sz);
+            p = header->popNode();
+            insertSegment(header); //publish new segment
+          }
+          return reinterpret_cast<void*>(p);
+        }, [&]{
+          this->advanceEpoch();
+        });
       }
 
       inline void free(void* ptr) {
-        header_t* header = (header_t*) getBasePointer(ptr);
-        size_t num_nodes = header->pushNode(ptr);
-        if(num_nodes == getMaxNumObjects(header->sz)) {
-          //Segment is full again, attempt to deallocate it
-          //First, make sure no one else allocates from this segment
-          if(header->emptyList()) {
-            freeSegment(header);
-          } // else, someone else changed list first, give up
-        }
+        uepoch::with_epoch([&]{
+          header_t* header = (header_t*) getBasePointer(ptr);
+          size_t num_nodes = header->pushNode(ptr);
+          if(num_nodes == getMaxNumObjects(header->sz)) {
+            //Segment is full again, attempt to retire it
+            if(header != seglist.peek()) { //Don't deallocate the first segment
+              retireSegment(header);
+            }
+          }
+        }, [&]{
+          this->advanceEpoch();
+        });
       }
 
     private:
       //linked list of segments
       //TODO: have full/partial/empty list to aid in searching for segments to allocate from?
-      std::atomic<header_t*> seglist {nullptr};
+      HarrisLinkedList<header_t*> seglist;
   };
 
 }
