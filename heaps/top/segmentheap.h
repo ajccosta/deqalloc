@@ -62,8 +62,16 @@ namespace HL {
           HL::STLAllocator<std::pair<void* const, void* const>, MyHeap>>
         mapType;
 
-      static inline mapType MyMap;
-      static inline PosixLockType MyMapLock;
+      struct global_state {
+        mapType MyMap;
+        PosixLockType MyMapLock;
+      };
+
+      //Each thread keeps its own retire list of segments, per segment heap
+      inline global_state& get_global_state() const {
+        static global_state gs{};
+        return gs;
+      }
 
       //Get the maximum number of objects in this segment
       static inline size_t getMaxNumObjects(size_t sz) {
@@ -243,9 +251,10 @@ namespace HL {
       //Base: pointer to first byte in segment; sz: size of segment
       void registerSegment(void* base) {
         void* alignedBase = getAlignedBase(base);
-        MyMapLock.lock();
-        MyMap[alignedBase] = base;
-        MyMapLock.unlock();
+        global_state& gs = get_global_state();
+        gs.MyMapLock.lock();
+        gs.MyMap[alignedBase] = base;
+        gs.MyMapLock.unlock();
       }
 
       //Finds base pointer of which ptr belongs to
@@ -285,14 +294,15 @@ namespace HL {
         //The "smaller" base's end (8KB-1 in the above example)
         void* alignedBaseEnd_2 = getSegmentEnd(alignedBase_2);
         assert(alignedBase_2 == getAlignedBase(alignedBase_1-1));
-        MyMapLock.lock();
-        auto search = MyMap.find(alignedBase_1);
+        global_state& gs = get_global_state();
+        gs.MyMapLock.lock();
+        auto search = gs.MyMap.find(alignedBase_1);
         void* segmentBaseAddr;
-        if (search == MyMap.end()) {
+        if (search == gs.MyMap.end()) {
           //Did not find segment in map, the correct segment 
           // is guaranteed to be aligned to alignedBase_2
-          search = MyMap.find(alignedBase_2);
-          assert(search != MyMap.end());
+          search = gs.MyMap.find(alignedBase_2);
+          assert(search != gs.MyMap.end());
           segmentBaseAddr = search->second;
         } else {
           //Found a segment, but need to confirm it is the correct one
@@ -300,14 +310,14 @@ namespace HL {
           //Does ptr belong inside this segment?
           if(!(segmentBaseAddr <= ptr && ptr < segmentBaseAddr + SegmentSize)) {
             //We did not find the correct segment, look at the alignedBase_2
-            search = MyMap.find(alignedBase_2);
-            assert(search != MyMap.end());
+            search = gs.MyMap.find(alignedBase_2);
+            assert(search != gs.MyMap.end());
             segmentBaseAddr = search->second;
           }
         }
         //ptr belongs to segment list (i.e., fits inside segment and is not in the header)
         assert(segmentBaseAddr + sizeof(header_t) <= ptr && ptr < segmentBaseAddr + SegmentSize);
-        MyMapLock.unlock();
+        gs.MyMapLock.unlock();
         return segmentBaseAddr;
       }
 
@@ -361,10 +371,11 @@ namespace HL {
 
       //Frees segment by removing it from MyMap and giving it back to SizedMmapHeap
       void freeSegment(header_t* header) {
-        MyMapLock.lock();
-        MyMap.erase(header);
+        global_state& gs = get_global_state();
+        gs.MyMapLock.lock();
+        gs.MyMap.erase(header);
         SizedMmapHeap::free(header, getActualSegmentSize(header->sz));
-        MyMapLock.unlock();
+        gs.MyMapLock.unlock();
       }
 
       //There are 3 types of Segments:
@@ -407,7 +418,7 @@ namespace HL {
       };
 
       //Each thread keeps its own retire list of segments, per segment heap
-      inline thread_state& get_thread_state() const  {
+      inline thread_state& get_thread_state() const {
         thread_local __attribute__((tls_model("initial-exec"))) thread_state ts{};
         return ts;
       }

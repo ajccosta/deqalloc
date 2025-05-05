@@ -31,17 +31,18 @@ volatile int anyThreadCreated = 1;
 
 #include "heaplayers.h"
 
+#define NULL_FREE //Whether to deal with free(nullptr);
 
 using namespace HL;
 
-class TopHeap : public SizeHeap<UniqueHeap<ZoneHeap<MmapHeap, 65536> > > {};
+class TheDeqallocHeapType : public KingsleyHeap<
+                                SegmentHeap<>,
+                                SegmentHeap<>
+                             > {};
 
-class TheCustomHeapType :
-  public ANSIWrapper<LockedHeap<PosixLockType, KingsleyHeap<AdaptHeap<DLList, TopHeap>, TopHeap>>> {};
-
-inline static TheCustomHeapType * getCustomHeap() {
-  static char thBuf[sizeof(TheCustomHeapType)];
-  static TheCustomHeapType * th = new (thBuf) TheCustomHeapType;
+inline static TheDeqallocHeapType* getDeqallocHeap() {
+  static char thBuf[sizeof(TheDeqallocHeapType)];
+  static TheDeqallocHeapType * th = new (thBuf) TheDeqallocHeapType;
   return th;
 }
 
@@ -66,14 +67,15 @@ extern "C" {
 extern "C" {
   
   void * xxmalloc (size_t sz) {
-    // printf_("xxmalloc\n");
-    auto ptr = getCustomHeap()->malloc (sz);
-    // printf_("xxmalloc %lu = %p\n", sz, ptr);
+    auto ptr = getDeqallocHeap()->malloc (sz);
     return ptr;
   }
 
   void xxfree (void * ptr) {
-    getCustomHeap()->free(ptr);
+#ifdef NULL_FREE
+    if(ptr)
+#endif
+      getDeqallocHeap()->free(ptr);
   }
 
   void * xxmemalign(size_t alignment, size_t sz) {
@@ -81,7 +83,7 @@ extern "C" {
   }
   
   size_t xxmalloc_usable_size (void * ptr) {
-    return getCustomHeap()->getSize (ptr);
+    return getDeqallocHeap()->getSize (ptr);
   }
 
   void xxmalloc_lock() {
