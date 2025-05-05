@@ -9,7 +9,7 @@
 #include "heaplayers.h"
 
 //Ad-hoc thread pool
-#define test_f_inp unsigned short
+#define test_f_inp unsigned short, size_t
 using test_f_out = void;
 
 using test_f_type = test_f_out(test_f_inp);
@@ -71,18 +71,25 @@ inline static HeapType * getCustomHeap() {
   return th;
 }
 
+constexpr size_t max_sz = 4096*32;
+constexpr std::array<char, max_sz> make_filled_buffer(char ch) {
+  std::array<char, max_sz> arr{}; for (auto& c : arr) { c = ch; } return arr;
+}
+//Statically filled buffer
+static std::array<char, max_sz> buf = make_filled_buffer('a');
+
 //The test function
 template<class HeapType>
-void testHeap(unsigned short n) {
+void testHeap(unsigned short n, size_t sz) {
+  assert(sz <= max_sz);
   auto heap = getCustomHeap<HeapType>();
-  size_t sz = 24;
-  using type = size_t;
+  using type = char;
   std::vector<type*> ptrs_to_free(n);
   for(int i = 0; i < n; i++) {
     type* ptr = (type*)heap->malloc(sz);
     ptrs_to_free[i] = ptr;
     RC_ASSERT((uintptr_t)ptr != 0);
-    ptr[0] = 0xDEADBEEF;
+    //memcpy(ptr, buf.data(), sz);
   }
   for(int i = 0; i < n; i++) {
     heap->free(ptrs_to_free[i]);
@@ -121,7 +128,12 @@ class TwoListHeapUT : public
               SizeHeap<
                 ZoneHeap<MmapHeap, 65536>>>>> {};
 
-class SegmentHeapUT : public SegmentHeap<> {};
+//class SegmentHeapUT : public SegmentHeap<> {};
+class SegmentHeapUT : public KingsleyHeap<
+                                SegmentHeap<>,
+                                SegmentHeap<>
+                             > {};
+
 
 static const unsigned int num_tests = 500;
 //Do <num_tests> runs in each test
@@ -173,10 +185,12 @@ int main() {
   //  testHeap<SegmentHeapUT>(n);
   //});
 
-  rc::check("Multi threaded SegmentHeap", [](unsigned short n) {
+  rc::check("Multi threaded SegmentHeap", [](unsigned short n, size_t sz) {
     RC_PRE(n > 0);
-    auto f = [](unsigned short n) { testHeap<SegmentHeapUT>(n); };
-    run_multi_threaded(nthreads, f, n/nthreads + n%nthreads);
+    RC_PRE(sz > 0);
+    sz %= max_sz; //TODO REMOVE RESTRICTION
+    auto f = [](unsigned short n, size_t sz) { testHeap<SegmentHeapUT>(n, sz); };
+    run_multi_threaded(nthreads, f, n/nthreads + n%nthreads, sz);
   });
 
   join_thread_pool();

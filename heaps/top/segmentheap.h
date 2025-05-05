@@ -24,6 +24,9 @@
 #include "threads/structures/HarrisLinkedList.h"
 #include <atomic>
 #include <limits>
+#include <thread>
+
+#include <iostream>
 
 /**
  * @class SegmentHeap
@@ -32,8 +35,7 @@
  * @author André Costa
  */
 
-//#define DEFAULT_SEGMENT_SIZE 4 * 1024 * 1024 //4MiB
-#define DEFAULT_SEGMENT_SIZE 4 * 1024 //4MiB
+#define DEFAULT_SEGMENT_SIZE 4 * 1024 * 1024 //4MiB
 
 
 namespace HL {
@@ -60,14 +62,26 @@ namespace HL {
           HL::STLAllocator<std::pair<void* const, void* const>, MyHeap>>
         mapType;
 
-      mapType MyMap;
-      PosixLockType MyMapLock;
+      static inline mapType MyMap;
+      static inline PosixLockType MyMapLock;
 
       //Get the maximum number of objects in this segment
       static inline size_t getMaxNumObjects(size_t sz) {
-        size_t remaining_sz = SegmentSize - sizeof(header_t);
-        size_t numObjects = remaining_sz / sz;
-        return numObjects;
+        switch(getSegmentType(sz)) {
+          case SegmentType::NORMAL:
+            {
+              size_t remaining_sz = SegmentSize - sizeof(header_t);
+              size_t numObjects = remaining_sz / sz;
+              return numObjects;
+            }
+          case SegmentType::SMALL_LARGE:
+            return smallLargeSegmentNElems;
+          case SegmentType::LARGE:
+            return 1;
+          default:
+            std::cerr<<"Supposedly unreachable case statement reached."<<std::endl;
+            std::abort();
+        }
       }
 
       struct node_t {
@@ -114,7 +128,7 @@ namespace HL {
             }
 
             static inline uint64_t tagRepr(uint64_t tag) {
-              assert(tag <= tagmax);
+              //can be any value, it is supposed to loop
               return tag << (64 - tagbits);
             }
 
@@ -181,6 +195,7 @@ namespace HL {
           do {
             h = head.load(std::memory_order_relaxed);
             auto [tag, num_nodes, index] = h.getAll();
+            num_nodes_ = num_nodes;
             //Pushing this node maintains invariant
             assert(num_nodes+1 >= 0 && num_nodes+1 <= getMaxNumObjects(sz));
             assert((index >= 0 && index <= getMaxNumObjects(sz))
@@ -250,6 +265,16 @@ namespace HL {
       // which means we must check if ptr belongs to that segment. The "previous" segment mapping is
       // guarateed to be unique because we always allocate segments of the same size and it is impossible
       // to fit another 8KB segment between the range 0KB-4KB.
+      //This works as long as we maintain the invariant that only a single segment can have its
+      // start address inside of a 8KB aligned region. This invariant can be satisfied if we never
+      // allocate segments smaller than 8KB.
+      // To see why this would be a problem, imagine that we allocated a segment (represented above) 
+      // with 8KB, and its start address was 4KB, meaning the map would have the entry 0KB:4KB. Then,
+      // if we allocate a 4KB segment, it is possible that that segment would be allocated in the region
+      // 0KB-4KB, leading its map entry to be 0KB:0KB, conflicting with the 8KB segment.
+      // Allocating larger segments is fine as long as all of its node's start address would fit inside
+      // of a segment of size SegmentSize. This ensures that calling getBasePointer on those nodes will
+      // hit the correct map entry.
       void* getBasePointer(void* ptr) {
         //The "larger" base (8KB in the above example)
         void* alignedBase_1 = getAlignedBase(ptr);
@@ -267,6 +292,7 @@ namespace HL {
           //Did not find segment in map, the correct segment 
           // is guaranteed to be aligned to alignedBase_2
           search = MyMap.find(alignedBase_2);
+          assert(search != MyMap.end());
           segmentBaseAddr = search->second;
         } else {
           //Found a segment, but need to confirm it is the correct one
@@ -275,6 +301,7 @@ namespace HL {
           if(!(segmentBaseAddr <= ptr && ptr < segmentBaseAddr + SegmentSize)) {
             //We did not find the correct segment, look at the alignedBase_2
             search = MyMap.find(alignedBase_2);
+            assert(search != MyMap.end());
             segmentBaseAddr = search->second;
           }
         }
@@ -298,13 +325,33 @@ namespace HL {
         return reinterpret_cast<node_t*>(ptr);
       }
 
+      //Round up to the size of a page.
+      static constexpr size_t roundToPageSize(size_t sz) {
+            return (sz + CPUInfo::PageSize - 1) & (size_t) ~(CPUInfo::PageSize - 1);
+      }
+
+      //sz: node size
+      static inline size_t getActualSegmentSize(size_t sz) {
+        switch(getSegmentType(sz)) {
+          case SegmentType::NORMAL:
+            return SegmentSize;
+          case SegmentType::SMALL_LARGE:
+            return roundToPageSize(sz * smallLargeSegmentNElems + sizeof(header_t));
+          case SegmentType::LARGE:
+            return roundToPageSize(sz + sizeof(header_t));
+          default:
+            std::cerr<<"Supposedly unreachable case statement reached."<<std::endl;
+            std::abort();
+        }
+      }
+
       //Allocate and initialize new segment
       header_t* allocateSegment(size_t sz) {
-        void* base = SizedMmapHeap::malloc(SegmentSize);
+        void* base = SizedMmapHeap::malloc(getActualSegmentSize(sz));
+        size_t numObjects = getMaxNumObjects(sz);
         header_t* header = (header_t*) base; //use first bytes of segment as header
         header->sz = sz;
         //Initialize linked list
-        size_t numObjects = getMaxNumObjects(sz);
         initializeList(base + sizeof(header_t), sz, numObjects);
         typename header_t::list_size_t h = typename header_t::list_size_t(0, numObjects, 0);
         header->head.store(h);
@@ -316,8 +363,27 @@ namespace HL {
       void freeSegment(header_t* header) {
         MyMapLock.lock();
         MyMap.erase(header);
-        SizedMmapHeap::free(header, SegmentSize);
+        SizedMmapHeap::free(header, getActualSegmentSize(header->sz));
         MyMapLock.unlock();
+      }
+
+      //There are 3 types of Segments:
+      //  - Normal segments (many nodes fit inside of a Segment), the segment has size SegmentSize
+      //  - Small Large segments, at least one node fits inside of a segment with SegmentSize,
+      //      but it would waste a lot of memory to have a single node there.
+      //      For example, assume SegmentSize=2MB and sizeof(header_t)=32bytes, and we get a request
+      //        for a 1MB allocation. We could only fit 1 1MB node inside a 2MB segment
+      //      Thus, Small Large segments are larger than a SegmentSize but its nodes
+      //        are smaller than SegmentSize. They have <smallLargeSementNElems> number of nodes.
+      //  - Large Segments only have a single node
+      enum SegmentType { NORMAL, SMALL_LARGE, LARGE };
+      constexpr static size_t smallLargeSegmentNElems = 2;
+      constexpr static size_t largestNormalSegSz = (SegmentSize - sizeof(header_t)) / smallLargeSegmentNElems;
+
+      static constexpr SegmentType getSegmentType(size_t sz) {
+        if (sz <= largestNormalSegSz) return SegmentType::NORMAL;
+        if (sz < SegmentSize) return SegmentType::SMALL_LARGE;
+        return SegmentType::LARGE;
       }
 
       //Empties segment, removes it from segment list and adds it to be retired later
@@ -342,8 +408,7 @@ namespace HL {
 
       //Each thread keeps its own retire list of segments, per segment heap
       inline thread_state& get_thread_state() const  {
-        //static thread_local __attribute__((tls_model("initial-exec"))) thread_state ts{}; ;
-        static thread_local thread_state ts{};
+        thread_local __attribute__((tls_model("initial-exec"))) thread_state ts{};
         return ts;
       }
 
@@ -411,12 +476,23 @@ namespace HL {
         uepoch::with_epoch([&]{
           header_t* header = (header_t*) getBasePointer(ptr);
           size_t num_nodes = header->pushNode(ptr);
+          assert(num_nodes <= getMaxNumObjects(header->sz));
           if(num_nodes == getMaxNumObjects(header->sz)) {
             //Segment is full again, attempt to retire it
             if(header != seglist.peek()) { //Don't deallocate the first segment
               retireSegment(header);
             }
           }
+        }, [&]{
+          this->advanceEpoch();
+        });
+      }
+
+      //Can we just use a thread_local variable to keep track of the size?
+      size_t getSize (void* ptr) {
+        return uepoch::with_epoch([&]{
+          header_t* header = (header_t*) getBasePointer(ptr);
+          return header->sz;
         }, [&]{
           this->advanceEpoch();
         });
