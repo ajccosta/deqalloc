@@ -128,7 +128,6 @@ class TwoListHeapUT : public
               SizeHeap<
                 ZoneHeap<MmapHeap, 65536>>>>> {};
 
-//class SegmentHeapUT : public SegmentHeap<> {};
 class SegmentHeapUT : public KingsleyHeap<
                                 SegmentHeap<>,
                                 SegmentHeap<>
