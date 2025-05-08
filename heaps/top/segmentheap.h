@@ -105,7 +105,7 @@ namespace HL {
         struct alignas(8) list_size_t {
           private:
             //Number of bits for ABA tags
-            static constexpr uint64_t tagbits = 16;
+            static constexpr uint64_t tagbits = 22;
             static constexpr uint64_t tagmax = (1<<tagbits)-1;
             //Odd number of tag bits wastes a bit and confuses logic
             static_assert(tagbits % 2 == 0);
@@ -239,13 +239,33 @@ popNode_n_retry:
           return {start_node, end_node, n_popped};
         }
 
-        //returns the number of elements left in the list
         size_t pushNode(void* ptr) {
-          //ptr is in segment list
-          assert(getBase() + sizeof(header_t) <= ptr && ptr < getBase() + SegmentSize);
+          return pushNode((node_t*)ptr, (node_t*)ptr, 1);
+        }
+
+        //node_first: the first node in the list
+        //node_last: the last node in the list
+        //n_nodes: number of nodes in this list
+        //if node_first == node_last the behavior is the same as pushing a single node
+        //Afterwards, the list will look like:
+        //  head -> node_first -> ... -> node_last -> prev_head -> ...
+        //returns the number of elements left in the list
+        size_t pushNode(node_t* node_first, node_t* node_last, size_t n_nodes) {
+          //nodes belong in this segment's list
+#ifndef NDEBUG
+          //Assert that all nodes belong to this segment and n_nodes is correct
+          node_t* _c = node_first;
+          size_t _n_nodes = 0;
+          while(true) {
+            _n_nodes++;
+            assert(belongsToSegmentList(_c));
+            if(_c == node_last) break;
+            _c = _c->next;
+          }
+          assert(_n_nodes == n_nodes);
+#endif
           uint64_t num_nodes_;
-          node_t *node = (node_t*) ptr;
-          uint64_t new_index = getIndexFromNodePointer(node);
+          uint64_t new_index = getIndexFromNodePointer(node_first);
           assert((new_index >= 0 && new_index <= getMaxNumObjects(sz)) ||
             new_index == list_size_t::node_index_null);
           list_size_t h, new_h;
@@ -255,13 +275,13 @@ popNode_n_retry:
             auto [tag, num_nodes, index] = t;
             num_nodes_ = num_nodes;
             //Pushing this node maintains invariant
-            assert(num_nodes+1 >= 0 && num_nodes+1 <= getMaxNumObjects(sz));
+            assert(num_nodes+n_nodes >= 0 && num_nodes+n_nodes <= getMaxNumObjects(sz));
             assert((index >= 0 && index <= getMaxNumObjects(sz))
               || index == list_size_t::node_index_null);
-            new_h = list_size_t(tag+1, num_nodes+1, new_index);
-            node->next = getNodePointer(index);
+            new_h = list_size_t(tag+1, num_nodes+n_nodes, new_index);
+            node_last->next = getNodePointer(index);
           } while(!head.compare_exchange_strong(h, new_h));
-          return num_nodes_+1;
+          return num_nodes_+n_nodes;
         }
 
         inline bool emptyList() {
@@ -580,6 +600,39 @@ popNode_n_retry:
             insertSegment(header); //publish new segment
           }
           return reinterpret_cast<void*>(p);
+        }, [&]{
+          this->advanceEpoch();
+        });
+      }
+
+      inline void free(node_t* start, node_t* end) {
+        uepoch::with_epoch([&]{
+          header_t* curr_header;
+          node_t* curr, *curr_start, *curr_end;
+          curr = start; //The current node we are looking at
+          size_t curr_n_nodes; //Number of nodes in curr list
+          while(true) {
+            curr_header = (header_t*) getBasePointer(curr);
+            curr_start = curr_end = curr;
+            curr_n_nodes = 0;
+            while(true) {
+              //Does not belong to the same segment as the previous node(s)
+              if(!curr_header->belongsToSegmentList(curr))
+                break;
+              curr_n_nodes++;
+              curr_end = curr;
+              if(curr == end) break;
+              curr = curr->next;
+            }
+            size_t num_nodes = curr_header->pushNode(curr_start, curr_end, curr_n_nodes);
+            if(num_nodes == getMaxNumObjects(curr_header->sz)) {
+              //Segment is full again, attempt to retire it
+              if(curr_header != seglist.peek()) { //Don't deallocate the first segment
+                retireSegment(curr_header);
+              }
+            }
+            if(curr == end) break;
+          }
         }, [&]{
           this->advanceEpoch();
         });

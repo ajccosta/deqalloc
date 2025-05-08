@@ -138,30 +138,24 @@ class SegmentHeapUT : public SegmentHeap<> {};
 void testSegmentHeap(unsigned short n, uint8_t n_sim_allocs) {
   auto heap = getCustomHeap<SegmentHeapUT>();
   using type = char;
+  using node_t = SegmentHeapUT::node_t;
   size_t sz = 24; //always use the same size
-  std::vector<type*> ptrs_to_free(n);
+  std::vector<std::pair<node_t*, node_t*>> ptrs_to_free(n);
   for(int i = 0; i < n; i++) {
     auto [start, end] = heap->malloc(sz, n_sim_allocs);
 
-    SegmentHeapUT::node_t* next = start;
+    node_t* next = start;
     size_t allocated = 1;
     while(next != end) { next = next->next; allocated++; }
     assert(allocated == n_sim_allocs);
     RC_ASSERT(allocated == n_sim_allocs);
 
-    type* ptr = (type*)start;
-    ptrs_to_free[i] = ptr;
-    RC_ASSERT((uintptr_t)ptr != 0);
+    ptrs_to_free[i] = {start, end};
+    RC_ASSERT((uintptr_t)start != 0 && (uintptr_t)end != 0);
   }
   for(int i = 0; i < n; i++) {
-    auto start = ptrs_to_free[i];
-    SegmentHeapUT::node_t* next = (SegmentHeapUT::node_t*) start;
-    size_t allocated = n_sim_allocs;
-    while(allocated-- > 0) {
-      auto curr = next;
-      next = next->next;
-      heap->free(curr);
-    }
+    auto [start, end] = ptrs_to_free[i];
+    heap->free(start, end);
   }
 }
 
