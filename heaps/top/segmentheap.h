@@ -92,9 +92,13 @@ namespace HL {
         }
       }
 
+    public:
+      //TODO: protected struct so derived classes can receive linked list of nodes
       struct node_t {
         node_t* next;
       };
+
+    private:
 
       struct header_t {
         //Auxiliary struct to allow pointer to list and number of nodes to be modified atomically
@@ -168,15 +172,17 @@ namespace HL {
           bool shouldfail;
           do {
             h = head.load(std::memory_order_relaxed);
-            auto [tag, num_nodes, index] = h.getAll();
+            auto t = h.getAll();
+            auto [tag, num_nodes, index] = t;
             assert(num_nodes >= 0 && num_nodes <= getMaxNumObjects(sz));
             if(num_nodes == 0) {
+              assert(index == list_size_t::node_index_null);
               return nullptr;
             }
-            node = getNodePointer(getBase(), index, sz);
+            node = getNodePointer(index);
             assert(node != nullptr); //we checked for num_nodes=0 so this should never happen
             node_next = node->next;
-            uint32_t new_index = getIndexFromNodePointer(getBase(), node_next, sz);
+            uint32_t new_index = getIndexFromNodePointer(node_next);
             shouldfail = !((new_index >= 0 && new_index <= getMaxNumObjects(sz))
               || new_index == list_size_t::node_index_null);
             new_h = list_size_t(tag+1, num_nodes-1, new_index);
@@ -190,38 +196,87 @@ namespace HL {
           return node;
         }
 
+        //(attempt to) allocate n nodes at a time
+        //Returns linked list with
+        //  {first node in list, last node in list, number of nodes in returned list}
+        std::tuple<node_t*, node_t*, size_t> popNode(size_t n) {
+          assert(n > 0);
+          list_size_t h, new_h;
+          node_t *node, *start_node, *end_node;
+          size_t n_popped; //how many nodes were popped
+          do {
+popNode_n_retry:
+            h = head.load(std::memory_order_relaxed);
+            auto t = h.getAll();
+            auto [tag, num_nodes, index] = t; //prevents vars from going out of scope
+            assert(num_nodes >= 0 && num_nodes <= getMaxNumObjects(sz));
+            if(num_nodes == 0) {
+              assert(index == list_size_t::node_index_null);
+              return {nullptr, nullptr, 0};
+            }
+            //How many nodes to pop
+            size_t n_pop = std::min(num_nodes, n);
+            assert(n_pop > 0);
+            int64_t n_traversed = n_pop; //How many nodes we will attempt to pop
+            node = getNodePointer(index);
+            start_node = node;
+            assert(node != nullptr); //we checked for num_nodes=0 so this should never happen
+            while(n_traversed-- > 0 && node != nullptr) {
+              end_node = node;
+              node = node->next;
+              //Other threads might have written to these locations concurrently.
+              //They are only allowed to do so if they have allocated nodes first.
+              //That means that even if we read their garbage, our CAS will fail.
+              //Still, if we read their garbage and interpret it as a node, we segfault!
+              //So, just check if what we read lies inside of this segment list, even
+              //  if it is wrong, we won't segfault and will retry after a failed CAS.
+              if(!belongsToSegmentList(node) && node != nullptr) goto popNode_n_retry;
+            }
+            uint32_t new_index = getIndexFromNodePointer(node);
+            n_popped = (n_pop-(n_traversed+1));
+            new_h = list_size_t(tag+1, num_nodes-n_popped, new_index);
+          } while(!head.compare_exchange_strong(h, new_h));
+          return {start_node, end_node, n_popped};
+        }
+
         //returns the number of elements left in the list
         size_t pushNode(void* ptr) {
           //ptr is in segment list
           assert(getBase() + sizeof(header_t) <= ptr && ptr < getBase() + SegmentSize);
           uint64_t num_nodes_;
           node_t *node = (node_t*) ptr;
-          uint64_t new_index = getIndexFromNodePointer(getBase(), node, sz);
+          uint64_t new_index = getIndexFromNodePointer(node);
           assert((new_index >= 0 && new_index <= getMaxNumObjects(sz)) ||
             new_index == list_size_t::node_index_null);
           list_size_t h, new_h;
           do {
             h = head.load(std::memory_order_relaxed);
-            auto [tag, num_nodes, index] = h.getAll();
+            auto t = h.getAll();
+            auto [tag, num_nodes, index] = t;
             num_nodes_ = num_nodes;
             //Pushing this node maintains invariant
             assert(num_nodes+1 >= 0 && num_nodes+1 <= getMaxNumObjects(sz));
             assert((index >= 0 && index <= getMaxNumObjects(sz))
               || index == list_size_t::node_index_null);
             new_h = list_size_t(tag+1, num_nodes+1, new_index);
-            node->next = getNodePointer(getBase(), index, sz);
+            node->next = getNodePointer(index);
           } while(!head.compare_exchange_strong(h, new_h));
           return num_nodes_+1;
         }
 
         inline bool emptyList() {
           list_size_t old = head.load(std::memory_order_relaxed);
-          auto [tag, num_nodes, index] = old.getAll();
+          auto t = old.getAll();
+          auto [tag, num_nodes, index] = t;
           list_size_t list_size_t_null = list_size_t(tag+1, 0, 0);
           if(num_nodes == getMaxNumObjects(sz))
             return head.compare_exchange_strong(old, list_size_t_null);
           else
             return false; //Someone allocated from this list before we were able to empty it, abort
+        }
+
+        node_t* getNodePointer(uint32_t index) {
+          return getNodePointer(getBase(), index, sz);
         }
 
         //get node pointer from segment base, node index and size of nodes
@@ -230,10 +285,19 @@ namespace HL {
           return (node_t*)(((uintptr_t)base) + sizeof(header_t) + index * sz);
         }
 
+        uint32_t getIndexFromNodePointer(node_t* nodeptr) {
+          return getIndexFromNodePointer(getBase(), nodeptr, sz);
+        }
+
         //get node index from segment base, node ptr and size of nodes
         static inline uint32_t getIndexFromNodePointer(void* base, node_t* nodeptr, size_t sz) {
           if(nodeptr == nullptr) return list_size_t::node_index_null;
           return (((uintptr_t)nodeptr) - (((uintptr_t)base) + sizeof(header_t)))/sz;
+        }
+
+        //Checks if a pointer lies inside the bounds of this Segment's
+        bool belongsToSegmentList(void* ptr) {
+          return (getBase() + sizeof(header_t) <= ptr) && (ptr < getBase() + SegmentSize);
         }
 
         //returns base pointer to segment. assumes that header is in first bytes of segment
@@ -464,6 +528,44 @@ namespace HL {
 
     public:
 
+      //Allocate n blocks of size sz
+      inline std::pair<node_t*, node_t*> malloc(size_t sz, size_t n) {
+        //Don't try to allocate more than what
+        //  fits inside a fully filled segment
+        assert(n <= getMaxNumObjects(sz));
+        return uepoch::with_epoch([&]() -> std::pair<node_t*, node_t*> {
+          header_t* header;
+          node_t *start_node = nullptr, *end_node = nullptr;
+          size_t to_allocate = n;
+          //TODO: look for non-empty segments to allocate from?
+          header = seglist.peek();
+          if(header != nullptr) {
+            //Segments available, try to pop from them
+            auto [_start_node, _end_node, allocated] = header->popNode(n);
+            assert(allocated <= n); //Don't allocate more than requested
+            //Might have not allocated
+            to_allocate -= allocated;
+            start_node = _start_node;
+            end_node = _end_node;
+          }
+          if(to_allocate > 0) { //Need to allocate new segment
+            header = allocateSegment(sz);
+            auto [_start_node, _end_node, allocated] = header->popNode(to_allocate);
+            //Nothing left to allocate
+            assert(to_allocate == allocated);
+            if(start_node == nullptr)
+              start_node = _start_node;
+            else //Join node lists
+              end_node->next = _start_node;
+            end_node = _end_node;
+            insertSegment(header); //publish new segment
+          }
+          return {start_node, end_node};
+        }, [&]{
+          this->advanceEpoch();
+        });
+      }
+
       inline void* malloc(size_t sz) {
         return uepoch::with_epoch([&] {
           header_t* header;
@@ -500,7 +602,7 @@ namespace HL {
       }
 
       //Can we just use a thread_local variable to keep track of the size?
-      size_t getSize (void* ptr) {
+      size_t getSize(void* ptr) {
         return uepoch::with_epoch([&]{
           header_t* header = (header_t*) getBasePointer(ptr);
           return header->sz;

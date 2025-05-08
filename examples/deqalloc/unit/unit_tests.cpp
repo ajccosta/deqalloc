@@ -128,10 +128,42 @@ class TwoListHeapUT : public
               SizeHeap<
                 ZoneHeap<MmapHeap, 65536>>>>> {};
 
-class SegmentHeapUT : public KingsleyHeap<
+class KingsleySegmentHeapUT : public KingsleyHeap<
                                 SegmentHeap<>,
                                 SegmentHeap<>
                              > {};
+
+class SegmentHeapUT : public SegmentHeap<> {};
+
+void testSegmentHeap(unsigned short n, uint8_t n_sim_allocs) {
+  auto heap = getCustomHeap<SegmentHeapUT>();
+  using type = char;
+  size_t sz = 24; //always use the same size
+  std::vector<type*> ptrs_to_free(n);
+  for(int i = 0; i < n; i++) {
+    auto [start, end] = heap->malloc(sz, n_sim_allocs);
+
+    SegmentHeapUT::node_t* next = start;
+    size_t allocated = 1;
+    while(next != end) { next = next->next; allocated++; }
+    assert(allocated == n_sim_allocs);
+    RC_ASSERT(allocated == n_sim_allocs);
+
+    type* ptr = (type*)start;
+    ptrs_to_free[i] = ptr;
+    RC_ASSERT((uintptr_t)ptr != 0);
+  }
+  for(int i = 0; i < n; i++) {
+    auto start = ptrs_to_free[i];
+    SegmentHeapUT::node_t* next = (SegmentHeapUT::node_t*) start;
+    size_t allocated = n_sim_allocs;
+    while(allocated-- > 0) {
+      auto curr = next;
+      next = next->next;
+      heap->free(curr);
+    }
+  }
+}
 
 
 static const unsigned int num_tests = 500;
@@ -179,17 +211,32 @@ int main() {
   //  testHeap<TwoListHeapUT>(n);
   //});
 
-  //rc::check("SegmentHeap", [](unsigned short n) {
-  //  RC_PRE(n > 0);
-  //  testHeap<SegmentHeapUT>(n);
-  //});
+  rc::check("SegmentHeap", [](unsigned short n, size_t sz) {
+    RC_PRE(n > 0);
+    RC_PRE(sz > 0);
+    sz %= max_sz;
+    testHeap<KingsleySegmentHeapUT>(n, sz);
+  });
 
   rc::check("Multi threaded SegmentHeap", [](unsigned short n, size_t sz) {
     RC_PRE(n > 0);
     RC_PRE(sz > 0);
-    sz %= max_sz; //TODO REMOVE RESTRICTION
-    auto f = [](unsigned short n, size_t sz) { testHeap<SegmentHeapUT>(n, sz); };
+    sz %= max_sz;
+    auto f = [](unsigned short n, size_t sz) { testHeap<KingsleySegmentHeapUT>(n, sz); };
     run_multi_threaded(nthreads, f, n/nthreads + n%nthreads, sz);
+  });
+
+  rc::check("SegmentHeap", [](unsigned short n, uint8_t n_sim_allocs) {
+    RC_PRE(n > 0);
+    RC_PRE(n_sim_allocs > 0);
+    testSegmentHeap(n, n_sim_allocs);
+  });
+
+  rc::check("Multi threaded SegmentHeap", [](unsigned short n, uint8_t n_sim_allocs) {
+    RC_PRE(n > 0);
+    RC_PRE(n_sim_allocs > 0);
+    auto f = [](unsigned short n, uint8_t n_sim_allocs) { testSegmentHeap(n, n_sim_allocs); };
+    run_multi_threaded(nthreads, f, n/nthreads + n%nthreads, n_sim_allocs);
   });
 
   join_thread_pool();
