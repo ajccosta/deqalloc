@@ -58,7 +58,7 @@ inline static TheDeqallocHeapType* getDeqallocHeap() {
 extern "C" {
   // For use by the replacement printf routines (see
   // https://github.com/emeryberger/printf)
-  void _putchar(char ch) { ::write(1, (void *)&ch, 1); }
+  void _putchar(char ch) { auto s = ::write(1, (void *)&ch, 1); }
 }
 #endif
 

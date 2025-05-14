@@ -26,21 +26,10 @@
 #define UEPOCH_H_
 
 #include <atomic>
-
-#include <iostream>
+#include "threadmanager.h"
 
 namespace uepoch {
   namespace internal {
-    constexpr int max_threads = 1024;
-
-    extern inline std::atomic<int>& num_threads() {
-      static std::atomic<int> num_threads;
-      return num_threads;  }
-
-    extern inline int thread_id() {
-      static thread_local int id{num_threads().fetch_add(1)};
-      assert(id < max_threads);
-      return id; }
 
     // the main structure
     struct alignas(64) epoch_state {
@@ -83,9 +72,6 @@ namespace uepoch {
         int threads;
         while (true) { // unlikely to loop more than once
           threads = num_threads();
-          if (threads > max_threads) {
-            std::cerr << "epoch: too many threads" << std::endl;
-            abort(); }
           for (int i=0; i < threads; i++)
             if ((announcements[i].last != -1l) &&
                 announcements[i].last < current_e) return;
@@ -119,8 +105,9 @@ namespace uepoch {
   //f: what to execute inside an epoch
   //advance: what to execute in case of an epoch advancement
   template <typename Thunk, typename AdvanceThunk>
-  auto with_epoch(const Thunk& f, const AdvanceThunk& advance) {
-    auto& epoch = internal::get_epoch();
+  auto with_epoch(const Thunk& f, const AdvanceThunk& advance,
+    uepoch::internal::epoch_state& epoch = internal::get_epoch()) {
+
     auto [not_in_epoch, id] = epoch.announce();
     if constexpr (std::is_void_v<std::invoke_result_t<Thunk>>) {
       f();
@@ -132,6 +119,22 @@ namespace uepoch {
       if (not_in_epoch) epoch.unannounce(id);
       return v;
     }
+  }
+
+  template <typename Thunk>
+  auto with_epoch(const Thunk& f,
+    uepoch::internal::epoch_state& epoch = internal::get_epoch()) {
+    //Typical with_epoch, i.e., does nothing on epoch advancement.
+    //Hopefully the empty lambda is optimized out.
+    return with_epoch(f, [](){}, epoch);
+  }
+
+  template <typename AdvanceThunk>
+  auto quiescence_check(const AdvanceThunk& advance,
+    uepoch::internal::epoch_state& epoch = internal::get_epoch()) {
+    //Don't do anything besides react to an epoch advancement
+    //Hopefully the empty lambda is optimized out.
+    return with_epoch([](){}, advance, epoch);
   }
 } // end namespace epoch
 

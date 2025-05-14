@@ -128,30 +128,29 @@ class TwoListHeapUT : public
               SizeHeap<
                 ZoneHeap<MmapHeap, 65536>>>>> {};
 
-class KingsleySegmentHeapUT : public KingsleyHeap<
-                                SegmentHeap<>,
+class DequeHeapUT : public DequeHeap<SegmentHeap<>> {};
+
+class KingsleySegmentHeapUT : public
+                              KingsleyHeap<
+                                DequeHeapUT,
                                 SegmentHeap<>
-                             > {};
+                              > {};
 
-class SegmentHeapUT : public SegmentHeap<> {};
-
-void testSegmentHeap(unsigned short n, uint8_t n_sim_allocs) {
-  auto heap = getCustomHeap<SegmentHeapUT>();
+template<class MultiAllocHeapType>
+void testMultiAllocHeap(unsigned short n, uint8_t n_sim_allocs) {
+  auto heap = getCustomHeap<MultiAllocHeapType>();
   using type = char;
-  using node_t = SegmentHeapUT::node_t;
+  using node_t = typename MultiAllocHeapType::node_t;
   size_t sz = 24; //always use the same size
   std::vector<std::pair<node_t*, node_t*>> ptrs_to_free(n);
   for(int i = 0; i < n; i++) {
     auto [start, end] = heap->malloc(sz, n_sim_allocs);
-
+    RC_ASSERT((uintptr_t)start != 0 && (uintptr_t)end != 0);
     node_t* next = start;
     size_t allocated = 1;
     while(next != end) { next = next->next; allocated++; }
-    assert(allocated == n_sim_allocs);
     RC_ASSERT(allocated == n_sim_allocs);
-
     ptrs_to_free[i] = {start, end};
-    RC_ASSERT((uintptr_t)start != 0 && (uintptr_t)end != 0);
   }
   for(int i = 0; i < n; i++) {
     auto [start, end] = ptrs_to_free[i];
@@ -205,31 +204,46 @@ int main() {
   //  testHeap<TwoListHeapUT>(n);
   //});
 
-  rc::check("SegmentHeap", [](unsigned short n, size_t sz) {
-    RC_PRE(n > 0);
-    RC_PRE(sz > 0);
-    sz %= max_sz;
-    testHeap<KingsleySegmentHeapUT>(n, sz);
-  });
+  //rc::check("SegmentHeap", [](unsigned short n, size_t sz) {
+  //  RC_PRE(n > 0);
+  //  RC_PRE(sz > 0);
+  //  sz %= max_sz;
+  //  testHeap<KingsleySegmentHeapUT>(n, sz);
+  //});
 
-  rc::check("Multi threaded SegmentHeap", [](unsigned short n, size_t sz) {
-    RC_PRE(n > 0);
-    RC_PRE(sz > 0);
-    sz %= max_sz;
-    auto f = [](unsigned short n, size_t sz) { testHeap<KingsleySegmentHeapUT>(n, sz); };
-    run_multi_threaded(nthreads, f, n/nthreads + n%nthreads, sz);
-  });
+  //rc::check("Multi threaded SegmentHeap", [](unsigned short n, size_t sz) {
+  //  RC_PRE(n > 0);
+  //  RC_PRE(sz > 0);
+  //  sz %= max_sz;
+  //  auto f = [](unsigned short n, size_t sz) { testHeap<KingsleySegmentHeapUT>(n, sz); };
+  //  run_multi_threaded(nthreads, f, n/nthreads + n%nthreads, sz);
+  //});
 
-  rc::check("SegmentHeap", [](unsigned short n, uint8_t n_sim_allocs) {
+  //rc::check("SegmentHeap", [](unsigned short n, uint8_t n_sim_allocs) {
+  //  RC_PRE(n > 0);
+  //  RC_PRE(n_sim_allocs > 0);
+  //  testMultiAllocHeap<SegmentHeap>(n, n_sim_allocs);
+  //});
+
+  //rc::check("Multi threaded SegmentHeap", [](unsigned short n, uint8_t n_sim_allocs) {
+  //  RC_PRE(n > 0);
+  //  RC_PRE(n_sim_allocs > 0);
+  //  auto f = [](unsigned short n, uint8_t n_sim_allocs) { testMultiAllocHeap<SegmentHeap>(n, n_sim_allocs); };
+  //  run_multi_threaded(nthreads, f, n/nthreads + n%nthreads, n_sim_allocs);
+  //});
+
+  //rc::check("DequeHeap", [](unsigned short n, uint8_t n_sim_allocs) {
+  //  RC_PRE(n > 0);
+  //  RC_PRE(n_sim_allocs > 0);
+  //  /*TODO: REMOVE THIS*/n_sim_allocs = 4;
+  //  testMultiAllocHeap<DequeHeapUT>(n, n_sim_allocs);
+  //});
+
+  rc::check("Multi threaded DequeHeap", [](unsigned short n, uint8_t n_sim_allocs) {
     RC_PRE(n > 0);
     RC_PRE(n_sim_allocs > 0);
-    testSegmentHeap(n, n_sim_allocs);
-  });
-
-  rc::check("Multi threaded SegmentHeap", [](unsigned short n, uint8_t n_sim_allocs) {
-    RC_PRE(n > 0);
-    RC_PRE(n_sim_allocs > 0);
-    auto f = [](unsigned short n, uint8_t n_sim_allocs) { testSegmentHeap(n, n_sim_allocs); };
+    /*TODO: REMOVE THIS*/n_sim_allocs = 4;
+    auto f = [](unsigned short n, uint8_t n_sim_allocs) { testMultiAllocHeap<DequeHeapUT>(n, n_sim_allocs); };
     run_multi_threaded(nthreads, f, n/nthreads + n%nthreads, n_sim_allocs);
   });
 

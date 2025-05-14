@@ -65,7 +65,7 @@ public:
         head.next = tail;
     }
 
-    void add(T* new_node_) {
+    void add(T* new_node_, bool retry = true) {
         Node* new_node = (Node*) new_node_;
         Node* left_node;
         do {
@@ -73,7 +73,7 @@ public:
             left_node = &head;
             Node* right_node = left_node->next.load();
             new_node->next.store(right_node);
-            if (left_node->next.compare_exchange_strong(right_node, new_node)) /*C2*/
+            if (left_node->next.compare_exchange_strong(right_node, new_node) || !retry) /*C2*/
                 return;
         } while (true); /*B3*/
     }
