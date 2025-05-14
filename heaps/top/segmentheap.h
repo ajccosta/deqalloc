@@ -578,6 +578,7 @@ popNode_n_retry:
             else //Join node lists
               end_node->next = _start_node;
             end_node = _end_node;
+            //TODO Allow segment insertion to fail so that we can retry (and don't allocate a huge number of segments just because)
             insertSegment(header); //publish new segment
           }
           return {start_node, end_node};
