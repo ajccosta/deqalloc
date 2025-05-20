@@ -14,6 +14,7 @@
 //TODO currently it is not known when it is safe to deallocate blocks, the user of this class is responsible for that.
 
 #include "utility/types.h"
+#include "threads/cpuinfo.h"
 
 #define BLOCK_SIZE_LOG 3
 
@@ -48,6 +49,9 @@ class alignas(64) continuous_array
     block *block_in_use = nullptr; //Block that is currently in use
     block* blocks_to_reuse = nullptr; //Block pool
     uint64_t curr_block_id = 0; //Last allocated block_id
+
+    class Super : public FreelistHeap<BumpAlloc<CPUInfo::PageSize, SizedMmapHeap>> {};
+    Super super;
     //-----------------//
     
     //Accessed by all//
@@ -61,7 +65,7 @@ class alignas(64) continuous_array
     {
       block *new_block = pop_reuse_block();
       if(new_block == nullptr) //If no blocks available, allocate one
-        new_block = (block*) malloc(sizeof(block));
+        new_block = (block*) super.malloc(sizeof(block));
       assert(new_block != nullptr); //TODO: treat this correctly
       return new_block;
     }
@@ -177,11 +181,11 @@ class alignas(64) continuous_array
       { //free blocks in current working set AND retired blocks
         aux = head;
         head = head->prev;
-        free(aux);
+        super.free(aux);
       }
       while((aux = pop_reuse_block()) != nullptr)
       { //free blocks stored for future reuse
-        free(aux);
+        super.free(aux);
       }
     }
     
