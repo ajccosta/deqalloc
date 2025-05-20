@@ -9,7 +9,7 @@
 #include "threads/threadmanager.h"
 #include "utility/random.h"
 
-template <class Super>
+template <class Super = SegmentHeap<>>
 class DequeHeap : public Super {
   public:
 
@@ -38,6 +38,7 @@ class DequeHeap : public Super {
         return {start_node, end_node};
       }
       //Our deque is empty, try stealing
+      //Avoid atomic read of num_threads multiple times
       size_t n_threads = num_threads().load(std::memory_order_relaxed);
       size_t attempts = 0;
       while(attempts++ < n_threads) {

@@ -44,14 +44,11 @@ namespace HL {
   class SegmentHeap : public SizedMmapHeap {
     public:
       static const size_t SegmentSize = SegmentSize_; //Make SegmentSize visible to other classes
-      enum { Alignment = CPUInfo::PageSize };
+      enum { Alignment = CPUInfo::PageSize };//TODO CHANGE TO SEGMENTSIZE ONCE FIXED ALIGNED MMAP
 
-      //SegmentSize must be multiple of page size
-      static_assert(SegmentSize % CPUInfo::PageSize == 0);
-      //SegmentSize must be power of 2
-      static_assert((SegmentSize & (SegmentSize-1)) == 0);
-      //Naturally SegmentSize can't be 0
-      static_assert(SegmentSize > 0);
+      static_assert(SegmentSize % CPUInfo::PageSize == 0 && "SegmentSize must be multiple of page size");
+      static_assert((SegmentSize & (SegmentSize-1)) == 0 && "SegmentSize must be power of 2");
+      static_assert(SegmentSize > 0 && "Naturally SegmentSize can't be 0");
 
     private:
 
@@ -498,7 +495,6 @@ popNode_n_retry:
       struct thread_state {
         header_t* retire_current = nullptr; //segments added in current epoch e
         header_t* retire_old = nullptr; //segments in epoch e-1
-        thread_state() {}
       };
 
       //Each thread keeps its own retire list of segments, per segment heap
@@ -581,6 +577,7 @@ popNode_n_retry:
             //TODO Allow segment insertion to fail so that we can retry (and don't allocate a huge number of segments just because)
             insertSegment(header); //publish new segment
           }
+          end_node->next = nullptr;
           return {start_node, end_node};
         }, [&]{
           this->advanceEpoch();

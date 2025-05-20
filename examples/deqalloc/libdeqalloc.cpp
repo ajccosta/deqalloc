@@ -36,9 +36,10 @@ volatile int anyThreadCreated = 1;
 using namespace HL;
 
 class TheDeqallocHeapType : public KingsleyHeap<
-                                SegmentHeap<>,
-                                SegmentHeap<>
-                             > {};
+                                     ThreadLocalStack<
+                                       DequeHeap<
+                                         SegmentHeap<>>>,
+                                     SegmentHeap<>> {};
 
 inline static TheDeqallocHeapType* getDeqallocHeap() {
   static char thBuf[sizeof(TheDeqallocHeapType)];

@@ -65,7 +65,7 @@ void run_multi_threaded(size_t numthreads, Thunk f, Args... args) {
 }
 
 template<class HeapType>
-inline static HeapType * getCustomHeap() {
+HeapType * getCustomHeap() {
   static char thBuf[sizeof(HeapType)];
   static HeapType * th = new (thBuf) HeapType;
   return th;
@@ -96,46 +96,6 @@ void testHeap(unsigned short n, size_t sz) {
   }
 }
 
-//Heap type definitions
-class TopHeap : public
-        UniqueHeap<
-          LockedHeap<
-            PosixLockType,
-            SizeHeap<
-              ZoneHeap<
-                MmapHeap,
-                65536>>>> {};
-
-class BoundedFreeListHeapUT : public
-        BoundedFreeListHeap<
-          512,
-          SizeHeap<
-            ZoneHeap<MmapHeap, 65536>>> {};
-
-class DeqallocUT : public
-        ANSIWrapper<
-          ThreadSpecificHeap<
-            KingsleyHeap<
-              AdaptHeap<DLList, TopHeap>,
-              TopHeap>>> {};
-
-class TwoListHeapUT : public
-        ANSIWrapper<
-          TwoListHeap<
-            512,
-            ListHeap<
-              512,
-              SizeHeap<
-                ZoneHeap<MmapHeap, 65536>>>>> {};
-
-class DequeHeapUT : public DequeHeap<SegmentHeap<>> {};
-
-class KingsleySegmentHeapUT : public
-                              KingsleyHeap<
-                                DequeHeapUT,
-                                SegmentHeap<>
-                              > {};
-
 template<class MultiAllocHeapType>
 void testMultiAllocHeap(unsigned short n, uint8_t n_sim_allocs) {
   auto heap = getCustomHeap<MultiAllocHeapType>();
@@ -157,6 +117,40 @@ void testMultiAllocHeap(unsigned short n, uint8_t n_sim_allocs) {
     heap->free(start, end);
   }
 }
+
+//Heap type definitions
+class TopHeap : public
+        UniqueHeap<
+          LockedHeap<
+            PosixLockType,
+            SizeHeap<
+              ZoneHeap<
+                MmapHeap,
+                65536>>>> {};
+
+class BoundedFreeListHeapUT : public
+        BoundedFreeListHeap<
+          512,
+          SizeHeap<
+            ZoneHeap<MmapHeap, 65536>>> {};
+
+class TwoListHeapUT : public
+        ANSIWrapper<
+          TwoListHeap<
+            512,
+            ListHeap<
+              512,
+              SizeHeap<
+                ZoneHeap<MmapHeap, 65536>>>>> {};
+
+class DequeHeapUT : public DequeHeap<> {};
+
+class DeqallocUT : public KingsleyHeap<
+                            ThreadLocalStack<
+                              DequeHeap<
+                                SegmentHeap<>>>,
+                            SegmentHeap<>
+                          > {};
 
 
 static const unsigned int num_tests = 500;
@@ -239,12 +233,20 @@ int main() {
   //  testMultiAllocHeap<DequeHeapUT>(n, n_sim_allocs);
   //});
 
-  rc::check("Multi threaded DequeHeap", [](unsigned short n, uint8_t n_sim_allocs) {
+  //rc::check("Multi threaded DequeHeap", [](unsigned short n, uint8_t n_sim_allocs) {
+  //  RC_PRE(n > 0);
+  //  RC_PRE(n_sim_allocs > 0);
+  //  /*TODO: REMOVE THIS*/n_sim_allocs = 4;
+  //  auto f = [](unsigned short n, uint8_t n_sim_allocs) { testMultiAllocHeap<DequeHeapUT>(n, n_sim_allocs); };
+  //  run_multi_threaded(nthreads, f, n/nthreads + n%nthreads, n_sim_allocs);
+  //});
+
+  rc::check("Multi threaded Deqalloc", [](unsigned short n, uint8_t n_sim_allocs) {
     RC_PRE(n > 0);
     RC_PRE(n_sim_allocs > 0);
-    /*TODO: REMOVE THIS*/n_sim_allocs = 4;
-    auto f = [](unsigned short n, uint8_t n_sim_allocs) { testMultiAllocHeap<DequeHeapUT>(n, n_sim_allocs); };
-    run_multi_threaded(nthreads, f, n/nthreads + n%nthreads, n_sim_allocs);
+    size_t sz = 24;
+    auto f = [](unsigned short n, size_t sz) { testHeap<DeqallocUT>(n, sz); };
+    run_multi_threaded(nthreads, f, n/nthreads + n%nthreads, sz);
   });
 
   join_thread_pool();
