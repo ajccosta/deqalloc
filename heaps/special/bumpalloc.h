@@ -33,6 +33,8 @@
  * @author Emery Berger <http://www.cs.umass.edu/~emery>
  */
 
+//#include <iostream>
+
 namespace HL {
 
   template <size_t ChunkSize,
@@ -55,9 +57,10 @@ namespace HL {
 		    "Alignment must be a power of two.");
     }
 
-    inline void * malloc (size_t sz) {
+    inline void * malloc(size_t sz) {
       // Round up the size if necessary.
       size_t newSize = (sz + Alignment - 1UL) & ~(Alignment - 1UL);
+      //std::cerr<<sz<<" "<<Alignment<<std::endl;
 
       // If there's not enough space left to fulfill this request, get
       // another chunk.
