@@ -35,7 +35,8 @@ volatile int anyThreadCreated = 1;
 
 using namespace HL;
 
-class TheDeqallocHeapType : public KingsleyHeap<
+class TheDeqallocHeapType : public MiniSegHeap<
+                                     18,
                                      ThreadLocalStack<
                                        DequeHeap<
                                          SegmentHeap<>>>,

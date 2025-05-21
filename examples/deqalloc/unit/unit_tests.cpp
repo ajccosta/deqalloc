@@ -71,7 +71,7 @@ HeapType * getCustomHeap() {
   return th;
 }
 
-constexpr size_t max_sz = 4096*32;
+constexpr size_t max_sz = 1*1024*1024;
 constexpr std::array<char, max_sz> make_filled_buffer(char ch) {
   std::array<char, max_sz> arr{}; for (auto& c : arr) { c = ch; } return arr;
 }
@@ -145,15 +145,15 @@ class TwoListHeapUT : public
 
 class DequeHeapUT : public DequeHeap<> {};
 
-class DeqallocUT : public KingsleyHeap<
-                            ThreadLocalStack<
-                              DequeHeap<
-                                SegmentHeap<>>>,
-                            SegmentHeap<>
-                          > {};
+class DeqallocUT : public MiniSegHeap<
+                                     18,
+                                     ThreadLocalStack<
+                                       DequeHeap<
+                                         SegmentHeap<>>>,
+                                     SegmentHeap<>> {};
 
 
-static const unsigned int num_tests = 500;
+static const unsigned int num_tests = 5000;
 //Do <num_tests> runs in each test
 static std::string RC_PARAMS = string("RC_PARAMS=max_success="+std::to_string(num_tests));
 
@@ -241,10 +241,11 @@ int main() {
   //  run_multi_threaded(nthreads, f, n/nthreads + n%nthreads, n_sim_allocs);
   //});
 
-  rc::check("Multi threaded Deqalloc", [](unsigned short n, uint8_t n_sim_allocs) {
+  rc::check("Multi threaded Deqalloc", [](unsigned short n, size_t sz) {
     RC_PRE(n > 0);
-    RC_PRE(n_sim_allocs > 0);
-    size_t sz = 24;
+    RC_PRE(sz > 0);
+    sz %= max_sz;
+    sz=24;
     auto f = [](unsigned short n, size_t sz) { testHeap<DeqallocUT>(n, sz); };
     run_multi_threaded(nthreads, f, n/nthreads + n%nthreads, sz);
   });

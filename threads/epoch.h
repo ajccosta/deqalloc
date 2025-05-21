@@ -40,7 +40,7 @@ namespace uepoch {
         announce() : last(-1l) {}};
 
       // the various delayed lists for each thread
-      struct alignas(256) thread_state {
+      struct alignas(64) thread_state {
         long epoch = 0; // epoch on last delay
         long count = 0; // number of calls to delay since last epoch update
         thread_state() {}
