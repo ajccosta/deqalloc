@@ -70,6 +70,7 @@ extern "C" {
   
   void * xxmalloc (size_t sz) {
     auto ptr = getDeqallocHeap()->malloc (sz);
+    deq_assert((uintptr_t)ptr % 8 == 0); //Should atleast be 8 bytes aligned
     return ptr;
   }
 
@@ -81,7 +82,9 @@ extern "C" {
   }
 
   void * xxmemalign(size_t alignment, size_t sz) {
-    return generic_xxmemalign(alignment, sz);
+    auto ptr = generic_xxmemalign(alignment, sz);
+    deq_assert((uintptr_t)ptr % alignment == 0);
+    return ptr;
   }
   
   size_t xxmalloc_usable_size (void * ptr) {

@@ -142,7 +142,7 @@ namespace HL {
             }
 
             static inline uint64_t numNodesRepr(uint64_t num_nodes) {
-              assert(num_nodes <= restmax);
+              deq_assert(num_nodes <= restmax);
               return num_nodes << rest_bits;
             }
 
@@ -171,13 +171,13 @@ namespace HL {
             h = head.load(std::memory_order_relaxed);
             auto t = h.getAll();
             auto [tag, num_nodes, index] = t;
-            assert(num_nodes >= 0 && num_nodes <= getMaxNumObjects(sz));
+            deq_assert(num_nodes >= 0 && num_nodes <= getMaxNumObjects(sz));
             if(num_nodes == 0) {
-              assert(index == list_size_t::node_index_null);
+              deq_assert(index == list_size_t::node_index_null);
               return nullptr;
             }
             node = getNodePointer(index);
-            assert(node != nullptr); //we checked for num_nodes=0 so this should never happen
+            deq_assert(node != nullptr); //we checked for num_nodes=0 so this should never happen
             node_next = node->next;
             uint32_t new_index = getIndexFromNodePointer(node_next);
             shouldfail = !((new_index >= 0 && new_index <= getMaxNumObjects(sz))
@@ -189,7 +189,7 @@ namespace HL {
           //This means that, before this thread was able to pop a node, another thread
           // succeeded and wrote something to that node. That's fine, but we should not
           // be able to pop that node, i.e., our CAS must fail.
-          assert(!shouldfail);
+          deq_assert(!shouldfail);
           return node;
         }
 
@@ -197,7 +197,7 @@ namespace HL {
         //Returns linked list with
         //  {first node in list, last node in list, number of nodes in returned list}
         std::tuple<node_t*, node_t*, size_t> popNode(size_t n) {
-          assert(n > 0);
+          deq_assert(n > 0);
           list_size_t h, new_h;
           node_t *node, *start_node, *end_node;
           size_t n_popped; //how many nodes were popped
@@ -206,18 +206,18 @@ popNode_n_retry:
             h = head.load(std::memory_order_relaxed);
             auto t = h.getAll();
             auto [tag, num_nodes, index] = t; //prevents vars from going out of scope
-            assert(num_nodes >= 0 && num_nodes <= getMaxNumObjects(sz));
+            deq_assert(num_nodes >= 0 && num_nodes <= getMaxNumObjects(sz));
             if(num_nodes == 0) {
-              assert(index == list_size_t::node_index_null);
+              deq_assert(index == list_size_t::node_index_null);
               return {nullptr, nullptr, 0};
             }
             //How many nodes to pop
             size_t n_pop = std::min(num_nodes, n);
-            assert(n_pop > 0);
+            deq_assert(n_pop > 0);
             int64_t n_traversed = n_pop; //How many nodes we will attempt to pop
             node = getNodePointer(index);
             start_node = node;
-            assert(node != nullptr); //we checked for num_nodes=0 so this should never happen
+            deq_assert(node != nullptr); //we checked for num_nodes=0 so this should never happen
             while(n_traversed-- > 0 && node != nullptr) {
               end_node = node;
               node = node->next;
@@ -250,20 +250,20 @@ popNode_n_retry:
         size_t pushNode(node_t* node_first, node_t* node_last, size_t n_nodes) {
           //nodes belong in this segment's list
 #ifndef NDEBUG
-          //Assert that all nodes belong to this segment and n_nodes is correct
+          //deq_assert that all nodes belong to this segment and n_nodes is correct
           node_t* _c = node_first;
           size_t _n_nodes = 0;
           while(true) {
             _n_nodes++;
-            assert(belongsToSegmentList(_c));
+            deq_assert(belongsToSegmentList(_c));
             if(_c == node_last) break;
             _c = _c->next;
           }
-          assert(_n_nodes == n_nodes);
+          deq_assert(_n_nodes == n_nodes);
 #endif
           uint64_t num_nodes_;
           uint64_t new_index = getIndexFromNodePointer(node_first);
-          assert((new_index >= 0 && new_index <= getMaxNumObjects(sz)) ||
+          deq_assert((new_index >= 0 && new_index <= getMaxNumObjects(sz)) ||
             new_index == list_size_t::node_index_null);
           list_size_t h, new_h;
           do {
@@ -272,8 +272,8 @@ popNode_n_retry:
             auto [tag, num_nodes, index] = t;
             num_nodes_ = num_nodes;
             //Pushing this node maintains invariant
-            assert(num_nodes+n_nodes >= 0 && num_nodes+n_nodes <= getMaxNumObjects(sz));
-            assert((index >= 0 && index <= getMaxNumObjects(sz))
+            deq_assert(num_nodes+n_nodes >= 0 && num_nodes+n_nodes <= getMaxNumObjects(sz));
+            deq_assert((index >= 0 && index <= getMaxNumObjects(sz))
               || index == list_size_t::node_index_null);
             new_h = list_size_t(tag+1, num_nodes+n_nodes, new_index);
             node_last->next = getNodePointer(index);
@@ -374,7 +374,7 @@ popNode_n_retry:
         void* alignedBase_2 = alignedBase_1 - SegmentSize;
         //The "smaller" base's end (8KB-1 in the above example)
         void* alignedBaseEnd_2 = getSegmentEnd(alignedBase_2);
-        assert(alignedBase_2 == getAlignedBase(alignedBase_1-1));
+        deq_assert(alignedBase_2 == getAlignedBase(alignedBase_1-1));
         global_state& gs = get_global_state();
         gs.MyMapLock.lock();
         auto search = gs.MyMap.find(alignedBase_1);
@@ -383,7 +383,7 @@ popNode_n_retry:
           //Did not find segment in map, the correct segment 
           // is guaranteed to be aligned to alignedBase_2
           search = gs.MyMap.find(alignedBase_2);
-          assert(search != gs.MyMap.end());
+          deq_assert(search != gs.MyMap.end());
           segmentBaseAddr = search->second;
         } else {
           //Found a segment, but need to confirm it is the correct one
@@ -392,12 +392,12 @@ popNode_n_retry:
           if(!(segmentBaseAddr <= ptr && ptr < segmentBaseAddr + SegmentSize)) {
             //We did not find the correct segment, look at the alignedBase_2
             search = gs.MyMap.find(alignedBase_2);
-            assert(search != gs.MyMap.end());
+            deq_assert(search != gs.MyMap.end());
             segmentBaseAddr = search->second;
           }
         }
         //ptr belongs to segment list (i.e., fits inside segment and is not in the header)
-        assert(segmentBaseAddr + sizeof(header_t) <= ptr && ptr < segmentBaseAddr + SegmentSize);
+        deq_assert(segmentBaseAddr + sizeof(header_t) <= ptr && ptr < segmentBaseAddr + SegmentSize);
         gs.MyMapLock.unlock();
         return segmentBaseAddr;
       }
@@ -509,7 +509,7 @@ popNode_n_retry:
         thread_state& ts = get_thread_state();
         //segment_retire_next should only be written once
         // in the entire lifetime of a segment (and by a single thread)
-        assert(header->segment_retire_next == nullptr);
+        deq_assert(header->segment_retire_next == nullptr);
         header->segment_retire_next = ts.retire_current;
         ts.retire_current = header;
       }
@@ -538,7 +538,7 @@ popNode_n_retry:
       //Returns the pointer to the SegmentSize aligned region which base belongs to
       static inline void* getAlignedBase(void* base) {
         void* ret = (void*)((uintptr_t) base & (~(SegmentSize-1)));
-        assert(reinterpret_cast<size_t>(ret) % SegmentSize == 0);
+        deq_assert(reinterpret_cast<size_t>(ret) % SegmentSize == 0);
         return ret;
       }
 
@@ -548,7 +548,7 @@ popNode_n_retry:
       inline std::pair<node_t*, node_t*> malloc(size_t sz, size_t n) {
         //Don't try to allocate more than what
         //  fits inside a fully filled segment
-        assert(n <= getMaxNumObjects(sz));
+        deq_assert(n <= getMaxNumObjects(sz));
         return uepoch::with_epoch([&]() -> std::pair<node_t*, node_t*> {
           header_t* header;
           node_t *start_node = nullptr, *end_node = nullptr;
@@ -558,7 +558,7 @@ popNode_n_retry:
           if(header != nullptr) {
             //Segments available, try to pop from them
             auto [_start_node, _end_node, allocated] = header->popNode(n);
-            assert(allocated <= n); //Don't allocate more than requested
+            deq_assert(allocated <= n); //Don't allocate more than requested
             //Might have not allocated
             to_allocate -= allocated;
             start_node = _start_node;
@@ -568,7 +568,7 @@ popNode_n_retry:
             header = allocateSegment(sz);
             auto [_start_node, _end_node, allocated] = header->popNode(to_allocate);
             //Nothing left to allocate
-            assert(to_allocate == allocated);
+            deq_assert(to_allocate == allocated);
             if(start_node == nullptr)
               start_node = _start_node;
             else //Join node lists
@@ -640,7 +640,7 @@ popNode_n_retry:
         uepoch::with_epoch([&]{
           header_t* header = (header_t*) getBasePointer(ptr);
           size_t num_nodes = header->pushNode(ptr);
-          assert(num_nodes <= getMaxNumObjects(header->sz));
+          deq_assert(num_nodes <= getMaxNumObjects(header->sz));
           if(num_nodes == getMaxNumObjects(header->sz)) {
             //Segment is full again, attempt to retire it
             if(header != seglist.peek()) { //Don't deallocate the first segment

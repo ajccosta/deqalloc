@@ -48,12 +48,13 @@ class ThreadLocalStack : public Super {
       thread_state& ts = get_thread_state();
       if(ts.sz == 0) {
         auto [start_node, end_node] = Super::malloc(sz, list_length);
-        assert(start_node != nullptr && end_node != nullptr);
+        deq_assert(start_node != nullptr && end_node != nullptr);
         ts.head = start_node;
         ts.tail = end_node;
         ts.sz = list_length;
       }
       node_t* n = ts.head;
+      deq_assert(n != nullptr);
       ts.head = ts.head->next;
       ts.sz--;
       return n;
@@ -62,9 +63,12 @@ class ThreadLocalStack : public Super {
     inline void free(void* ptr) {
       thread_state& ts = get_thread_state();
       node_t* n = (node_t*) ptr;
+      deq_assert(n != nullptr);
       if(ts.sz == list_length+1) {
+        deq_assert(ts.head != nullptr);
         ts.mid = ts.head;
       } else if(ts.sz == 2*list_length) {
+        deq_assert(ts.mid->next != nullptr && ts.tail != nullptr);
         Super::free(ts.mid->next, ts.tail);
         ts.tail = ts.mid;
         ts.mid->next = nullptr;

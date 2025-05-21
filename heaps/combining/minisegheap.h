@@ -40,7 +40,7 @@ class MiniSegHeap : public SmallHeap {
       return (size_t) (1ULL << (i+3));
     }
 
-    static constexpr size_t maxSmallObjectSize = class2Size(NumBins);
+    static constexpr size_t maxSmallObjectSize = class2Size(NumBins-1);
 
     static inline constexpr int size2Class(const size_t sz) {
       return (int) HL::ilog2((sz < 8) ? 8 : sz) - 3;
@@ -54,10 +54,10 @@ class MiniSegHeap : public SmallHeap {
       void* ptr = nullptr;
       const auto sizeClass = size2Class(sz);
       const auto realSize = class2Size(sizeClass);
-      assert(realSize >= sz);
+      deq_assert(realSize >= sz);
       if (realSize <= maxSmallObjectSize) {
-        assert(sizeClass >= 0);
-        assert(sizeClass < NumBins);
+        deq_assert(sizeClass >= 0);
+        deq_assert(sizeClass < NumBins);
         ptr = smallHeaps[sizeClass].malloc(realSize);
       } else {
         ptr = largeHeap.malloc(realSize);
@@ -75,8 +75,8 @@ class MiniSegHeap : public SmallHeap {
         largeHeap.free(ptr);
       } else {
         auto objectSizeClass = size2Class(objectSize);
-        assert (objectSizeClass >= 0);
-        assert (objectSizeClass < NumBins);
+        deq_assert (objectSizeClass >= 0);
+        deq_assert (objectSizeClass < NumBins);
         smallHeaps[objectSizeClass].free(ptr);
       }
     }

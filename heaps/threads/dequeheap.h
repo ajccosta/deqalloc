@@ -34,7 +34,7 @@ class DequeHeap : public Super {
       //Try our own deque
       if(opt) {
         auto [start_node, end_node] = opt.value();
-        assert(start_node != nullptr && end_node != nullptr);
+        deq_assert(start_node != nullptr && end_node != nullptr);
         return {start_node, end_node};
       }
       //Our deque is empty, try stealing
@@ -47,14 +47,14 @@ class DequeHeap : public Super {
         auto [opt, deque_is_empty] = res;
         if(opt) {
           auto [start_node, end_node] = opt.value();
-          assert(start_node != nullptr && end_node != nullptr);
+          deq_assert(start_node != nullptr && end_node != nullptr);
           return {start_node, end_node};
         }
       }
       //Could not steal either, allocate from super heap
       //  Currently, we assume that super heap supports "list allocation" (e.g. SegmentHeap)
       auto [start_node, end_node] = Super::malloc(sz, n);
-      assert(start_node != nullptr && end_node != nullptr);
+      deq_assert(start_node != nullptr && end_node != nullptr);
       return {start_node, end_node};
     }
 
