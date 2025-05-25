@@ -131,6 +131,9 @@ namespace HL {
             inline uint64_t getNodeIndex() { return restmax & node_repr; }
             inline std::tuple<uint64_t,uint64_t,uint64_t> getAll() { return {getTag(), getNumNodes(), getNodeIndex()}; }
 
+            bool operator==(list_size_t const& rhs) const { return node_repr == rhs.node_repr; }
+            bool operator!=(list_size_t const& rhs) const { return !(*this == rhs); }
+
           private:
             inline uint64_t getRepr(uint64_t tag, uint64_t num_nodes, uint64_t node_index) {
               return tagRepr(tag) | numNodesRepr(num_nodes) | nodeIndexRepr(node_index);
@@ -198,6 +201,7 @@ namespace HL {
         //  {first node in list, last node in list, number of nodes in returned list}
         std::tuple<node_t*, node_t*, size_t> popNode(size_t n) {
           deq_assert(n > 0);
+          checkList();
           list_size_t h, new_h;
           node_t *node, *start_node, *end_node;
           size_t n_popped; //how many nodes were popped
@@ -217,20 +221,29 @@ popNode_n_retry:
             int64_t n_traversed = n_pop; //How many nodes we will attempt to pop
             node = getNodePointer(index);
             start_node = node;
-            deq_assert(node != nullptr); //we checked for num_nodes=0 so this should never happen
-            while(n_traversed-- > 0 && node != nullptr) {
+            while(n_traversed-- > 0) {
               end_node = node;
-              node = node->next;
               //Other threads might have written to these locations concurrently.
               //They are only allowed to do so if they have allocated nodes first.
               //That means that even if we read their garbage, our CAS will fail.
               //Still, if we read their garbage and interpret it as a node, we segfault!
               //So, just check if what we read lies inside of this segment list, even
               //  if it is wrong, we won't segfault and will retry after a failed CAS.
-              if(!belongsToSegmentList(node) && node != nullptr) goto popNode_n_retry;
+              if(!belongsToSegmentList(node)) {
+                //Head must have changed since someone wrote to this node
+                deq_assert(h != head.load(std::memory_order_seq_cst));
+                goto popNode_n_retry;
+              }
+              node = node->next;
             }
+            //Node that will go at the head is not in list, retry
+            if(!belongsToSegmentList(node) && node != nullptr) goto popNode_n_retry;
             uint32_t new_index = getIndexFromNodePointer(node);
             n_popped = (n_pop-(n_traversed+1));
+            deq_assert(belongsToSegmentList(node) || node == nullptr);
+            deq_assert(num_nodes-n_popped == 0 ? new_index == list_size_t::node_index_null : true);
+            deq_assert(node == nullptr ? (num_nodes-n_popped == 0 ||
+              h != head.load(std::memory_order_seq_cst)): true);
             new_h = list_size_t(tag+1, num_nodes-n_popped, new_index);
           } while(!head.compare_exchange_strong(h, new_h));
           return {start_node, end_node, n_popped};
@@ -238,6 +251,26 @@ popNode_n_retry:
 
         size_t pushNode(void* ptr) {
           return pushNode((node_t*)ptr, (node_t*)ptr, 1);
+        }
+
+        void checkList() {
+#ifndef NDEBUG
+          //Check that list is well-formed
+          size_t retries = 0;
+checkList_retry:
+          deq_assert(retries++ < 10000);
+          list_size_t h = head.load(std::memory_order_seq_cst);
+          auto t = h.getAll();
+          auto [tag, num_nodes, index] = t;
+          node_t* _c = getNodePointer(index);
+          size_t _n_nodes = 0;
+          while(_c) {
+            _c = _c->next;
+            _n_nodes++;
+            if(!belongsToSegmentList(_c) && _n_nodes != num_nodes) goto checkList_retry;
+          }
+          deq_assert(_n_nodes == num_nodes);
+#endif
         }
 
         //node_first: the first node in the list
@@ -250,7 +283,7 @@ popNode_n_retry:
         size_t pushNode(node_t* node_first, node_t* node_last, size_t n_nodes) {
           //nodes belong in this segment's list
 #ifndef NDEBUG
-          //deq_assert that all nodes belong to this segment and n_nodes is correct
+          //assert that all nodes belong to this segment and n_nodes is correct
           node_t* _c = node_first;
           size_t _n_nodes = 0;
           while(true) {
@@ -260,10 +293,11 @@ popNode_n_retry:
             _c = _c->next;
           }
           deq_assert(_n_nodes == n_nodes);
+          checkList();
 #endif
           uint64_t num_nodes_;
           uint64_t new_index = getIndexFromNodePointer(node_first);
-          deq_assert((new_index >= 0 && new_index <= getMaxNumObjects(sz)) ||
+          deq_assert((new_index >= 0 && new_index < getMaxNumObjects(sz)) ||
             new_index == list_size_t::node_index_null);
           list_size_t h, new_h;
           do {
@@ -271,12 +305,13 @@ popNode_n_retry:
             auto t = h.getAll();
             auto [tag, num_nodes, index] = t;
             num_nodes_ = num_nodes;
-            //Pushing this node maintains invariant
-            deq_assert(num_nodes+n_nodes >= 0 && num_nodes+n_nodes <= getMaxNumObjects(sz));
-            deq_assert((index >= 0 && index <= getMaxNumObjects(sz))
-              || index == list_size_t::node_index_null);
             new_h = list_size_t(tag+1, num_nodes+n_nodes, new_index);
             node_last->next = getNodePointer(index);
+            deq_assert(num_nodes+n_nodes >= 0 && num_nodes+n_nodes <= getMaxNumObjects(sz));
+            deq_assert((index >= 0 && index < getMaxNumObjects(sz))
+              || index == list_size_t::node_index_null);
+            deq_assert(num_nodes == 0 ? index == list_size_t::node_index_null : true);
+            deq_assert(num_nodes == 0 ? node_last->next == nullptr : true);
           } while(!head.compare_exchange_strong(h, new_h));
           return num_nodes_+n_nodes;
         }
@@ -285,7 +320,7 @@ popNode_n_retry:
           list_size_t old = head.load(std::memory_order_relaxed);
           auto t = old.getAll();
           auto [tag, num_nodes, index] = t;
-          list_size_t list_size_t_null = list_size_t(tag+1, 0, 0);
+          list_size_t list_size_t_null = list_size_t(tag+1, 0, list_size_t::node_index_null);
           if(num_nodes == getMaxNumObjects(sz))
             return head.compare_exchange_strong(old, list_size_t_null);
           else
@@ -557,6 +592,7 @@ popNode_n_retry:
           header = seglist.peek();
           if(header != nullptr) {
             //Segments available, try to pop from them
+            deq_assert(sz == header->sz);
             auto [_start_node, _end_node, allocated] = header->popNode(n);
             deq_assert(allocated <= n); //Don't allocate more than requested
             //Might have not allocated
@@ -590,8 +626,10 @@ popNode_n_retry:
           void* p = nullptr;
           //TODO: look for non-empty segments to allocate from?
           header = seglist.peek();
-          if(header != nullptr) //Segments available, try to pop from them
+          if(header != nullptr) {//Segments available, try to pop from them
+            deq_assert(sz == header->sz);
             p = header->popNode();
+          }
           if(p == nullptr) { //Need to allocate new segment
             header = allocateSegment(sz);
             p = header->popNode();
