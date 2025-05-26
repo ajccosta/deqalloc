@@ -70,6 +70,7 @@ namespace HL {
         return gs;
       }
 
+    public:
       //Get the maximum number of objects in this segment
       static inline size_t getMaxNumObjects(size_t sz) {
         switch(getSegmentType(sz)) {
@@ -89,7 +90,6 @@ namespace HL {
         }
       }
 
-    public:
       //TODO: protected struct so derived classes can receive linked list of nodes
       struct node_t {
         node_t* next;

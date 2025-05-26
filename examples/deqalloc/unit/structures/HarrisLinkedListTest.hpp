@@ -41,6 +41,7 @@
  */
 template<typename T, typename V, typename Allocator>
 class HarrisLinkedListTest : public Allocator {
+    using stlalloc = HL::STLAllocator<void*, Allocator>;
 
 public:
     struct alignas(128) Node {
@@ -66,7 +67,7 @@ public:
 
     // We don't expect the destructor to be called if this instance can still be in use
     ~HarrisLinkedListTest() {
-        uepochTest::clear();
+        uepochTest::clear<stlalloc>();
         Node* node = head;
         while(node != nullptr) {
             Node* next = getUnmarked(node->next);
@@ -96,7 +97,7 @@ public:
      *
      */
     bool add(T key, V value) {
-      return uepochTest::with_epoch([&] () -> bool {
+      return uepochTest::with_epoch<stlalloc>([&] () -> bool {
             Node* new_node = new(Allocator::malloc(sizeof(Node))) Node(key, value);
             Node* left_node;
             do {
@@ -119,7 +120,7 @@ public:
      * "High Performance Dynamic Lock-Free Hash Tables and List-Based Sets"
      */
     bool remove(T key) {
-        return uepochTest::with_epoch([&] () -> bool {
+        return uepochTest::with_epoch<stlalloc>([&] () -> bool {
             Node* right_node;
             Node* right_node_next;
             Node* left_node;
@@ -133,7 +134,7 @@ public:
             } while (true); /*B4*/
             if (!left_node->next.compare_exchange_strong(right_node, right_node_next)) /*C4*/
                 right_node = search (right_node->key, left_node);
-            else uepochTest::delay([&](){ Allocator::free(getUnmarked(right_node)); });
+            else uepochTest::delay<stlalloc>([&](){ Allocator::free(getUnmarked(right_node)); });
             return true;
         });
     }
@@ -157,7 +158,7 @@ public:
     }
 
     std::optional<V> find(T key) {
-      return uepochTest::with_epoch([&] { return find_(key);});
+      return uepochTest::with_epoch<stlalloc>([&] { return find_(key);});
     }
 
 
@@ -190,7 +191,7 @@ private:
             if (left_node->next.compare_exchange_strong(left_node_next, right_node)) /*C1*/  {
                 Node* to_free = getUnmarked(left_node_next);
                 while(to_free != right_node) {
-                    uepochTest::delay([&](){ Allocator::free(to_free); });
+                    uepochTest::delay<stlalloc>([&](){ Allocator::free(to_free); });
                     to_free = getUnmarked(to_free->next);
                 }
                 if ((right_node != tail) && isMarked(right_node->next.load())) 

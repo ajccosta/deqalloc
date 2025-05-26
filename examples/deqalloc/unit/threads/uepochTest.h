@@ -40,6 +40,7 @@ namespace uepochTest {
       return id; }
 
     // the main structure
+    template<typename Allocator>
     struct alignas(64) epoch_state {
 
       // announcements for each thread
@@ -49,7 +50,7 @@ namespace uepochTest {
 
       // the various delayed lists for each thread
       struct alignas(256) thread_state {
-        using list = std::forward_list<std::function<void(void)>>;
+        using list = std::forward_list<std::function<void(void)>, Allocator>;
         list current; // delayed functions from current epoch
         list old;  // delayed functions from previous epoch
         list safe; // delayed functions that are safe to call
@@ -132,15 +133,16 @@ namespace uepochTest {
       }
     }; // end struct epoch_state
   
-    extern inline epoch_state& get_epoch() {
-      static epoch_state epoch;
+    template <typename Allocator>
+    extern inline epoch_state<Allocator>& get_epoch() {
+      static epoch_state<Allocator> epoch;
       return epoch;
     }
   } // end namespace internal
 
-  template <typename Thunk>
+  template <typename Allocator, typename Thunk>
   auto with_epoch(const Thunk& f) {
-    auto& epoch = internal::get_epoch();
+    auto& epoch = internal::get_epoch<Allocator>();
     auto [not_in_epoch, id] = epoch.announce();
     if constexpr (std::is_void_v<std::invoke_result_t<Thunk>>) {
       f();
@@ -152,11 +154,13 @@ namespace uepochTest {
     }
   }
 
+  template <typename Allocator>
   void delay(std::function<void(void)> f) {
-    internal::get_epoch().delay(std::move(f));
+    internal::get_epoch<Allocator>().delay(std::move(f));
   }
 
-  void clear() {internal::get_epoch().clear();}
+  template <typename Allocator>
+  void clear() {internal::get_epoch<Allocator>().clear();}
 } // end namespace epoch
 
 #endif //PARLAY_EPOCH_H_
