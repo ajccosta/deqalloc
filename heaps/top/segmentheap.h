@@ -230,18 +230,29 @@ popNode_n_retry:
               //So, just check if what we read lies inside of this segment list, even
               //  if it is wrong, we won't segfault and will retry after a failed CAS.
               if(!belongsToSegmentList(node)) {
+#ifndef NDEBUG
                 //Head must have changed since someone wrote to this node
-                deq_assert(h != head.load(std::memory_order_seq_cst));
+                std::atomic_thread_fence(std::memory_order_seq_cst);
+                deq_assert(h != head.load(std::memory_order_relaxed));
+#endif
                 goto popNode_n_retry;
               }
               node = node->next;
             }
-            //Node that will go at the head is not in list, retry
-            if(!belongsToSegmentList(node) && node != nullptr) goto popNode_n_retry;
-            uint32_t new_index = getIndexFromNodePointer(node);
             n_popped = (n_pop-(n_traversed+1));
+            //If the node that will be the new head of the list does not belong to the list
+            // and is not a nullptr (i.e., we are for sure reading something a user wrote)
+            // we simply retry.
+            //In the case that we see a nullptr (it is also considered to not be in the list)
+            // we might be at the end of the list, in which case the nullptr is valid. In that
+            // case n_popped==num_nodes. Otherwise, we saw another corrupting write (such as
+            // truncating the end of the list in another thread), we need to retry as well.
+            if((node == nullptr && n_popped != num_nodes)
+              || (!belongsToSegmentList(node) && node != nullptr))
+              goto popNode_n_retry;
+            uint32_t new_index = getIndexFromNodePointer(node);
             deq_assert(belongsToSegmentList(node) || node == nullptr);
-            deq_assert(num_nodes-n_popped == 0 ? new_index == list_size_t::node_index_null : true);
+            deq_assert(num_nodes == n_popped ? new_index == list_size_t::node_index_null : true);
             deq_assert(node == nullptr ? (num_nodes-n_popped == 0 ||
               h != head.load(std::memory_order_seq_cst)): true);
             new_h = list_size_t(tag+1, num_nodes-n_popped, new_index);
@@ -592,7 +603,7 @@ checkList_retry:
           header = seglist.peek();
           if(header != nullptr) {
             //Segments available, try to pop from them
-            deq_assert(sz == header->sz);
+            deq_assert(getSegmentType(sz) == SegmentType::NORMAL ? sz == header->sz : true);
             auto [_start_node, _end_node, allocated] = header->popNode(n);
             deq_assert(allocated <= n); //Don't allocate more than requested
             //Might have not allocated
@@ -627,7 +638,7 @@ checkList_retry:
           //TODO: look for non-empty segments to allocate from?
           header = seglist.peek();
           if(header != nullptr) {//Segments available, try to pop from them
-            deq_assert(sz == header->sz);
+            deq_assert(getSegmentType(sz) == SegmentType::NORMAL ? sz == header->sz : true);
             p = header->popNode();
           }
           if(p == nullptr) { //Need to allocate new segment
