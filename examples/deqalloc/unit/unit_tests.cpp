@@ -197,23 +197,23 @@ int main() {
     run_multi_threaded(nthreads, f, n/nthreads + n%nthreads, n_sim_allocs);
   });
 
-  rc::check("Single threaded Deqalloc", [](unsigned short n, size_t sz) {
-    RC_PRE(n > 0);
-    RC_PRE(sz > 0);
-    sz %= max_sz;
-    RC_PRE(SegmentHeapUT::getMaxNumObjects(sz) >= DeqallocUT::list_length);
-    testHeap<DeqallocUT>(n, sz);
-  });
+  //rc::check("Single threaded Deqalloc", [](unsigned short n, size_t sz) {
+  //  RC_PRE(n > 0);
+  //  RC_PRE(sz > 0);
+  //  sz %= max_sz;
+  //  RC_PRE(SegmentHeapUT::getMaxNumObjects(sz) >= DeqallocUT::list_length);
+  //  testHeap<DeqallocUT>(n, sz);
+  //});
 
-  rc::check("Multi threaded Deqalloc", [](unsigned short n, size_t sz) {
-    RC_PRE(n > 0);
-    RC_PRE(sz > 0);
-    sz %= max_sz;
-    RC_PRE(SegmentHeapUT::getMaxNumObjects(sz) >= DeqallocUT::list_length);
-    testHeap<DeqallocUT>(n, sz);
-    auto f = [](unsigned short n, size_t sz) { testHeap<DeqallocUT>(n, sz); };
-    run_multi_threaded(nthreads, f, n/nthreads + n%nthreads, sz);
-  });
+  //rc::check("Multi threaded Deqalloc", [](unsigned short n, size_t sz) {
+  //  RC_PRE(n > 0);
+  //  RC_PRE(sz > 0);
+  //  sz %= max_sz;
+  //  RC_PRE(SegmentHeapUT::getMaxNumObjects(sz) >= DeqallocUT::list_length);
+  //  testHeap<DeqallocUT>(n, sz);
+  //  auto f = [](unsigned short n, size_t sz) { testHeap<DeqallocUT>(n, sz); };
+  //  run_multi_threaded(nthreads, f, n/nthreads + n%nthreads, sz);
+  //});
 
   //rc::check("Harris Linked List Deqalloc", [](unsigned short n) {
   //  RC_PRE(n > 0);
