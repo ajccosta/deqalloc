@@ -49,63 +49,12 @@ class ThreadLocalStack : public Super {
 
   public:
 
-    //inline void* malloc(size_t sz) {
-    //  thread_state& ts = get_thread_state();
-    //  if(ts.sz == 0) {
-    //    deq_assert(ts.head == nullptr);
-    //    auto [start_node, end_node] = Super::malloc(sz, list_length);
-    //    deq_assert(start_node != nullptr && end_node != nullptr);
-    //    deq_assert(end_node->next == nullptr);
-    //    ts.head = start_node;
-    //    ts.tail = end_node;
-    //    ts.mid = nullptr;
-    //    ts.sz = list_length;
-    //  }
-    //  node_t* n = ts.head;
-    //  deq_assert(n != nullptr);
-    //  ts.head = ts.head->next;
-    //  ts.sz--;
-    //  //if(ts.sz == 0) {
-    //  //  deq_assert(ts.head == nullptr);
-    //  //  ts.tail = nullptr;
-    //  //}
-    //  return n;
-    //}
-
-    //inline void free(void* ptr) {
-    //  thread_state& ts = get_thread_state();
-    //  node_t* n = (node_t*) ptr;
-    //  deq_assert(n != nullptr);
-    //  //if(ts.sz == 0) {
-    //  //  ts.tail = n;
-    //  //} else
-    //  if(ts.sz == list_length+1) {
-    //    deq_assert(ts.head != nullptr);
-    //    ts.mid = ts.head;
-    //  } else if(ts.sz == 2*list_length) {
-    //    deq_assert(ts.mid && ts.mid->next != nullptr && ts.tail);
-    //    deq_assert(ts.tail->next == nullptr);
-    //    Super::free(ts.mid->next, ts.tail);
-    //    ts.tail = ts.mid;
-    //    ts.tail->next = nullptr;
-    //    ts.mid = nullptr;
-    //    ts.sz = list_length;
-    //  }
-    //  deq_assert(ts.sz > 0 ? ts.head != nullptr : true);
-    //  n->next = ts.head;
-    //  ts.head = n;
-    //  ts.sz++;
-    //}
-
-    inline size_t getSize(void *ptr) {
-      return Super::getSize(ptr);
-    }
-
     inline void* malloc(size_t sz) {
       thread_state& ts = get_thread_state();
       if(ts.sz == 0) {
         auto [start_node, end_node] = Super::malloc(sz, get_list_length(sz));
         ts.head = start_node;
+        ts.tail = end_node;
         ts.mid = nullptr;
         ts.sz = get_list_length(sz);
       }
@@ -120,18 +69,19 @@ class ThreadLocalStack : public Super {
       if(ts.sz == get_list_length(sz)+1) {
         ts.mid = ts.head;
       } else if(ts.sz == 2*get_list_length(sz)) {
-        //Traverse list to find tail
-        ts.tail = ts.mid;
-        for(int i = 0; i < get_list_length(sz); i++)
-          ts.tail = ts.tail->next;
         Super::free(ts.mid->next, ts.tail);
         ts.tail = ts.mid;
         ts.mid->next = nullptr;
+        //ts.mid = nullptr;
         ts.sz = get_list_length(sz);
       }
       node_t* n = new (ptr) node_t{ts.head};
       ts.head = n;
       ts.sz++;
+    }
+
+    inline size_t getSize(void *ptr) {
+      return Super::getSize(ptr);
     }
 };
 
