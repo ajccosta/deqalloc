@@ -37,9 +37,17 @@ class ThreadLocalStack : public Super {
     thread_state thread_states[max_threads];
     inline thread_state& get_thread_state() { return thread_states[thread_id()]; }
 
-  public:
 
-    static constexpr size_t list_length = 4; //TODO THIS SHOULD BE ADJUSTABLE PER SIZE CLASS!!!!!
+    static inline constexpr size_t default_list_bytes = (1ul << 18) - 64; // in bytes
+
+    //TODO don't calculate list_length every time
+    static constexpr size_t get_list_length(size_t sz /*size of objects*/) {
+      size_t s1 = default_list_bytes / sz;
+      size_t s2 = s1 <= 1 ? 2 : s1; //minimum list_length of 2;
+      return s2;
+    }
+
+  public:
 
     //inline void* malloc(size_t sz) {
     //  thread_state& ts = get_thread_state();
@@ -96,10 +104,10 @@ class ThreadLocalStack : public Super {
     inline void* malloc(size_t sz) {
       thread_state& ts = get_thread_state();
       if(ts.sz == 0) {
-        auto [start_node, end_node] = Super::malloc(sz, list_length);
+        auto [start_node, end_node] = Super::malloc(sz, get_list_length(sz));
         ts.head = start_node;
         ts.mid = nullptr;
-        ts.sz = list_length;
+        ts.sz = get_list_length(sz);
       }
       node_t* n = ts.head;
       ts.head = ts.head->next;
@@ -107,19 +115,19 @@ class ThreadLocalStack : public Super {
       return static_cast<void*>(n);
     }
 
-    inline void free(void* ptr) {
+    inline void free(void* ptr, size_t sz) {
       thread_state& ts = get_thread_state();
-      if(ts.sz == list_length+1) {
+      if(ts.sz == get_list_length(sz)+1) {
         ts.mid = ts.head;
-      } else if(ts.sz == 2*list_length) {
+      } else if(ts.sz == 2*get_list_length(sz)) {
         //Traverse list to find tail
         ts.tail = ts.mid;
-        for(int i = 0; i < list_length; i++)
+        for(int i = 0; i < get_list_length(sz); i++)
           ts.tail = ts.tail->next;
         Super::free(ts.mid->next, ts.tail);
         ts.tail = ts.mid;
         ts.mid->next = nullptr;
-        ts.sz = list_length;
+        ts.sz = get_list_length(sz);
       }
       node_t* n = new (ptr) node_t{ts.head};
       ts.head = n;
