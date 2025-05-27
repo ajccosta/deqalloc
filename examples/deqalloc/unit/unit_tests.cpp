@@ -92,7 +92,7 @@ void testHeap(unsigned short n, size_t sz) {
     type* ptr = (type*)heap->malloc(sz);
     ptrs_to_free[i] = ptr;
     RC_ASSERT((uintptr_t)ptr != 0);
-    //memcpy(ptr, buf.data(), sz);
+    memcpy(ptr, buf.data(), sz);
   }
   for(int i = 0; i < n; i++) {
     heap->free(ptrs_to_free[i]);
@@ -142,9 +142,11 @@ void testSharedList(unsigned short n, size_t ignored) {
 }
 
 //Heap type definitions
-class SegmentHeapUT : public SegmentHeap<> {};
+class SegmentHeapUT : public MiniSegHeap<18,
+                                         ThreadLocalStack<SegmentHeap<>>,
+                                         SegmentHeap<>> {};
 
-class DequeHeapUT : public DequeHeap<SegmentHeapUT> {};
+class DequeHeapUT : public DequeHeap<SegmentHeap<>> {};
 
 class DeqallocUT : public MiniSegHeap<18,
                                       ThreadLocalStack<DequeHeapUT>,
@@ -162,14 +164,24 @@ int main() {
   rc::check("Single threaded SegmentHeap Multi Alloc", [](unsigned short n, uint8_t n_sim_allocs) {
     RC_PRE(n > 0);
     RC_PRE(n_sim_allocs > 0);
-    testMultiAllocHeap<SegmentHeapUT>(n, n_sim_allocs);
+    testMultiAllocHeap<SegmentHeap<>>(n, n_sim_allocs);
   });
 
   rc::check("Multi threaded SegmentHeap Multi Alloc", [](unsigned short n, uint8_t n_sim_allocs) {
     RC_PRE(n > 0);
     RC_PRE(n_sim_allocs > 0);
-    auto f = [](unsigned short n, uint8_t n_sim_allocs) { testMultiAllocHeap<SegmentHeapUT>(n, n_sim_allocs); };
+    auto f = [](unsigned short n, uint8_t n_sim_allocs) { testMultiAllocHeap<SegmentHeap<>>(n, n_sim_allocs); };
     run_multi_threaded(nthreads, f, n/nthreads + n%nthreads, n_sim_allocs);
+  });
+
+  rc::check("Multi threaded SegmentHeap", [](unsigned short n, size_t sz) {
+    RC_PRE(n > 0);
+    sz %= max_sz;
+    RC_PRE(sz > 0);
+    auto f = [](unsigned short n, size_t sz) {
+      testHeap<SegmentHeapUT>(n, sz);
+    };
+    run_multi_threaded(nthreads, f, n, sz);
   });
 
   rc::check("Single threaded DequeHeap Multi Alloc", [](unsigned short n) {

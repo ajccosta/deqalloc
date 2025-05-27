@@ -126,9 +126,9 @@ namespace HL {
 
             static inline uint64_t node_index_null = restmax;
 
-            inline uint64_t getTag() { return node_repr >> (64 - tagbits); }
-            inline uint64_t getNumNodes() { return ((~(tagmax << (64 - tagbits))) & node_repr) >> rest_bits; }
-            inline uint64_t getNodeIndex() { return restmax & node_repr; }
+            inline uint64_t getTag() const { return node_repr >> (64 - tagbits); }
+            inline uint64_t getNumNodes() const { return ((~(tagmax << (64 - tagbits))) & node_repr) >> rest_bits; }
+            inline uint64_t getNodeIndex() const { return restmax & node_repr; }
             inline std::tuple<uint64_t,uint64_t,uint64_t> getAll() { return {getTag(), getNumNodes(), getNodeIndex()}; }
 
             bool operator==(list_size_t const& rhs) const { return node_repr == rhs.node_repr; }
@@ -151,6 +151,13 @@ namespace HL {
 
             static inline uint64_t nodeIndexRepr(uint64_t node_index) {
               return node_index;
+            }
+
+            friend ostream& operator<<(ostream& os, list_size_t const& t) {
+              return os << '{' <<
+                t.getTag() << ',' <<
+                t.getNumNodes() << ',' <<
+                t.getNodeIndex() << '}';
             }
         };
         //list_size_t must fit in a word

@@ -34,53 +34,96 @@ class ThreadLocalStack : public Super {
     //Check that thread state fits in single a cache line
     static_assert(sizeof(thread_state) <= 64);
 
-    inline thread_state& get_thread_state() const {
-      //TODO check assembled code verify that this incurs no runtime checks
-      thread_local __attribute__((tls_model("initial-exec"))) thread_state ts{};
-      return ts;
-    }
+    thread_state thread_states[max_threads];
+    inline thread_state& get_thread_state() { return thread_states[thread_id()]; }
 
   public:
 
     static constexpr size_t list_length = 4; //TODO THIS SHOULD BE ADJUSTABLE PER SIZE CLASS!!!!!
 
+    //inline void* malloc(size_t sz) {
+    //  thread_state& ts = get_thread_state();
+    //  if(ts.sz == 0) {
+    //    deq_assert(ts.head == nullptr);
+    //    auto [start_node, end_node] = Super::malloc(sz, list_length);
+    //    deq_assert(start_node != nullptr && end_node != nullptr);
+    //    deq_assert(end_node->next == nullptr);
+    //    ts.head = start_node;
+    //    ts.tail = end_node;
+    //    ts.mid = nullptr;
+    //    ts.sz = list_length;
+    //  }
+    //  node_t* n = ts.head;
+    //  deq_assert(n != nullptr);
+    //  ts.head = ts.head->next;
+    //  ts.sz--;
+    //  //if(ts.sz == 0) {
+    //  //  deq_assert(ts.head == nullptr);
+    //  //  ts.tail = nullptr;
+    //  //}
+    //  return n;
+    //}
+
+    //inline void free(void* ptr) {
+    //  thread_state& ts = get_thread_state();
+    //  node_t* n = (node_t*) ptr;
+    //  deq_assert(n != nullptr);
+    //  //if(ts.sz == 0) {
+    //  //  ts.tail = n;
+    //  //} else
+    //  if(ts.sz == list_length+1) {
+    //    deq_assert(ts.head != nullptr);
+    //    ts.mid = ts.head;
+    //  } else if(ts.sz == 2*list_length) {
+    //    deq_assert(ts.mid && ts.mid->next != nullptr && ts.tail);
+    //    deq_assert(ts.tail->next == nullptr);
+    //    Super::free(ts.mid->next, ts.tail);
+    //    ts.tail = ts.mid;
+    //    ts.tail->next = nullptr;
+    //    ts.mid = nullptr;
+    //    ts.sz = list_length;
+    //  }
+    //  deq_assert(ts.sz > 0 ? ts.head != nullptr : true);
+    //  n->next = ts.head;
+    //  ts.head = n;
+    //  ts.sz++;
+    //}
+
+    inline size_t getSize(void *ptr) {
+      return Super::getSize(ptr);
+    }
+
     inline void* malloc(size_t sz) {
       thread_state& ts = get_thread_state();
       if(ts.sz == 0) {
         auto [start_node, end_node] = Super::malloc(sz, list_length);
-        deq_assert(start_node != nullptr && end_node != nullptr);
         ts.head = start_node;
-        ts.tail = end_node;
+        ts.mid = nullptr;
         ts.sz = list_length;
       }
       node_t* n = ts.head;
-      deq_assert(n != nullptr);
       ts.head = ts.head->next;
       ts.sz--;
-      return n;
+      return static_cast<void*>(n);
     }
 
     inline void free(void* ptr) {
       thread_state& ts = get_thread_state();
-      node_t* n = (node_t*) ptr;
-      deq_assert(n != nullptr);
       if(ts.sz == list_length+1) {
-        deq_assert(ts.head != nullptr);
         ts.mid = ts.head;
       } else if(ts.sz == 2*list_length) {
-        deq_assert(ts.mid->next != nullptr && ts.tail != nullptr);
+        //Traverse list to find tail
+        ts.tail = ts.mid;
+        for(int i = 0; i < list_length; i++)
+          ts.tail = ts.tail->next;
         Super::free(ts.mid->next, ts.tail);
         ts.tail = ts.mid;
         ts.mid->next = nullptr;
         ts.sz = list_length;
       }
-      n->next = ts.head;
+      node_t* n = new (ptr) node_t{ts.head};
       ts.head = n;
       ts.sz++;
-    }
-
-    inline size_t getSize(void *ptr) {
-      return Super::getSize(ptr);
     }
 };
 
