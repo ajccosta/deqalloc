@@ -77,7 +77,7 @@ class MiniSegHeap : public SmallHeap {
         auto objectSizeClass = size2Class(objectSize);
         deq_assert (objectSizeClass >= 0);
         deq_assert (objectSizeClass < NumBins);
-        smallHeaps[objectSizeClass].free(ptr);
+        smallHeaps[objectSizeClass].free(ptr, objectSize);
       }
     }
 
