@@ -41,7 +41,7 @@
 namespace HL {
 
   template<size_t SegmentSize_ = DEFAULT_SEGMENT_SIZE>
-  class SegmentHeap : public SizedMmapHeap {
+  class SegmentHeap : public AlignedMmapHeap {
     public:
       static const size_t SegmentSize = SegmentSize_; //Make SegmentSize visible to other classes
       enum { Alignment = CPUInfo::PageSize };//TODO CHANGE TO SEGMENTSIZE ONCE FIXED ALIGNED MMAP
@@ -49,26 +49,6 @@ namespace HL {
       static_assert(SegmentSize % CPUInfo::PageSize == 0 && "SegmentSize must be multiple of page size");
       static_assert((SegmentSize & (SegmentSize-1)) == 0 && "SegmentSize must be power of 2");
       static_assert(SegmentSize > 0 && "Naturally SegmentSize can't be 0");
-
-    private:
-
-      // Note: we never reclaim memory obtained for MyHeap, even when this heap is destroyed.
-      class MyHeap : public LockedHeap<PosixLockType, FreelistHeap<BumpAlloc<65536, SizedMmapHeap>>> {};
-      typedef std::unordered_map<void*, void*,
-          std::hash<void*>, std::equal_to<void*>,
-          HL::STLAllocator<std::pair<void* const, void* const>, MyHeap>>
-        mapType;
-
-      struct global_state {
-        mapType MyMap;
-        PosixLockType MyMapLock;
-      };
-
-      //Each thread keeps its own retire list of segments, per segment heap
-      inline global_state& get_global_state() const {
-        static global_state gs{};
-        return gs;
-      }
 
     public:
       //Get the maximum number of objects in this segment
@@ -381,78 +361,15 @@ checkList_retry:
         seglist.add(&header->next_segment);
       }
 
-      //Register newly created segment in map
-      //Base: pointer to first byte in segment; sz: size of segment
-      void registerSegment(void* base) {
-        void* alignedBase = getAlignedBase(base);
-        global_state& gs = get_global_state();
-        gs.MyMapLock.lock();
-        gs.MyMap[alignedBase] = base;
-        gs.MyMapLock.unlock();
+      static inline void* getBasePointer(void* ptr) {
+        return getAlignedBase(ptr);
       }
 
-      //Finds base pointer of which ptr belongs to
-      //When a segment's base pointer is not aligned to the segment size (likely)
-      // ptr may be in either the first or second aligned region of its segment
-      //For example, the following represents a 8KB segment that is only 4KB aligned
-      // 0   4KB  8KB  12KB
-      // [    |xxxx|xxxx]
-      //      ^ segment base
-      //              ^ ptr
-      //In this case, MyMap contains the entry 0KB:4KB
-      //If ptr belongs to the segment from 4KB-12KB, it is not enough
-      // to search for the 8KB aligned part of ptr (masking the last 13 LSbits
-      // which will search MyMap for the 8KB key).
-      //Therefore we may also search MyMap for the previous 8KB aligned segment.
-      //Note that there may be a segments with the mapping 8KB:X (e.g., a segment starting at 12KB),
-      // which means we must check if ptr belongs to that segment. The "previous" segment mapping is
-      // guarateed to be unique because we always allocate segments of the same size and it is impossible
-      // to fit another 8KB segment between the range 0KB-4KB.
-      //This works as long as we maintain the invariant that only a single segment can have its
-      // start address inside of a 8KB aligned region. This invariant can be satisfied if we never
-      // allocate segments smaller than 8KB.
-      // To see why this would be a problem, imagine that we allocated a segment (represented above) 
-      // with 8KB, and its start address was 4KB, meaning the map would have the entry 0KB:4KB. Then,
-      // if we allocate a 4KB segment, it is possible that that segment would be allocated in the region
-      // 0KB-4KB, leading its map entry to be 0KB:0KB, conflicting with the 8KB segment.
-      // Allocating larger segments is fine as long as all of its node's start address would fit inside
-      // of a segment of size SegmentSize. This ensures that calling getBasePointer on those nodes will
-      // hit the correct map entry.
-      void* getBasePointer(void* ptr) {
-        //The "larger" base (8KB in the above example)
-        void* alignedBase_1 = getAlignedBase(ptr);
-        //The "larger" base's end (12KB-1 in the above example)
-        void* alignedBaseEnd_1 = getSegmentEnd(alignedBase_1);
-        //The "smaller" base (4KB in the above example)
-        void* alignedBase_2 = alignedBase_1 - SegmentSize;
-        //The "smaller" base's end (8KB-1 in the above example)
-        void* alignedBaseEnd_2 = getSegmentEnd(alignedBase_2);
-        deq_assert(alignedBase_2 == getAlignedBase(alignedBase_1-1));
-        global_state& gs = get_global_state();
-        gs.MyMapLock.lock();
-        auto search = gs.MyMap.find(alignedBase_1);
-        void* segmentBaseAddr;
-        if (search == gs.MyMap.end()) {
-          //Did not find segment in map, the correct segment 
-          // is guaranteed to be aligned to alignedBase_2
-          search = gs.MyMap.find(alignedBase_2);
-          deq_assert(search != gs.MyMap.end());
-          segmentBaseAddr = search->second;
-        } else {
-          //Found a segment, but need to confirm it is the correct one
-          segmentBaseAddr = search->second;
-          //Does ptr belong inside this segment?
-          if(!(segmentBaseAddr <= ptr && ptr < segmentBaseAddr + SegmentSize)) {
-            //We did not find the correct segment, look at the alignedBase_2
-            search = gs.MyMap.find(alignedBase_2);
-            deq_assert(search != gs.MyMap.end());
-            segmentBaseAddr = search->second;
-          }
-        }
-        //ptr belongs to segment list (i.e., fits inside segment and is not in the header)
-        deq_assert(segmentBaseAddr + sizeof(header_t) <= ptr && ptr < segmentBaseAddr + SegmentSize);
-        gs.MyMapLock.unlock();
-        return segmentBaseAddr;
+      //Returns the pointer to the SegmentSize aligned region which base belongs to
+      static inline void* getAlignedBase(void* base) {
+        void* ret = (void*)((uintptr_t) base & (~(SegmentSize-1)));
+        deq_assert(reinterpret_cast<size_t>(ret) % SegmentSize == 0);
+        return ret;
       }
 
       //Initializes node list in this segment
@@ -491,7 +408,7 @@ checkList_retry:
 
       //Allocate and initialize new segment
       header_t* allocateSegment(size_t sz) {
-        void* base = SizedMmapHeap::malloc(getActualSegmentSize(sz));
+        void* base = AlignedMmapHeap::malloc(getActualSegmentSize(sz), SegmentSize);
         size_t numObjects = getMaxNumObjects(sz);
         header_t* header = (header_t*) base; //use first bytes of segment as header
         header->sz = sz;
@@ -499,17 +416,11 @@ checkList_retry:
         initializeList(base + sizeof(header_t), sz, numObjects);
         typename header_t::list_size_t h = typename header_t::list_size_t(0, numObjects, 0);
         header->head.store(h);
-        registerSegment(base);
         return header;
       }
 
-      //Frees segment by removing it from MyMap and giving it back to SizedMmapHeap
       void freeSegment(header_t* header) {
-        global_state& gs = get_global_state();
-        gs.MyMapLock.lock();
-        gs.MyMap.erase(header);
-        SizedMmapHeap::free(header, getActualSegmentSize(header->sz));
-        gs.MyMapLock.unlock();
+        AlignedMmapHeap::free(header, getActualSegmentSize(header->sz));
       }
 
       //There are 3 types of Segments:
@@ -581,18 +492,6 @@ checkList_retry:
         ts.retire_old = ts.retire_current;
         //Empty current
         ts.retire_current = nullptr;
-      }
-
-      //Returns the last address of segment whose start is base
-      static inline void* getSegmentEnd(void* base) {
-        return base + SegmentSize - 1;
-      }
-
-      //Returns the pointer to the SegmentSize aligned region which base belongs to
-      static inline void* getAlignedBase(void* base) {
-        void* ret = (void*)((uintptr_t) base & (~(SegmentSize-1)));
-        deq_assert(reinterpret_cast<size_t>(ret) % SegmentSize == 0);
-        return ret;
       }
 
     public:
