@@ -13,7 +13,7 @@
 #include <optional>
 
 #include "continuousarray.h"
-#include "../epoch.h"
+#include "../faa_epoch.h"
 
 // Deque based on "Correct and Efficient Work-Stealing for Weak Memory Models" from
 //  Nhat Minh Lê, Antoniu Pop, Albert Cohen and Francesco Zappa Nardelli, which itself
@@ -35,7 +35,7 @@ struct alignas(64) MemoryStealingDeque {
   size_t last_anchor; //Where was last anchor dropped
   int64_t num_pops; //#pop ops that the owner is allowed to do without syncing
   alignas(64) continuous_array<V> deq;
-  alignas(64) uepoch::internal::epoch_state epoch; //TODO implement specialized epoch collector for deque pattern
+  alignas(64) faa_uepoch::faa_epoch_state epoch;
   alignas(64) std::atomic<uint64_t> bot; //index of where owner is pushing/popping
   alignas(64) std::atomic<uint64_t> top; //index of where thiefs are stealing
 
@@ -69,14 +69,14 @@ struct alignas(64) MemoryStealingDeque {
     auto b = bot.load(std::memory_order_acquire);  // atomic load
     assert(b + 1 >= t); //Check invariant that bot never strays more than 1 from top
     if (b > t + N) {
-      return uepoch::with_epoch([&]() -> std::pair<std::optional<V>, bool> {
+      return epoch.with_epoch([&]() -> std::pair<std::optional<V>, bool> {
         if (top.compare_exchange_strong(t, t + 1)) {
           auto val = deq.get_tail(t);
           return {val, (b == t + 1 + N)};
         } else {
           return {std::nullopt, (b == t + 1 + N)};
         }
-      }, epoch);
+      });
     }
     return {std::nullopt, true};
   }
@@ -97,7 +97,7 @@ struct alignas(64) MemoryStealingDeque {
       num_pops--;
       //No extra checks needed. bot was guaranteed to be > 0
       if (num_pops <= anchor_drop) {
-        uepoch::quiescence_check([&] {
+        epoch.quiescence_check([&] {
           std::atomic_thread_fence(std::memory_order_seq_cst);
           if(last_anchor != 0 && b < last_anchor) {
             //If b is greater than last_anchor the public portion does not grow downward
@@ -108,7 +108,7 @@ struct alignas(64) MemoryStealingDeque {
             assert(b - num_pops >= t); //Check invariant that bot never strays more than 1 from top
           }
           last_anchor = b; //drop anchor at current bot value
-        }, epoch);
+        });
       }
       return deq.get_head(b);
     }
