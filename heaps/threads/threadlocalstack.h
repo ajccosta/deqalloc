@@ -38,7 +38,7 @@ class ThreadLocalStack : public Super {
     inline thread_state& get_thread_state() { return thread_states[thread_id()]; }
 
 
-    static inline constexpr size_t default_list_bytes = (1ul << 18) - 64; // in bytes
+    static inline constexpr size_t default_list_bytes = 1ul << 18; // in bytes
 
     //TODO don't calculate list_length every time
     static constexpr size_t get_list_length(size_t sz /*size of objects*/) {
@@ -61,6 +61,7 @@ class ThreadLocalStack : public Super {
       node_t* n = ts.head;
       ts.head = ts.head->next;
       ts.sz--;
+      deq_assert((uintptr_t)n % 64 == 0); //all pointers are cache-aligned
       return static_cast<void*>(n);
     }
 

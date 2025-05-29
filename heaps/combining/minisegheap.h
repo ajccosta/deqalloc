@@ -35,15 +35,17 @@ class MiniSegHeap : public SmallHeap {
     SmallHeap smallHeaps[NumBins];
     LargeHeap largeHeap;
 
-    //TODO REFINE CLASSES
+    static constexpr size_t smallestSize = 64;
+    static constexpr size_t skippedClasses = HL::ilog2(smallestSize);
+
     static inline constexpr size_t class2Size(const size_t i) {
-      return (size_t) (1ULL << (i+3));
+      return (size_t) (1ULL << (i+skippedClasses));
     }
 
     static constexpr size_t maxSmallObjectSize = class2Size(NumBins-1);
 
     static inline constexpr int size2Class(const size_t sz) {
-      return (int) HL::ilog2((sz < 8) ? 8 : sz) - 3;
+      return (int) HL::ilog2((sz < smallestSize) ? smallestSize : sz) - skippedClasses;
     }
 
   public:

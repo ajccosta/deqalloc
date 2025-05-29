@@ -16,7 +16,7 @@
 #include "utility/types.h"
 #include "threads/cpuinfo.h"
 
-#define BLOCK_SIZE_LOG 3
+#define BLOCK_SIZE_LOG 15
 
 template<typename T>
 class alignas(64) continuous_array
@@ -50,7 +50,7 @@ class alignas(64) continuous_array
     block* blocks_to_reuse = nullptr; //Block pool
     uint64_t curr_block_id = 0; //Last allocated block_id
 
-    class Super : public FreelistHeap<BumpAlloc<CPUInfo::PageSize, SizedMmapHeap>> {};
+    class Super : public FreelistHeap<BumpAlloc<BLOCK_SIZE_LOG, SizedMmapHeap>> {};
     Super super;
     //-----------------//
     
