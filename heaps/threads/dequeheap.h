@@ -19,7 +19,7 @@ class DequeHeap : public Super {
 
   private:
 
-    using deque_t = MemoryStealingDeque<std::tuple<node_t*, node_t*>, 5, 2>;
+    using deque_t = MemoryStealingDeque<std::tuple<node_t*, node_t*>, 2, 1>;
     deque_t deques[max_threads];
 
     static inline thread_local parlay::random my_rand __attribute__((tls_model ("initial-exec")));

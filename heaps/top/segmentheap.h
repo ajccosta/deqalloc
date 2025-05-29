@@ -77,7 +77,7 @@ namespace HL {
 
     private:
 
-      struct header_t {
+      struct alignas(64) header_t {
         //Auxiliary struct to allow pointer to list and number of nodes to be modified atomically
         struct alignas(8) list_size_t {
           private:
@@ -609,12 +609,12 @@ checkList_retry:
 
       //Can we just use a thread_local variable to keep track of the size?
       size_t getSize(void* ptr) {
-        return uepoch::with_epoch([&]{
+        //return uepoch::with_epoch([&]{
           header_t* header = (header_t*) getBasePointer(ptr);
           return header->sz;
-        }, [&]{
-          this->advanceEpoch();
-        });
+        //}, [&]{
+          //this->advanceEpoch();
+        //});
       }
 
     private:
