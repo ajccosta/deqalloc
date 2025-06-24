@@ -44,7 +44,7 @@ namespace HL {
   class SegmentHeap : public AlignedMmapHeap {
     public:
       static const size_t SegmentSize = SegmentSize_; //Make SegmentSize visible to other classes
-      enum { Alignment = CPUInfo::PageSize };//TODO CHANGE TO SEGMENTSIZE ONCE FIXED ALIGNED MMAP
+      enum { Alignment = SegmentSize };
 
       static_assert(SegmentSize % CPUInfo::PageSize == 0 && "SegmentSize must be multiple of page size");
       static_assert((SegmentSize & (SegmentSize-1)) == 0 && "SegmentSize must be power of 2");
@@ -70,7 +70,6 @@ namespace HL {
         }
       }
 
-      //TODO: protected struct so derived classes can receive linked list of nodes
       struct node_t {
         node_t* next;
       };
@@ -148,39 +147,15 @@ namespace HL {
 
         alignas(8) header_t* next_segment = nullptr; //linked list of segments of size sz
         header_t *segment_retire_next = nullptr;
-        //TODO when sz is larger than SegmentSize we should treat differently?
         size_t sz; //size of nodes inside this segment
         std::atomic<list_size_t> head; //points to first element in node list
 
         //keep trying to pop node until list is empty
         void* popNode() {
-          list_size_t h, new_h;
-          node_t *node, *node_next;
-          bool shouldfail;
-          do {
-            h = head.load(std::memory_order_relaxed);
-            auto t = h.getAll();
-            auto [tag, num_nodes, index] = t;
-            deq_assert(num_nodes >= 0 && num_nodes <= getMaxNumObjects(sz));
-            if(num_nodes == 0) {
-              deq_assert(index == list_size_t::node_index_null);
-              return nullptr;
-            }
-            node = getNodePointer(index);
-            deq_assert(node != nullptr); //we checked for num_nodes=0 so this should never happen
-            node_next = node->next;
-            uint32_t new_index = getIndexFromNodePointer(node_next);
-            shouldfail = !((new_index >= 0 && new_index <= getMaxNumObjects(sz))
-              || new_index == list_size_t::node_index_null);
-            new_h = list_size_t(tag+1, num_nodes-1, new_index);
-          } while(!head.compare_exchange_strong(h, new_h));
-          //CAS succeeded.
-          //shouldfail is true if new_index pointed to memory outside of our segment.
-          //This means that, before this thread was able to pop a node, another thread
-          // succeeded and wrote something to that node. That's fine, but we should not
-          // be able to pop that node, i.e., our CAS must fail.
-          deq_assert(!shouldfail);
-          return node;
+          auto [start, end, n_popped] = popNode(1);
+          deq_assert(n_popped == 0 || n_popped == 1);
+          deq_assert(start == end);
+          return n_popped == 1 ? start : nullptr;
         }
 
         //(attempt to) allocate n nodes at a time
@@ -256,7 +231,6 @@ popNode_n_retry:
           //Check that list is well-formed
           size_t retries = 0;
 checkList_retry:
-          deq_assert(retries++ < 10000);
           list_size_t h = head.load(std::memory_order_seq_cst);
           auto t = h.getAll();
           auto [tag, num_nodes, index] = t;
@@ -265,7 +239,10 @@ checkList_retry:
           while(_c) {
             _c = _c->next;
             _n_nodes++;
-            if(!belongsToSegmentList(_c) && _n_nodes != num_nodes) goto checkList_retry;
+            if(!belongsToSegmentList(_c) && !(_c == nullptr && _n_nodes == num_nodes)) {
+              deq_assert(retries++ < 10000);
+              goto checkList_retry;
+            }
           }
           deq_assert(_n_nodes == num_nodes);
 #endif
@@ -357,8 +334,8 @@ checkList_retry:
       };
 
       //Insert segment into linked list of segments
-      void insertSegment(header_t* header) {
-        seglist.add(&header->next_segment);
+      bool insertSegment(header_t* header, header_t* expected) {
+        return seglist.compare_and_add(&header->next_segment, expected);
       }
 
       static inline void* getBasePointer(void* ptr) {
@@ -494,6 +471,25 @@ checkList_retry:
         ts.retire_current = nullptr;
       }
 
+      //Joins two lists so that they become start_node1->...->end_node1->start_node2->...->end_node2
+      //list 1 (start_node1->...->end_node1) might be empty, in which case start_node1 == nullptr
+      //list 2 must be non-empty
+      static std::pair<node_t*, node_t*> joinLists(node_t* start_node1, node_t* end_node1,
+        node_t* start_node2, node_t* end_node2) {
+        //returns the a new list
+        node_t* start, *end;
+        deq_assert(start_node2 != nullptr && end_node2 != nullptr);
+        if(start_node1 == nullptr) {
+          deq_assert(end_node1 == nullptr);
+          start = start_node2;
+        } else {//Join node lists
+          start = start_node1;
+          end_node1->next = start_node2;
+        }
+        end = end_node2;
+        return {start, end};
+      }
+
     public:
 
       //Allocate n blocks of size sz
@@ -502,34 +498,53 @@ checkList_retry:
         //  fits inside a fully filled segment
         deq_assert(n <= getMaxNumObjects(sz));
         return uepoch::with_epoch([&]() -> std::pair<node_t*, node_t*> {
+mallocN_retry_beginning:
           header_t* header;
           node_t *start_node = nullptr, *end_node = nullptr;
-          size_t to_allocate = n;
+          int to_allocate = n;
+mallocN_retry_partial:
           //TODO: look for non-empty segments to allocate from?
           header = seglist.peek();
           if(header != nullptr) {
             //Segments available, try to pop from them
             deq_assert(getSegmentType(sz) == SegmentType::NORMAL ? sz == header->sz : true);
-            auto [_start_node, _end_node, allocated] = header->popNode(n);
+            auto [_start_node, _end_node, allocated] = header->popNode(to_allocate);
             deq_assert(allocated <= n); //Don't allocate more than requested
-            //Might have not allocated
-            to_allocate -= allocated;
-            start_node = _start_node;
-            end_node = _end_node;
+            deq_assert(to_allocate >= 0);
+            if(allocated > 0) {
+              to_allocate -= allocated;
+              auto [_start_node_j, _end_node_j] = joinLists(start_node, end_node, _start_node, _end_node);
+              start_node = _start_node_j;
+              end_node = _end_node_j;
+            }
           }
           if(to_allocate > 0) { //Need to allocate new segment
+            header_t* prev_header = header;
             header = allocateSegment(sz);
+            //TODO make synchronization-free popNode. At this point only this thread has access to this segment
+            //And the segment is fresh, so there is no need to actually traverse the list as this is deterministic
             auto [_start_node, _end_node, allocated] = header->popNode(to_allocate);
             //Nothing left to allocate
             deq_assert(to_allocate == allocated);
-            if(start_node == nullptr)
-              start_node = _start_node;
-            else //Join node lists
-              end_node->next = _start_node;
-            end_node = _end_node;
-            //TODO Allow segment insertion to fail so that we can retry (and don't allocate a huge number of segments just because)
-            insertSegment(header); //publish new segment
+            to_allocate -= allocated;
+            bool inserted = insertSegment(header, prev_header); //publish new segment
+            if(!inserted) {
+              //Free segment and try again
+              //TODO: have segment pool to avoid freeing and reallocting all the time
+              freeSegment(header);
+              if(n - allocated > 0) { //We have allocated a few nodes from the head segment, don't leak them
+                to_allocate += allocated; //Nodes allocated from this new segment were freed
+                goto mallocN_retry_partial;
+              } else { //No nodes were allocated yet, just restart
+                goto mallocN_retry_beginning;
+              }
+            }
+            //Succeeded, join lists
+            auto [_start_node_j, _end_node_j] = joinLists(start_node, end_node, _start_node, _end_node);
+            start_node = _start_node_j;
+            end_node = _end_node_j;
           }
+          deq_assert(to_allocate == 0);
           end_node->next = nullptr;
           return {start_node, end_node};
         }, [&]{
@@ -539,6 +554,7 @@ checkList_retry:
 
       inline void* malloc(size_t sz) {
         return uepoch::with_epoch([&] {
+malloc1_retry:
           header_t* header;
           void* p = nullptr;
           //TODO: look for non-empty segments to allocate from?
@@ -548,9 +564,15 @@ checkList_retry:
             p = header->popNode();
           }
           if(p == nullptr) { //Need to allocate new segment
+            header_t* prev_header = header;
             header = allocateSegment(sz);
             p = header->popNode();
-            insertSegment(header); //publish new segment
+            bool inserted = insertSegment(header, prev_header); //publish new segment
+            if(!inserted) {
+              //Free segment and try again
+              freeSegment(header);
+              goto malloc1_retry;
+            }
           }
           return reinterpret_cast<void*>(p);
         }, [&]{
@@ -559,6 +581,8 @@ checkList_retry:
       }
 
       inline void free(node_t* start, node_t* end) {
+        //TODO FIX
+        deq_assert(false); //Don't free to segmentheap, buggy interaction with thread local stack currently
         uepoch::with_epoch([&]{
           header_t* curr_header;
           node_t* curr, *curr_start, *curr_end;
@@ -607,14 +631,15 @@ checkList_retry:
         });
       }
 
-      //Can we just use a thread_local variable to keep track of the size?
+      //No need to be inside of an epoch. The getSize can only be called on a valid
+      // pointer. A valid pointer mustn't be in a freed state (for our use). Thus,
+      // the node this pointer points to must be holding up a Segment from being
+      // deallocated (as a segment can only be allocated when all nodes inside it
+      // are freed). Hence we are getSize is guaranteed to be safe to call on a pointer
+      // that has not yet been freed.
       size_t getSize(void* ptr) {
-        //return uepoch::with_epoch([&]{
-          header_t* header = (header_t*) getBasePointer(ptr);
-          return header->sz;
-        //}, [&]{
-          //this->advanceEpoch();
-        //});
+        header_t* header = (header_t*) getBasePointer(ptr);
+        return header->sz;
       }
 
     private:
