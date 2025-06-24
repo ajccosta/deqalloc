@@ -23,7 +23,7 @@
  * @brief A minimalist segheap.
  * Does not allocate from big heap when a small heap allocation fails.
  * Does not rely on segheap.
- * Does not take size2Class/class2Size functions, it uses mimalloc's
+ * Does not take size2Class/class2Size functions, it uses its own (derived from jemalloc and hoard).
  *
  * @param SmallHeap The subheap class.
  * @param LargeHeap The parent class, used for "big" objects.
@@ -32,39 +32,113 @@
 template <size_t NumBins, class SmallHeap, class LargeHeap>
 class MiniSegHeap : public SmallHeap {
   private:
-    SmallHeap smallHeaps[NumBins];
-    LargeHeap largeHeap;
-
-    static constexpr size_t smallestSize = 8;
-    static constexpr size_t skippedClasses = HL::ilog2(smallestSize);
+  
+    //jemalloc's size classes
+    static constexpr size_t size_classes[] = {
+        // Tiny to small (8 B to 4 KiB)
+        8, 16, 32, 48, 64, 80, 96, 112, 128,
+        160, 192, 224, 256, 320, 384, 448, 512,
+        640, 768, 896, 1024,       // 1 KiB
+        1280, 1536, 1792, 2048,    // 2 KiB
+        2560, 3072, 3584, 4096,    // 4 KiB
+        // Mid-size (5 KiB to 64 KiB)
+        5 * 1024, 6 * 1024, 7 * 1024, 8 * 1024,
+        10 * 1024, 12 * 1024, 14 * 1024, 16 * 1024,
+        20 * 1024, 24 * 1024, 28 * 1024, 32 * 1024,
+        40 * 1024, 48 * 1024, 56 * 1024, 64 * 1024,
+        // Large (80 KiB to 1 MiB)
+        80 * 1024, 96 * 1024, 112 * 1024, 128 * 1024,
+        160 * 1024, 192 * 1024, 224 * 1024, 256 * 1024,
+        320 * 1024, 384 * 1024, 448 * 1024, 512 * 1024,
+        640 * 1024, 768 * 1024, 896 * 1024, 1024 * 1024, // 1 MiB
+        // Huge (1280 KiB and up)
+        1280 * 1024, 1536 * 1024, 1792 * 1024,
+        2 * 1024 * 1024, 2560 * 1024, 3 * 1024 * 1024,
+        3584 * 1024, 4 * 1024 * 1024, 5 * 1024 * 1024,
+        6 * 1024 * 1024, 7 * 1024 * 1024, 8 * 1024 * 1024,
+        10 * 1024 * 1024, 12 * 1024 * 1024, 14 * 1024 * 1024,
+        16 * 1024 * 1024, 20 * 1024 * 1024, 24 * 1024 * 1024,
+        28 * 1024 * 1024, 32 * 1024 * 1024, 40 * 1024 * 1024,
+        48 * 1024 * 1024, 56 * 1024 * 1024, 64 * 1024 * 1024
+    };
+    
+    //statically find the size class corresponding to a given size
+    static constexpr int findSizeClassIndex(size_t size) {
+      for (size_t i = 0; i < std::size(size_classes); i++)
+        if (size_classes[i] == size)
+          return i;
+      return -1; //Not found, this should error at compile time
+    }
 
     static inline constexpr size_t class2Size(const size_t i) {
-      return (size_t) (1ULL << (i+skippedClasses));
+      return size_classes[i];
     }
 
+    //largest smallest object size
     static constexpr size_t maxSmallObjectSize = class2Size(NumBins-1);
+    //largest smallest object class (redundant but useful for assertions)
+    static constexpr size_t maxSmallObjectClass = findSizeClassIndex(maxSmallObjectSize);
+    static_assert(maxSmallObjectClass == (NumBins-1));
 
-    static inline constexpr int size2Class(const size_t sz) {
-      return (int) HL::ilog2((sz < smallestSize) ? smallestSize : sz) - skippedClasses;
+    static inline size_t size2Class(const size_t sz) {
+      static size_t sizes[maxSmallObjectSize+1];
+      static bool init = size2Class_precompute(sizes); //static bool so that this is only called once
+      return sizes[sz];
     }
+
+    static inline size_t size2Class_slow(const size_t sz) {
+      return size2Class_search(sz);
+    }
+
+    //Use hoard's size class binary search to precompute the size classes
+    //https://github.com/emeryberger/Hoard/blob/master/src/include/hoard/geometricsizeclass.cpp
+    static bool size2Class_precompute(size_t* sizes) {
+      for(int i = 0; i <= maxSmallObjectSize; i++)
+        sizes[i] = size2Class_search(i);
+      return true;
+    }
+
+    static constexpr int size2Class_search(const size_t sz) {
+      // Do a binary search to find the right size class.
+      size_t left  = 0;
+      size_t right = std::size(size_classes);
+      while (left < right) {
+        size_t mid = (left + right)/2;
+        if (class2Size(mid) < sz) {
+          left = mid + 1;
+        } else {
+          right = mid;
+        }
+      }
+      deq_assert(class2Size(left) >= sz);
+      deq_assert((left == 0) || (class2Size(left-1) < sz));
+      return left;
+    }
+
+
+    SmallHeap smallHeaps[NumBins];
+    LargeHeap largeHeap;
 
   public:
 
     enum { Alignment = gcd<LargeHeap::Alignment, SmallHeap::Alignment>::VALUE };
 
     inline void* malloc(const size_t sz) {
-      void* ptr = nullptr;
-      const auto sizeClass = size2Class(sz);
-      const auto realSize = class2Size(sizeClass);
-      deq_assert(realSize >= sz);
-      if (realSize <= maxSmallObjectSize) {
+      if (sz <= maxSmallObjectSize) {
+        const auto sizeClass = size2Class(sz);
+        const auto realSize = class2Size(sizeClass);
+        deq_assert(realSize >= sz);
+        deq_assert(realSize <= maxSmallObjectSize);
         deq_assert(sizeClass >= 0);
         deq_assert(sizeClass < NumBins);
-        ptr = smallHeaps[sizeClass].malloc(realSize);
+        return smallHeaps[sizeClass].malloc(realSize);
       } else {
-        ptr = largeHeap.malloc(realSize);
+        //large sizes do not have their size2Class precomputed, use slow version
+        const auto sizeClass = size2Class_slow(sz);
+        const auto realSize = class2Size(sizeClass);
+        deq_assert(sizeClass > maxSmallObjectClass);
+        return largeHeap.malloc(realSize);
       }
-      return ptr;
     }
 
     inline void free(void* ptr) {
