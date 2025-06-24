@@ -35,7 +35,7 @@ class MiniSegHeap : public SmallHeap {
     SmallHeap smallHeaps[NumBins];
     LargeHeap largeHeap;
 
-    static constexpr size_t smallestSize = 64;
+    static constexpr size_t smallestSize = 8;
     static constexpr size_t skippedClasses = HL::ilog2(smallestSize);
 
     static inline constexpr size_t class2Size(const size_t i) {
