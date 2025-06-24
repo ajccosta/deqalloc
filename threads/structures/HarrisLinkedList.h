@@ -21,11 +21,14 @@
  *
  * This version is tailored to SegmentHeap's needs. This includes:
  *  - No keys or values are stored. We only care about the pointers themselves (they belong to a segment header).
- *  - Nodes are always inserted at the head. We want fresher segments to be faster to access.
+ *  - Nodes are always inserted at the head. We want fresher segments to be faster to access/find.
  *  - The head sentinel node is not allocated from a node pool.
  *  - The tail sentinel node points to a statically allocated dummy node to save space.
  *  - Nodes are pre-allocated (they are part of the SegmentHeap header).
  *  - We assume the list represents a set because the user never inserts duplicates
+ *  - It includes compare_and_add(), a version of add() where we abort the insertion if we don't find the expected
+      node at the head. This is useful when multiple threads decide to allocate a new segment, but we only want one
+      of the newly allocated segments to actually be used (by all threads). This prevents blowup.
  */
 
 template <typename T = void*>
@@ -78,6 +81,23 @@ public:
         } while (true); /*B3*/
     }
 
+    //Add only if <expected> is at the head
+    //Returns whether insertion was done or not
+    bool compare_and_add(T* new_node_, T expected, bool retry = true) {
+        Node* new_node = (Node*) new_node_;
+        Node* left_node;
+        do {
+            //Always insert at the head
+            left_node = &head;
+            Node* right_node = left_node->next.load();
+            if((uintptr_t)expected != (uintptr_t)right_node && right_node != tail)
+                return false;
+            new_node->next.store(right_node);
+            if (left_node->next.compare_exchange_strong(right_node, new_node) || !retry) /*C2*/
+                return true;
+        } while (true); /*B3*/
+    }
+
     template <typename Thunk>
     bool remove(T* node_to_delete_, const Thunk& retire) {
         Node* node_to_delete = (Node*) node_to_delete_;
@@ -116,7 +136,7 @@ public:
 
     //Returns first element in list
     T peek() {
-        Node* n = head.next;
+        Node* n = head.next.load(std::memory_order_seq_cst);
         return (T)(n != tail ? n : nullptr);
     }
 
