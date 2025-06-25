@@ -35,12 +35,27 @@ volatile int anyThreadCreated = 1;
 
 using namespace HL;
 
+//#define PROFILE //define in order to get profiling results (memory consumption of each heap)
+
+#ifndef PROFILE
 class TheDeqallocHeapType : public MiniSegHeap<
                                      67,
                                      ThreadLocalStack<
                                        DequeHeap<
                                          SegmentHeap<>>>,
                                      SegmentHeap<>> {};
+#else
+class TheDeqallocHeapType : public ConcurrentProfileHeap<0,
+                                    MiniSegHeap<
+                                     67,
+                                     ConcurrentProfileHeap<1, ThreadLocalStack<
+                                      ConcurrentProfileHeap<2, DequeHeap<
+                                       ConcurrentProfileHeap<3, SegmentHeap<>>>>>>,
+                                      ConcurrentProfileHeap<4, SegmentHeap<>>
+                                    >
+                                   > {};
+#endif
+
 
 inline static TheDeqallocHeapType* getDeqallocHeap() {
   static char thBuf[sizeof(TheDeqallocHeapType)];
