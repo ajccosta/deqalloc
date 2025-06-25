@@ -70,29 +70,41 @@ class MiniSegHeap : public SmallHeap {
       return -1; //Not found, this should error at compile time
     }
 
-    static inline constexpr size_t class2Size(const size_t i) {
-      return size_classes[i];
+    //get the smallest type that will hold a given value
+    template <std::size_t N>
+    using smallest_unsigned_t =
+      std::conditional_t<N <= UINT8_MAX,  uint8_t,
+      std::conditional_t<N <= UINT16_MAX, uint16_t,
+      std::conditional_t<N <= UINT32_MAX, uint32_t,
+                                        uint64_t>>>;
+
+    //The class type. We care about this being the smalles possible because
+    // we precompute small size class sizes, and want to save space.
+    using class_t = smallest_unsigned_t<std::size(size_classes)>;
+
+    static inline constexpr size_t class2Size(const class_t cl) {
+      return size_classes[cl];
     }
 
     //largest smallest object size
     static constexpr size_t maxSmallObjectSize = class2Size(NumBins-1);
     //largest smallest object class (redundant but useful for assertions)
-    static constexpr size_t maxSmallObjectClass = findSizeClassIndex(maxSmallObjectSize);
+    static constexpr class_t maxSmallObjectClass = findSizeClassIndex(maxSmallObjectSize);
     static_assert(maxSmallObjectClass == (NumBins-1));
 
-    static inline size_t size2Class(const size_t sz) {
-      static size_t sizes[maxSmallObjectSize+1];
+    static inline class_t size2Class(const size_t sz) {
+      static class_t sizes[maxSmallObjectSize+1];
       static bool init = size2Class_precompute(sizes); //static bool so that this is only called once
       return sizes[sz];
     }
 
-    static inline size_t size2Class_slow(const size_t sz) {
+    static inline class_t size2Class_slow(const size_t sz) {
       return size2Class_search(sz);
     }
 
     //Use hoard's size class binary search to precompute the size classes
     //https://github.com/emeryberger/Hoard/blob/master/src/include/hoard/geometricsizeclass.cpp
-    static bool size2Class_precompute(size_t* sizes) {
+    static bool size2Class_precompute(class_t* sizes) {
       for(int i = 0; i <= maxSmallObjectSize; i++)
         sizes[i] = size2Class_search(i);
       return true;
@@ -100,10 +112,10 @@ class MiniSegHeap : public SmallHeap {
 
     static constexpr int size2Class_search(const size_t sz) {
       // Do a binary search to find the right size class.
-      size_t left  = 0;
-      size_t right = std::size(size_classes);
+      class_t left  = 0;
+      class_t right = std::size(size_classes);
       while (left < right) {
-        size_t mid = (left + right)/2;
+        class_t mid = (left + right)/2;
         if (class2Size(mid) < sz) {
           left = mid + 1;
         } else {
@@ -114,7 +126,6 @@ class MiniSegHeap : public SmallHeap {
       deq_assert((left == 0) || (class2Size(left-1) < sz));
       return left;
     }
-
 
     SmallHeap smallHeaps[NumBins];
     LargeHeap largeHeap;
