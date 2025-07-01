@@ -4,7 +4,7 @@
 #include <atomic>
 #include <iostream>
 
-constexpr int max_threads = 512;
+constexpr int max_threads = 256;
 
 extern inline std::atomic<int>& num_threads() {
   static std::atomic<int> num_threads;

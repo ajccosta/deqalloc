@@ -52,7 +52,7 @@ namespace HL {
 
     public:
       //Get the maximum number of objects in this segment
-      static inline size_t getMaxNumObjects(size_t sz) {
+      static inline constexpr size_t getMaxNumObjects(size_t sz) {
         switch(getSegmentType(sz)) {
           case SegmentType::NORMAL:
             {
@@ -640,6 +640,14 @@ malloc1_retry:
       size_t getSize(void* ptr) {
         header_t* header = (header_t*) getBasePointer(ptr);
         return header->sz;
+      }
+
+      static inline void prefetchHeader(void* ptr) {
+        __builtin_prefetch(getBasePointer(ptr), 1, 3);
+      }
+
+      static constexpr inline size_t SegmentNumNodes(size_t sz) {
+        return getMaxNumObjects(sz);
       }
 
     private:

@@ -155,6 +155,7 @@ namespace HL {
         uintptr_t p = (uintptr_t) ptr;
         //address aligned to <alignment>
         uintptr_t aligned_addr = (p + alignment - 1) & ~(alignment - 1);
+        //madvise((void*)aligned_addr, sz, MADV_NOHUGEPAGE);
         assert(aligned_addr >= p);
         size_t prefix_sz = aligned_addr - p;
         size_t suffix_sz = alignment - prefix_sz;
