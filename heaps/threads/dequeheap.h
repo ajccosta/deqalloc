@@ -65,6 +65,10 @@ class DequeHeap : public Super {
     inline size_t getSize(void *ptr) {
       return Super::getSize(ptr);
     }
+
+    static constexpr inline size_t SegmentNumNodes(size_t sz) {
+      return Super::SegmentNumNodes(sz);
+    }
 };
 
 #endif

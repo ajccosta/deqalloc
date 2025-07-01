@@ -38,14 +38,19 @@ class ThreadLocalStack : public Super {
     inline thread_state& get_thread_state() { return thread_states[thread_id()]; }
 
 
-    static inline constexpr size_t default_list_bytes = 1ul << 18; // in bytes
+    //static inline constexpr size_t default_list_bytes = 1ul << 14; // in bytes
+    static inline constexpr size_t default_list_bytes = 32*1024-64; // in bytes
+
 
     //TODO don't calculate list_length every time
     static constexpr size_t get_list_length(size_t sz /*size of objects*/) {
       size_t s1 = default_list_bytes / sz;
-      size_t s2 = s1 <= 1 ? 2 : s1; //minimum list_length of 2;
+      size_t s2 = s1 < 1 ? 1 : s1; //minimum list_length of 2;
       return s2;
     }
+
+    //Number of nodes in threadlocalstack exceeds number of nodes in a single segment
+    static_assert(Super::SegmentNumNodes(32) >= get_list_length(32));
 
   public:
 
