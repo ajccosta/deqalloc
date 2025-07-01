@@ -146,11 +146,7 @@ class MiniSegHeap : public SmallHeap {
         deq_assert(sizeClass < NumBins);
         return smallHeaps[sizeClass].malloc(realSize);
       } else {
-        //large sizes do not have their size2Class precomputed, use slow version
-        const auto sizeClass = size2Class_slow(sz);
-        const auto realSize = class2Size(sizeClass);
-        deq_assert(sizeClass > maxSmallObjectClass);
-        return largeHeap.malloc(realSize);
+        return largeHeap.malloc(sz);
       }
     }
 
