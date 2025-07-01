@@ -141,16 +141,19 @@ void testSharedList(unsigned short n, size_t ignored) {
   }
 }
 
+//Max size that is considered small, and segmentheap size
+static constexpr size_t small_class_max = 2*1024*1024;
+
 //Heap type definitions
-class SegmentHeapUT : public MiniSegHeap<18,
-                                         ThreadLocalStack<SegmentHeap<>>,
-                                         SegmentHeap<>> {};
+class SegmentHeapUT : public MiniSegHeap<small_class_max,
+                                         ThreadLocalStack<SegmentHeap<small_class_max>>,
+                                         SegmentHeap<small_class_max>> {};
 
-class DequeHeapUT : public DequeHeap<SegmentHeap<>> {};
+class DequeHeapUT : public DequeHeap<SegmentHeap<small_class_max>> {};
 
-class DeqallocUT : public MiniSegHeap<18,
+class DeqallocUT : public MiniSegHeap<small_class_max,
                                       ThreadLocalStack<DequeHeapUT>,
-                                      SegmentHeapUT> {};
+                                      SegmentHeap<small_class_max>> {};
 
 static const unsigned int num_tests = 500;
 //Do <num_tests> runs in each test
