@@ -29,7 +29,8 @@
  * @param LargeHeap The parent class, used for "big" objects.
  */
 
-template <size_t NumBins, class SmallHeap, class LargeHeap>
+//maxSmallObjectSize: largest smallest object size
+template <size_t maxSmallObjectSize, class SmallHeap, class LargeHeap>
 class MiniSegHeap : public SmallHeap {
   private:
   
@@ -86,11 +87,12 @@ class MiniSegHeap : public SmallHeap {
       return size_classes[cl];
     }
 
-    //largest smallest object size
-    static constexpr size_t maxSmallObjectSize = class2Size(NumBins-1);
+    static constexpr int _NumBins = findSizeClassIndex(maxSmallObjectSize) + 1;
+    static_assert(_NumBins != -1); //No size class of size maxSmallObjectSize
+    static constexpr class_t NumBins = static_cast<class_t>(_NumBins);
     //largest smallest object class (redundant but useful for assertions)
     static constexpr class_t maxSmallObjectClass = findSizeClassIndex(maxSmallObjectSize);
-    static_assert(maxSmallObjectClass == (NumBins-1));
+    static_assert(maxSmallObjectClass == NumBins-1);
 
     static inline class_t size2Class(const size_t sz) {
       static class_t sizes[maxSmallObjectSize+1];

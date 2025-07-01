@@ -35,23 +35,24 @@ volatile int anyThreadCreated = 1;
 
 using namespace HL;
 
+#define SMALL_SIZE_CLASS_MAX 2*1024*1024
 //#define PROFILE //define in order to get profiling results (memory consumption of each heap)
 
 #ifndef PROFILE
 class TheDeqallocHeapType : public MiniSegHeap<
-                                     67,
+                                     SMALL_SIZE_CLASS_MAX,
                                      ThreadLocalStack<
                                        DequeHeap<
-                                         SegmentHeap<>>>,
-                                     SegmentHeap<>> {};
+                                         SegmentHeap<SMALL_SIZE_CLASS_MAX>>>,
+                                     SegmentHeap<SMALL_SIZE_CLASS_MAX>> {};
 #else
 class TheDeqallocHeapType : public ConcurrentProfileHeap<0,
                                     MiniSegHeap<
-                                     67,
+                                     SMALL_SIZE_CLASS_MAX,
                                      ConcurrentProfileHeap<1, ThreadLocalStack<
                                       ConcurrentProfileHeap<2, DequeHeap<
-                                       ConcurrentProfileHeap<3, SegmentHeap<>>>>>>,
-                                      ConcurrentProfileHeap<4, SegmentHeap<>>
+                                       ConcurrentProfileHeap<3, SegmentHeap<SMALL_SIZE_CLASS_MAX>>>>>>,
+                                      ConcurrentProfileHeap<4, SegmentHeap<SMALL_SIZE_CLASS_MAX>>
                                     >
                                    > {};
 #endif
@@ -117,4 +118,3 @@ extern "C" {
   }
   
 }
-
