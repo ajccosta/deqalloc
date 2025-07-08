@@ -147,8 +147,12 @@ namespace HL {
 
         alignas(8) header_t* next_segment = nullptr; //linked list of segments of size sz
         header_t *segment_retire_next = nullptr;
-        size_t sz; //size of nodes inside this segment
         std::atomic<list_size_t> head; //points to first element in node list
+
+        struct size_threadlocal {
+          alignas(8) size_t sz; //size of nodes inside this segment
+        }
+        size_threadlocal[max_threads];
 
         //keep trying to pop node until list is empty
         void* popNode() {
@@ -172,7 +176,7 @@ popNode_n_retry:
             h = head.load(std::memory_order_relaxed);
             auto t = h.getAll();
             auto [tag, num_nodes, index] = t; //prevents vars from going out of scope
-            deq_assert(num_nodes >= 0 && num_nodes <= getMaxNumObjects(sz));
+            deq_assert(num_nodes >= 0 && num_nodes <= getMaxNumObjects(getSize()));
             if(num_nodes == 0) {
               deq_assert(index == list_size_t::node_index_null);
               return {nullptr, nullptr, 0};
@@ -272,7 +276,7 @@ checkList_retry:
 #endif
           uint64_t num_nodes_;
           uint64_t new_index = getIndexFromNodePointer(node_first);
-          deq_assert((new_index >= 0 && new_index < getMaxNumObjects(sz)) ||
+          deq_assert((new_index >= 0 && new_index < getMaxNumObjects(getSize())) ||
             new_index == list_size_t::node_index_null);
           list_size_t h, new_h;
           do {
@@ -282,8 +286,8 @@ checkList_retry:
             num_nodes_ = num_nodes;
             new_h = list_size_t(tag+1, num_nodes+n_nodes, new_index);
             node_last->next = getNodePointer(index);
-            deq_assert(num_nodes+n_nodes >= 0 && num_nodes+n_nodes <= getMaxNumObjects(sz));
-            deq_assert((index >= 0 && index < getMaxNumObjects(sz))
+            deq_assert(num_nodes+n_nodes >= 0 && num_nodes+n_nodes <= getMaxNumObjects(getSize()));
+            deq_assert((index >= 0 && index < getMaxNumObjects(getSize()))
               || index == list_size_t::node_index_null);
             deq_assert(num_nodes == 0 ? index == list_size_t::node_index_null : true);
             deq_assert(num_nodes == 0 ? node_last->next == nullptr : true);
@@ -296,14 +300,21 @@ checkList_retry:
           auto t = old.getAll();
           auto [tag, num_nodes, index] = t;
           list_size_t list_size_t_null = list_size_t(tag+1, 0, list_size_t::node_index_null);
-          if(num_nodes == getMaxNumObjects(sz))
+          if(num_nodes == getMaxNumObjects(getSize()))
             return head.compare_exchange_strong(old, list_size_t_null);
           else
             return false; //Someone allocated from this list before we were able to empty it, abort
         }
 
+        //Each thread gets its own cache line with sz.
+        //This is an extreme waste but helps prevent cacheline
+        // contention that was degrading performance significantly.
+        inline size_t getSize() {
+          return size_threadlocal[thread_id()].sz;
+        }
+
         node_t* getNodePointer(uint32_t index) {
-          return getNodePointer(getBase(), index, sz);
+          return getNodePointer(getBase(), index, getSize());
         }
 
         //get node pointer from segment base, node index and size of nodes
@@ -313,7 +324,7 @@ checkList_retry:
         }
 
         uint32_t getIndexFromNodePointer(node_t* nodeptr) {
-          return getIndexFromNodePointer(getBase(), nodeptr, sz);
+          return getIndexFromNodePointer(getBase(), nodeptr, getSize());
         }
 
         //get node index from segment base, node ptr and size of nodes
@@ -388,7 +399,8 @@ checkList_retry:
         void* base = AlignedMmapHeap::malloc(getActualSegmentSize(sz), SegmentSize);
         size_t numObjects = getMaxNumObjects(sz);
         header_t* header = (header_t*) base; //use first bytes of segment as header
-        header->sz = sz;
+        for(int i = 0; i < max_threads; i++)
+          header->size_threadlocal[i].sz = sz;
         //Initialize linked list
         initializeList(base + sizeof(header_t), sz, numObjects);
         typename header_t::list_size_t h = typename header_t::list_size_t(0, numObjects, 0);
@@ -397,7 +409,7 @@ checkList_retry:
       }
 
       void freeSegment(header_t* header) {
-        AlignedMmapHeap::free(header, getActualSegmentSize(header->sz));
+        AlignedMmapHeap::free(header, getActualSegmentSize(header->getSize()));
       }
 
       //There are 3 types of Segments:
@@ -507,7 +519,7 @@ mallocN_retry_partial:
           header = seglist.peek();
           if(header != nullptr) {
             //Segments available, try to pop from them
-            deq_assert(getSegmentType(sz) == SegmentType::NORMAL ? sz == header->sz : true);
+            deq_assert(getSegmentType(sz) == SegmentType::NORMAL ? sz == header->getSize() : true);
             auto [_start_node, _end_node, allocated] = header->popNode(to_allocate);
             deq_assert(allocated <= n); //Don't allocate more than requested
             deq_assert(to_allocate >= 0);
@@ -560,7 +572,7 @@ malloc1_retry:
           //TODO: look for non-empty segments to allocate from?
           header = seglist.peek();
           if(header != nullptr) {//Segments available, try to pop from them
-            deq_assert(getSegmentType(sz) == SegmentType::NORMAL ? sz == header->sz : true);
+            deq_assert(getSegmentType(sz) == SegmentType::NORMAL ? sz == header->getSize() : true);
             p = header->popNode();
           }
           if(p == nullptr) { //Need to allocate new segment
@@ -602,7 +614,7 @@ malloc1_retry:
               curr = curr->next;
             }
             size_t num_nodes = curr_header->pushNode(curr_start, curr_end, curr_n_nodes);
-            if(num_nodes == getMaxNumObjects(curr_header->sz)) {
+            if(num_nodes == getMaxNumObjects(curr_header->getSize())) {
               //Segment is full again, attempt to retire it
               if(curr_header != seglist.peek()) { //Don't deallocate the first segment
                 retireSegment(curr_header);
@@ -619,8 +631,8 @@ malloc1_retry:
         uepoch::with_epoch([&]{
           header_t* header = (header_t*) getBasePointer(ptr);
           size_t num_nodes = header->pushNode(ptr);
-          deq_assert(num_nodes <= getMaxNumObjects(header->sz));
-          if(num_nodes == getMaxNumObjects(header->sz)) {
+          deq_assert(num_nodes <= getMaxNumObjects(header->getSize()));
+          if(num_nodes == getMaxNumObjects(header->getSize())) {
             //Segment is full again, attempt to retire it
             if(header != seglist.peek()) { //Don't deallocate the first segment
               retireSegment(header);
@@ -639,11 +651,7 @@ malloc1_retry:
       // that has not yet been freed.
       size_t getSize(void* ptr) {
         header_t* header = (header_t*) getBasePointer(ptr);
-        return header->sz;
-      }
-
-      static inline void prefetchHeader(void* ptr) {
-        __builtin_prefetch(getBasePointer(ptr), 1, 3);
+        return header->getSize();
       }
 
       static constexpr inline size_t SegmentNumNodes(size_t sz) {
