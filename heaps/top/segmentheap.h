@@ -36,19 +36,22 @@
  */
 
 #define DEFAULT_SEGMENT_SIZE 4 * 1024 * 1024 //4MiB
-
+#define DEFAULT_SMALL_SIZE_CLASS_MAX 32 * 1024 //32KiB
 
 namespace HL {
 
-  template<size_t SegmentSize_ = DEFAULT_SEGMENT_SIZE>
+  template<size_t SegmentSize_ = DEFAULT_SEGMENT_SIZE,
+           size_t SmallSizeClassMax_ = DEFAULT_SMALL_SIZE_CLASS_MAX>
   class SegmentHeap : public AlignedMmapHeap {
     public:
-      static const size_t SegmentSize = SegmentSize_; //Make SegmentSize visible to other classes
+      static constexpr size_t SegmentSize = SegmentSize_; //Make SegmentSize visible to other classes
       enum { Alignment = SegmentSize };
 
       static_assert(SegmentSize % CPUInfo::PageSize == 0 && "SegmentSize must be multiple of page size");
       static_assert((SegmentSize & (SegmentSize-1)) == 0 && "SegmentSize must be power of 2");
       static_assert(SegmentSize > 0 && "Naturally SegmentSize can't be 0");
+
+      static constexpr size_t SmallSizeClassMax = SmallSizeClassMax_;
 
     public:
       //Get the maximum number of objects in this segment
@@ -58,10 +61,9 @@ namespace HL {
             {
               size_t remaining_sz = SegmentSize - sizeof(header_t);
               size_t numObjects = remaining_sz / sz;
+              deq_assert(numObjects > 0);
               return numObjects;
             }
-          case SegmentType::SMALL_LARGE:
-            return smallLargeSegmentNElems;
           case SegmentType::LARGE:
             return 1;
           default:
@@ -310,7 +312,9 @@ checkList_retry:
         //This is an extreme waste but helps prevent cacheline
         // contention that was degrading performance significantly.
         inline size_t getSize() {
-          return size_threadlocal[thread_id()].sz;
+          size_t sz = size_threadlocal[thread_id()].sz;
+          deq_assert(sz > 0);
+          return sz;
         }
 
         node_t* getNodePointer(uint32_t index) {
@@ -343,6 +347,9 @@ checkList_retry:
           return this;
         }
       };
+
+      //Largest small size class has to fit inside of a segment
+      static_assert(SmallSizeClassMax <= (SegmentSize - sizeof(header_t)));
 
       //Insert segment into linked list of segments
       bool insertSegment(header_t* header, header_t* expected) {
@@ -384,8 +391,6 @@ checkList_retry:
         switch(getSegmentType(sz)) {
           case SegmentType::NORMAL:
             return SegmentSize;
-          case SegmentType::SMALL_LARGE:
-            return roundToPageSize(sz * smallLargeSegmentNElems + sizeof(header_t));
           case SegmentType::LARGE:
             return roundToPageSize(sz + sizeof(header_t));
           default:
@@ -412,22 +417,10 @@ checkList_retry:
         AlignedMmapHeap::free(header, getActualSegmentSize(header->getSize()));
       }
 
-      //There are 3 types of Segments:
-      //  - Normal segments (many nodes fit inside of a Segment), the segment has size SegmentSize
-      //  - Small Large segments, at least one node fits inside of a segment with SegmentSize,
-      //      but it would waste a lot of memory to have a single node there.
-      //      For example, assume SegmentSize=2MB and sizeof(header_t)=32bytes, and we get a request
-      //        for a 1MB allocation. We could only fit 1 1MB node inside a 2MB segment
-      //      Thus, Small Large segments are larger than a SegmentSize but its nodes
-      //        are smaller than SegmentSize. They have <smallLargeSementNElems> number of nodes.
-      //  - Large Segments only have a single node
-      enum SegmentType { NORMAL, SMALL_LARGE, LARGE };
-      constexpr static size_t smallLargeSegmentNElems = 2;
-      constexpr static size_t largestNormalSegSz = (SegmentSize - sizeof(header_t)) / smallLargeSegmentNElems;
+      enum SegmentType { NORMAL, LARGE };
 
       static constexpr SegmentType getSegmentType(size_t sz) {
-        if (sz <= largestNormalSegSz) return SegmentType::NORMAL;
-        if (sz < SegmentSize) return SegmentType::SMALL_LARGE;
+        if (sz <= SmallSizeClassMax) return SegmentType::NORMAL;
         return SegmentType::LARGE;
       }
 
@@ -441,8 +434,12 @@ checkList_retry:
       //  must check that the segment is full and that it has been retired, which means that both
       //  strategies incur some overhead. Emptying before retiring is simpler so we stick with that.
       void retireSegment(header_t* header) {
-        if(!header->emptyList()) return;
-        seglist.remove(&header->next_segment, [&](header_t* h){this->addToRetireList(h);});
+        if(getMaxNumObjects(header->getSize()) > 1) { //Segment is shared, add to retire list
+          if(!header->emptyList()) return;
+          seglist.remove(&header->next_segment, [&](header_t* h){this->addToRetireList(h);});
+        } else { //This segment is not shared, we are the only one to have a reference to it
+          freeSegment(header);
+        }
       }
 
       struct thread_state {
@@ -539,16 +536,18 @@ mallocN_retry_partial:
             //Nothing left to allocate
             deq_assert(to_allocate == allocated);
             to_allocate -= allocated;
-            bool inserted = insertSegment(header, prev_header); //publish new segment
-            if(!inserted) {
-              //Free segment and try again
-              //TODO: have segment pool to avoid freeing and reallocting all the time
-              freeSegment(header);
-              if(n - allocated > 0) { //We have allocated a few nodes from the head segment, don't leak them
-                to_allocate += allocated; //Nodes allocated from this new segment were freed
-                goto mallocN_retry_partial;
-              } else { //No nodes were allocated yet, just restart
-                goto mallocN_retry_beginning;
+            if(getMaxNumObjects(sz) > 1) { //Only publish segments that have other nodes to be shared
+              bool inserted = insertSegment(header, prev_header); //publish new segment
+              if(!inserted) {
+                //Free segment and try again
+                //TODO: have segment pool to avoid freeing and reallocting all the time
+                freeSegment(header);
+                if(n - allocated > 0) { //We have allocated a few nodes from the head segment, don't leak them
+                  to_allocate += allocated; //Nodes allocated from this new segment were freed
+                  goto mallocN_retry_partial;
+                } else { //No nodes were allocated yet, just restart
+                  goto mallocN_retry_beginning;
+                }
               }
             }
             //Succeeded, join lists
@@ -579,11 +578,13 @@ malloc1_retry:
             header_t* prev_header = header;
             header = allocateSegment(sz);
             p = header->popNode();
-            bool inserted = insertSegment(header, prev_header); //publish new segment
-            if(!inserted) {
-              //Free segment and try again
-              freeSegment(header);
-              goto malloc1_retry;
+            if(getMaxNumObjects(sz) > 1) { //Only publish segments that have other nodes to be shared
+              bool inserted = insertSegment(header, prev_header); //publish new segment
+              if(!inserted) {
+                //Free segment and try again
+                freeSegment(header);
+                goto malloc1_retry;
+              }
             }
           }
           return reinterpret_cast<void*>(p);

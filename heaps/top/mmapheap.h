@@ -151,7 +151,7 @@ namespace HL {
         assert((alignment & (alignment-1)) == 0 && "alignment must be power of 2");
         //allocate more than we need to
         void* ptr;
-        static constexpr size_t huge_page_size = 2*1024*1024;
+        //static constexpr size_t huge_page_size = 2*1024*1024;
         //if(sz >= huge_page_size && alignment == huge_page_size) {
         //  //Try to allocate a huge page first. It will be aligned to 2MiB.
         //  ptr = SizedMmapHeap::malloc(sz);
@@ -171,11 +171,12 @@ namespace HL {
         //address aligned to <alignment>
         uintptr_t aligned_addr = (p + alignment - 1) & ~(alignment - 1);
         //madvise((void*)aligned_addr, sz, MADV_NOHUGEPAGE);
+        //madvise((void*)aligned_addr, sz, MADV_HUGEPAGE);
         assert(aligned_addr >= p);
         size_t prefix_sz = aligned_addr - p;
         size_t suffix_sz = alignment - prefix_sz;
-        //if(prefix_sz > 0) SizedMmapHeap::free((void*)p, prefix_sz);
-        //if(suffix_sz > 0) SizedMmapHeap::free((void*)aligned_addr + sz, suffix_sz);
+        if(prefix_sz > 0) SizedMmapHeap::free((void*)p, prefix_sz);
+        if(suffix_sz > 0) SizedMmapHeap::free((void*)aligned_addr + sz, suffix_sz);
         return (void*)aligned_addr;
       }
   };

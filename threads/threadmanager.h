@@ -4,15 +4,15 @@
 #include <atomic>
 #include <iostream>
 
-constexpr int max_threads = 256;
+constexpr size_t max_threads = 256;
 
-extern inline std::atomic<int>& num_threads() {
-  static std::atomic<int> num_threads;
+extern inline std::atomic<size_t>& num_threads() {
+  static std::atomic<size_t> num_threads;
   return num_threads;
 }
 
-extern inline int thread_id() {
-  static thread_local __attribute__((tls_model("initial-exec"))) int id{num_threads().fetch_add(1)};
+extern inline size_t thread_id() {
+  static thread_local __attribute__((tls_model("initial-exec"))) size_t id{num_threads().fetch_add(1)};
 #ifndef NDEBUG
   if (id > max_threads) {
     std::cerr << "Too many threads. To fix this, increase the maximum "
