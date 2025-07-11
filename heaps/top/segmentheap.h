@@ -83,46 +83,56 @@ namespace HL {
         struct alignas(8) list_size_t {
           private:
             //Number of bits for ABA tags
-            static constexpr uint64_t tagbits = 22;
+            static constexpr uint64_t tagbits = 21;
             static constexpr uint64_t tagmax = (1<<tagbits)-1;
+            static constexpr uint64_t tagandcanonlbits = tagbits + 1; //tag + canonic bit
             //Odd number of tag bits wastes a bit and confuses logic
-            static_assert(tagbits % 2 == 0);
+            static_assert(tagandcanonlbits % 2 == 0);
 
             //Number of bits to represent number of nodes and node indexes
-            static constexpr uint64_t rest_bits = (64-tagbits)/2;
+            static constexpr uint64_t rest_bits = (64-tagandcanonlbits)/2;
             static constexpr uint64_t restmax = (1<<rest_bits)-1;
 
             //MSB <tagbits> bits used for tag, then store num_nodes, then node_index
             //(verilog syntax)
-            //[tagbits+(rest_bits*2)-1:(rest_bits*2)] tag
+            //[64:63] canonic bit
+            //[tagbits+(rest_bits*2)-2:(rest_bits*2)] tag
             //[(rest_bits*2)-1:rest_bits] num_nodes
             //[rest_bits-1:0] node_index
             uint64_t node_repr;
 
           public:
-            list_size_t(uint64_t tag, uint64_t num_nodes, uint64_t node_index) :
-              node_repr(getRepr(tag, num_nodes, node_index)) {}
+            list_size_t(bool canon, uint64_t tag, uint64_t num_nodes, uint64_t node_index) :
+              node_repr(getRepr(canon, tag, num_nodes, node_index)) {}
 
             list_size_t() = default;
 
             static inline uint64_t node_index_null = restmax;
 
-            inline uint64_t getTag() const { return node_repr >> (64 - tagbits); }
-            inline uint64_t getNumNodes() const { return ((~(tagmax << (64 - tagbits))) & node_repr) >> rest_bits; }
+            //Whether the list is in a "canonic state", i.e., no pushes have been made yet
+            inline uint64_t getCanon() const { return (node_repr & (1ull << 63))>>63; }
+            inline uint64_t getTag() const { return (node_repr  & (~(1ull<<63))) >> (64 - tagandcanonlbits); }
+            inline uint64_t getNumNodes() const { return ((~(((tagmax<<1)+1) << (64 - tagandcanonlbits))) & node_repr) >> rest_bits; }
             inline uint64_t getNodeIndex() const { return restmax & node_repr; }
-            inline std::tuple<uint64_t,uint64_t,uint64_t> getAll() { return {getTag(), getNumNodes(), getNodeIndex()}; }
+            inline std::tuple<bool, uint64_t,uint64_t,uint64_t> getAll() { return {getCanon(), getTag(), getNumNodes(), getNodeIndex()}; }
 
             bool operator==(list_size_t const& rhs) const { return node_repr == rhs.node_repr; }
             bool operator!=(list_size_t const& rhs) const { return !(*this == rhs); }
 
           private:
-            inline uint64_t getRepr(uint64_t tag, uint64_t num_nodes, uint64_t node_index) {
-              return tagRepr(tag) | numNodesRepr(num_nodes) | nodeIndexRepr(node_index);
+            inline uint64_t getRepr(bool canon, uint64_t tag, uint64_t num_nodes, uint64_t node_index) {
+              return canonRepr(canon) | tagRepr(tag) | numNodesRepr(num_nodes) | nodeIndexRepr(node_index);
+            }
+
+            static inline uint64_t canonRepr(bool canon) {
+              deq_assert(((uint64_t)canon) == 0 || ((uint64_t)canon) == 1);
+              return ((uint64_t)canon) << 63;
             }
 
             static inline uint64_t tagRepr(uint64_t tag) {
               //can be any value, it is supposed to loop
-              return tag << (64 - tagbits);
+              //mask off canon bit
+              return (tag << (64 - tagandcanonlbits)) & (~(1ull<<63));
             }
 
             static inline uint64_t numNodesRepr(uint64_t num_nodes) {
@@ -136,6 +146,7 @@ namespace HL {
 
             friend ostream& operator<<(ostream& os, list_size_t const& t) {
               return os << '{' <<
+                t.getCanon() << ',' <<
                 t.getTag() << ',' <<
                 t.getNumNodes() << ',' <<
                 t.getNodeIndex() << '}';
@@ -156,7 +167,6 @@ namespace HL {
         }
         size_threadlocal[max_threads];
 
-        //keep trying to pop node until list is empty
         void* popNode() {
           auto [start, end, n_popped] = popNode(1);
           deq_assert(n_popped == 0 || n_popped == 1);
@@ -177,7 +187,7 @@ namespace HL {
 popNode_n_retry:
             h = head.load(std::memory_order_relaxed);
             auto t = h.getAll();
-            auto [tag, num_nodes, index] = t; //prevents vars from going out of scope
+            auto [canon, tag, num_nodes, index] = t; //prevents vars from going out of scope
             deq_assert(num_nodes >= 0 && num_nodes <= getMaxNumObjects(getSize()));
             if(num_nodes == 0) {
               deq_assert(index == list_size_t::node_index_null);
@@ -223,7 +233,7 @@ popNode_n_retry:
             deq_assert(num_nodes == n_popped ? new_index == list_size_t::node_index_null : true);
             deq_assert(node == nullptr ? (num_nodes-n_popped == 0 ||
               h != head.load(std::memory_order_seq_cst)): true);
-            new_h = list_size_t(tag+1, num_nodes-n_popped, new_index);
+            new_h = list_size_t(canon, tag+1, num_nodes-n_popped, new_index);
           } while(!head.compare_exchange_strong(h, new_h));
           return {start_node, end_node, n_popped};
         }
@@ -239,7 +249,7 @@ popNode_n_retry:
 checkList_retry:
           list_size_t h = head.load(std::memory_order_seq_cst);
           auto t = h.getAll();
-          auto [tag, num_nodes, index] = t;
+          auto [canon, tag, num_nodes, index] = t;
           node_t* _c = getNodePointer(index);
           size_t _n_nodes = 0;
           while(_c) {
@@ -284,9 +294,9 @@ checkList_retry:
           do {
             h = head.load(std::memory_order_relaxed);
             auto t = h.getAll();
-            auto [tag, num_nodes, index] = t;
+            auto [canon, tag, num_nodes, index] = t;
             num_nodes_ = num_nodes;
-            new_h = list_size_t(tag+1, num_nodes+n_nodes, new_index);
+            new_h = list_size_t(false, tag+1, num_nodes+n_nodes, new_index);
             node_last->next = getNodePointer(index);
             deq_assert(num_nodes+n_nodes >= 0 && num_nodes+n_nodes <= getMaxNumObjects(getSize()));
             deq_assert((index >= 0 && index < getMaxNumObjects(getSize()))
@@ -300,8 +310,8 @@ checkList_retry:
         inline bool emptyList() {
           list_size_t old = head.load(std::memory_order_relaxed);
           auto t = old.getAll();
-          auto [tag, num_nodes, index] = t;
-          list_size_t list_size_t_null = list_size_t(tag+1, 0, list_size_t::node_index_null);
+          auto [canon, tag, num_nodes, index] = t;
+          list_size_t list_size_t_null = list_size_t(canon, tag+1, 0, list_size_t::node_index_null);
           if(num_nodes == getMaxNumObjects(getSize()))
             return head.compare_exchange_strong(old, list_size_t_null);
           else
@@ -408,7 +418,7 @@ checkList_retry:
           header->size_threadlocal[i].sz = sz;
         //Initialize linked list
         initializeList(base + sizeof(header_t), sz, numObjects);
-        typename header_t::list_size_t h = typename header_t::list_size_t(0, numObjects, 0);
+        typename header_t::list_size_t h = typename header_t::list_size_t(true, 0, numObjects, 0);
         header->head.store(h);
         return header;
       }
