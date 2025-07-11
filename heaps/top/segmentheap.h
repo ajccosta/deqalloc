@@ -183,11 +183,13 @@ namespace HL {
           list_size_t h, new_h;
           node_t *node, *start_node, *end_node;
           size_t n_popped; //how many nodes were popped
+          bool canon;
           do {
 popNode_n_retry:
             h = head.load(std::memory_order_relaxed);
             auto t = h.getAll();
-            auto [canon, tag, num_nodes, index] = t; //prevents vars from going out of scope
+            auto [_canon, tag, num_nodes, index] = t; //prevents vars from going out of scope
+            canon = _canon;
             deq_assert(num_nodes >= 0 && num_nodes <= getMaxNumObjects(getSize()));
             if(num_nodes == 0) {
               deq_assert(index == list_size_t::node_index_null);
@@ -195,46 +197,57 @@ popNode_n_retry:
             }
             //How many nodes to pop
             size_t n_pop = std::min(num_nodes, n);
-            deq_assert(n_pop > 0);
-            int64_t n_traversed = n_pop; //How many nodes we will attempt to pop
-            node = getNodePointer(index);
-            start_node = node;
-            while(n_traversed-- > 0) {
-              end_node = node;
-              //Other threads might have written to these locations concurrently.
-              //They are only allowed to do so if they have allocated nodes first.
-              //That means that even if we read their garbage, our CAS will fail.
-              //Still, if we read their garbage and interpret it as a node, we segfault!
-              //So, just check if what we read lies inside of this segment list, even
-              //  if it is wrong, we won't segfault and will retry after a failed CAS.
-              if(!belongsToSegmentList(node)) {
+            uint32_t new_index;
+            if(!canon) { //list not in canonical representation, we have to traverse nodes
+              deq_assert(n_pop > 0);
+              int64_t n_traversed = n_pop; //How many nodes we will attempt to pop
+              node = getNodePointer(index);
+              start_node = node;
+              while(n_traversed-- > 0) {
+                end_node = node;
+                //Other threads might have written to these locations concurrently.
+                //They are only allowed to do so if they have allocated nodes first.
+                //That means that even if we read their garbage, our CAS will fail.
+                //Still, if we read their garbage and interpret it as a node, we segfault!
+                //So, just check if what we read lies inside of this segment list, even
+                //  if it is wrong, we won't segfault and will retry after a failed CAS.
+                if(!belongsToSegmentList(node)) {
 #ifndef NDEBUG
                 //Head must have changed since someone wrote to this node
                 std::atomic_thread_fence(std::memory_order_seq_cst);
                 deq_assert(h != head.load(std::memory_order_relaxed));
 #endif
+                  goto popNode_n_retry;
+                }
+                node = node->next;
+              }
+              n_popped = (n_pop-(n_traversed+1));
+              //If the node that will be the new head of the list does not belong to the list
+              // and is not a nullptr (i.e., we are for sure reading something a user wrote)
+              // we simply retry.
+              //In the case that we see a nullptr (it is also considered to not be in the list)
+              // we might be at the end of the list, in which case the nullptr is valid. In that
+              // case n_popped==num_nodes. Otherwise, we saw another corrupting write (such as
+              // truncating the end of the list in another thread), we need to retry as well.
+              if((node == nullptr && n_popped != num_nodes)
+                || (!belongsToSegmentList(node) && node != nullptr)) {
                 goto popNode_n_retry;
               }
-              node = node->next;
+              new_index = getIndexFromNodePointer(node);
+              deq_assert(belongsToSegmentList(node) || node == nullptr);
+              deq_assert(node == nullptr ? (num_nodes-n_popped == 0 ||
+                h != head.load(std::memory_order_seq_cst)): true);
+            } else { //list is in canonical representation, don't traverse simply calculate next node
+              start_node = getNodePointer(index);
+              end_node = getNodePointer(index + n_pop - 1);
+              n_popped = n_pop;
+              new_index = n_pop == num_nodes ? list_size_t::node_index_null : index + n_pop;
             }
-            n_popped = (n_pop-(n_traversed+1));
-            //If the node that will be the new head of the list does not belong to the list
-            // and is not a nullptr (i.e., we are for sure reading something a user wrote)
-            // we simply retry.
-            //In the case that we see a nullptr (it is also considered to not be in the list)
-            // we might be at the end of the list, in which case the nullptr is valid. In that
-            // case n_popped==num_nodes. Otherwise, we saw another corrupting write (such as
-            // truncating the end of the list in another thread), we need to retry as well.
-            if((node == nullptr && n_popped != num_nodes)
-              || (!belongsToSegmentList(node) && node != nullptr))
-              goto popNode_n_retry;
-            uint32_t new_index = getIndexFromNodePointer(node);
-            deq_assert(belongsToSegmentList(node) || node == nullptr);
             deq_assert(num_nodes == n_popped ? new_index == list_size_t::node_index_null : true);
-            deq_assert(node == nullptr ? (num_nodes-n_popped == 0 ||
-              h != head.load(std::memory_order_seq_cst)): true);
             new_h = list_size_t(canon, tag+1, num_nodes-n_popped, new_index);
           } while(!head.compare_exchange_strong(h, new_h));
+          if(canon)
+            initializeList(start_node, getSize(), n_popped);
           return {start_node, end_node, n_popped};
         }
 
@@ -250,6 +263,7 @@ checkList_retry:
           list_size_t h = head.load(std::memory_order_seq_cst);
           auto t = h.getAll();
           auto [canon, tag, num_nodes, index] = t;
+          if(canon) return;
           node_t* _c = getNodePointer(index);
           size_t _n_nodes = 0;
           while(_c) {
@@ -292,9 +306,21 @@ checkList_retry:
             new_index == list_size_t::node_index_null);
           list_size_t h, new_h;
           do {
+pushNode_n_retry:
             h = head.load(std::memory_order_relaxed);
             auto t = h.getAll();
             auto [canon, tag, num_nodes, index] = t;
+            if(canon && num_nodes > 0) {
+              list_size_t list_size_t_null = list_size_t(false, tag+1, 0, list_size_t::node_index_null);
+              //try to empty list to get exclusive access to it
+              bool emptied = head.compare_exchange_strong(h, list_size_t_null);
+              if(!emptied) //failed emptying, retry
+                goto pushNode_n_retry;
+              //initialize rest of the list
+              initializeList(getNodePointer(index), getSize(), num_nodes);
+              //CAS will now try to change from empty list
+              h = list_size_t_null;
+            }
             num_nodes_ = num_nodes;
             new_h = list_size_t(false, tag+1, num_nodes+n_nodes, new_index);
             node_last->next = getNodePointer(index);
@@ -416,8 +442,7 @@ checkList_retry:
         header_t* header = (header_t*) base; //use first bytes of segment as header
         for(int i = 0; i < max_threads; i++)
           header->size_threadlocal[i].sz = sz;
-        //Initialize linked list
-        initializeList(base + sizeof(header_t), sz, numObjects);
+        //Don't initialize linked list on segment creation, initialize as we go
         typename header_t::list_size_t h = typename header_t::list_size_t(true, 0, numObjects, 0);
         header->head.store(h);
         return header;
