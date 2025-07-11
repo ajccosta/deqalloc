@@ -129,8 +129,28 @@ class MiniSegHeap : public SmallHeap {
       return left;
     }
 
+    static inline constexpr size_t default_list_bytes = 1ul << 14; // in bytes
+
+    static constexpr size_t get_list_length(size_t sz /*size of objects*/) {
+      size_t s1 = default_list_bytes / sz;
+      size_t s2 = s1 < 1 ? 1 : s1; //minimum list_length of 2;
+      return s2;
+    }
+
     SmallHeap smallHeaps[NumBins];
     LargeHeap largeHeap;
+
+    static constexpr std::array<size_t, NumBins> list_lengths_precompute() {
+      std::array<size_t, NumBins> list_lengths{};
+      for (size_t i = 0; i < NumBins; i++)
+        list_lengths[i] = get_list_length(class2Size(i));
+      return list_lengths;
+    }
+    static constexpr std::array<size_t, NumBins> list_lengths = list_lengths_precompute();
+
+    //Number of nodes in threadlocalstack exceeds number of nodes in a single segment
+    static_assert(SmallHeap::SegmentNumNodes(32) >= get_list_length(32));
+
 
   public:
 
@@ -144,7 +164,7 @@ class MiniSegHeap : public SmallHeap {
         deq_assert(realSize <= maxSmallObjectSize);
         deq_assert(sizeClass >= 0);
         deq_assert(sizeClass < NumBins);
-        return smallHeaps[sizeClass].malloc(realSize);
+        return smallHeaps[sizeClass].malloc(realSize, list_lengths[sizeClass]);
       } else {
         return largeHeap.malloc(sz);
       }
@@ -162,7 +182,7 @@ class MiniSegHeap : public SmallHeap {
         auto objectSizeClass = size2Class(objectSize);
         deq_assert (objectSizeClass >= 0);
         deq_assert (objectSizeClass < NumBins);
-        smallHeaps[objectSizeClass].free(ptr, objectSize);
+        smallHeaps[objectSizeClass].free(ptr, objectSize, list_lengths[objectSizeClass]);
       }
     }
 

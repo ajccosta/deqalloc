@@ -37,24 +37,13 @@ class ThreadLocalStack : public Super {
     thread_state thread_states[max_threads];
     inline thread_state& get_thread_state() { return thread_states[thread_id()]; }
 
-
-    static inline constexpr size_t default_list_bytes = 1ul << 14; // in bytes
-
-    //TODO don't calculate list_length every time
-    static constexpr size_t get_list_length(size_t sz /*size of objects*/) {
-      size_t s1 = default_list_bytes / sz;
-      size_t s2 = s1 < 1 ? 1 : s1; //minimum list_length of 2;
-      return s2;
-    }
-
-    //Number of nodes in threadlocalstack exceeds number of nodes in a single segment
-    static_assert(Super::SegmentNumNodes(32) >= get_list_length(32));
-
   public:
+    //Weird API (that includes list_length) because c++ makes it difficult
+    // to instantiate multiple threadlocalstacks each with a different
+    // list_length
 
-    inline void* malloc(size_t sz) {
+    inline void* malloc(size_t sz, size_t list_length) {
       thread_state& ts = get_thread_state();
-      const size_t list_length = get_list_length(sz);
       if(ts.sz == 0) {
         auto [start_node, end_node] = Super::malloc(sz, list_length);
         ts.head = start_node;
@@ -68,9 +57,8 @@ class ThreadLocalStack : public Super {
       return static_cast<void*>(n);
     }
 
-    inline void free(void* ptr, size_t sz) {
+    inline void free(void* ptr, size_t sz, size_t list_length) {
       thread_state& ts = get_thread_state();
-      const size_t list_length = get_list_length(sz);
       if(ts.sz == list_length+1) {
         ts.mid = ts.head;
       } else if(ts.sz == 2*list_length) {
