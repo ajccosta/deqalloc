@@ -16,7 +16,7 @@
 #include "utility/types.h"
 #include "threads/cpuinfo.h"
 
-#define BLOCK_SIZE_LOG 15
+#define BLOCK_SIZE_LOG 17
 
 template<typename T>
 class alignas(64) continuous_array
