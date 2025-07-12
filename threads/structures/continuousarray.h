@@ -16,7 +16,7 @@
 #include "utility/types.h"
 #include "threads/cpuinfo.h"
 
-#define BLOCK_SIZE_LOG 15
+#define BLOCK_SIZE_LOG 12
 
 template<typename T>
 class alignas(64) continuous_array
@@ -45,17 +45,18 @@ class alignas(64) continuous_array
 
     
     //Accessed by owner//
-    block *head = nullptr; //Head of block list
-    block *block_in_use = nullptr; //Block that is currently in use
+    block head_block = block{nullptr, nullptr, 0}; //Head of block list
+    block *head = &head_block;
+    block *block_in_use = head; //Block that is currently in use
     block* blocks_to_reuse = nullptr; //Block pool
-    uint64_t curr_block_id = 0; //Last allocated block_id
+    uint64_t curr_block_id = 1; //Last allocated block_id
 
     class Super : public FreelistHeap<BumpAlloc<BLOCK_SIZE_LOG, SizedMmapHeap>> {};
     Super super;
     //-----------------//
     
     //Accessed by all//
-    alignas(64) std::atomic<block*> tail;
+    alignas(64) std::atomic<block*> tail {head};
     alignas(64) std::atomic<block*> to_retire {nullptr};
     //---------------//
     
@@ -156,38 +157,27 @@ class alignas(64) continuous_array
     }
         
   public:
-    continuous_array()
-    {
-      //Allocate first block
-      head = get_block();
-      head->prev = nullptr;
-      head->next = nullptr;
-      head->block_id = curr_block_id++;
-      //At construction, tail is also the first block allocated
-      tail.store(head); 
-      block_in_use = head;
-    }
     
-    ~continuous_array()
-    //Assumes no concurrent accesses are done anymore
-    {
-      block *r = get_retired(); //Get all retired (not yet free'd) nodes
-      block *aux;
-      //If tail or head is null, something went wrong
-      assert(tail.load(std::memory_order_relaxed) != nullptr); 
-      assert(head != nullptr); 
-      tail.load(std::memory_order_relaxed)->prev = r; //Attach head to retired list
-      while(head != nullptr)
-      { //free blocks in current working set AND retired blocks
-        aux = head;
-        head = head->prev;
-        super.free(aux);
-      }
-      while((aux = pop_reuse_block()) != nullptr)
-      { //free blocks stored for future reuse
-        super.free(aux);
-      }
-    }
+    //~continuous_array()
+    ////Assumes no concurrent accesses are done anymore
+    //{
+    //  block *r = get_retired(); //Get all retired (not yet free'd) nodes
+    //  block *aux;
+    //  //If tail or head is null, something went wrong
+    //  assert(tail.load(std::memory_order_relaxed) != nullptr); 
+    //  assert(head != nullptr); 
+    //  tail.load(std::memory_order_relaxed)->prev = r; //Attach head to retired list
+    //  while(head != nullptr)
+    //  { //free blocks in current working set AND retired blocks
+    //    aux = head;
+    //    head = head->prev;
+    //    super.free(aux);
+    //  }
+    //  while((aux = pop_reuse_block()) != nullptr)
+    //  { //free blocks stored for future reuse
+    //    super.free(aux);
+    //  }
+    //}
     
     T
     get_head(uint64_t index)
