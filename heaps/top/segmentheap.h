@@ -22,6 +22,7 @@
 #include "threads/cpuinfo.h"
 #include "threads/epoch.h"
 #include "threads/structures/HarrisLinkedList.h"
+#include "utility/random.h"
 #include <atomic>
 #include <limits>
 #include <thread>
@@ -162,10 +163,13 @@ namespace HL {
         header_t *segment_retire_next = nullptr;
         std::atomic<list_size_t> head; //points to first element in node list
 
+        static constexpr size_t num_sz_replicas = 64;
         struct size_threadlocal {
           alignas(8) size_t sz; //size of nodes inside this segment
         }
-        size_threadlocal[max_threads];
+        size_threadlocal[num_sz_replicas];
+
+        static inline thread_local parlay::random my_rand __attribute__((tls_model ("initial-exec")));
 
         void* popNode() {
           auto [start, end, n_popped] = popNode(1);
@@ -348,7 +352,7 @@ pushNode_n_retry:
         //This is an extreme waste but helps prevent cacheline
         // contention that was degrading performance significantly.
         inline size_t getSize() {
-          size_t sz = size_threadlocal[thread_id()].sz;
+          size_t sz = size_threadlocal[my_rand.rand() % num_sz_replicas].sz;
           deq_assert(sz > 0);
           return sz;
         }
