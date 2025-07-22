@@ -439,11 +439,32 @@ pushNode_n_retry:
         }
       }
 
+
+      //Don't free segments, add them to a pool
+      static inline thread_local header_t* segment_pool = nullptr;
+
+      header_t* popSegmentPool() {
+        if(segment_pool != nullptr) {
+          header_t* h = segment_pool;
+          segment_pool = h->next_segment;
+          return h;
+        } else {
+          return nullptr;
+        }
+      }
+
+      void pushSegmentPool(header_t* h) {
+        h->next_segment = segment_pool;
+        segment_pool = h;
+      }
+
+
       //Allocate and initialize new segment
       header_t* allocateSegment(size_t sz) {
-        void* base = AlignedMmapHeap::malloc(getActualSegmentSize(sz), SegmentSize);
+        header_t* header = popSegmentPool();
+        if(header == nullptr)
+          header = static_cast<header_t*>(AlignedMmapHeap::malloc(getActualSegmentSize(sz), SegmentSize));
         size_t numObjects = getMaxNumObjects(sz);
-        header_t* header = (header_t*) base; //use first bytes of segment as header
         for(int i = 0; i < max_threads; i++)
           header->size_threadlocal[i].sz = sz;
         //Don't initialize linked list on segment creation, initialize as we go
@@ -453,7 +474,9 @@ pushNode_n_retry:
       }
 
       void freeSegment(header_t* header) {
-        AlignedMmapHeap::free(header, getActualSegmentSize(header->getSize()));
+        //TODO Add logic to choose between adding to the pool and actually freeing
+        pushSegmentPool(header);
+        //AlignedMmapHeap::free(header, getActualSegmentSize(header->getSize()));
       }
 
       enum SegmentType { NORMAL, LARGE };
