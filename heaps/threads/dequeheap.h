@@ -59,6 +59,7 @@ class DequeHeap : public Super {
     }
 
     inline void free(node_t* start_node, node_t* end_node) {
+      deq_assert(start_node != nullptr && end_node != nullptr);
       my_deq().push_bottom({start_node, end_node});
     }
 

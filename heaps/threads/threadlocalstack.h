@@ -59,7 +59,9 @@ class ThreadLocalStack : public Super {
 
     inline void free(void* ptr, size_t sz, size_t list_length) {
       thread_state& ts = get_thread_state();
-      if(ts.sz == list_length+1) {
+      if(ts.sz == 0) {
+        ts.tail = static_cast<node_t*>(ptr);
+      } else if(ts.sz == list_length+1) {
         ts.mid = ts.head;
       } else if(ts.sz == 2*list_length) {
         Super::free(ts.mid->next, ts.tail);
