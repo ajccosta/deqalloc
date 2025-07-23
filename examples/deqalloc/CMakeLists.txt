@@ -43,9 +43,16 @@ else()
   set(ALL_SOURCES ${UNIX_SOURCES})
 endif()
 
+#Compile time definitions for shared library
+set(DEFINES "")
+if(DEFAULT_LIST_BYTES)
+  message(STATUS "Thread-local pool size is ${DEFAULT_LIST_BYTES} bytes")
+  set(DEFINES "${DEFINES} DEFAULT_LIST_BYTES=${DEFAULT_LIST_BYTES}")
+endif()
+
 # Create shared library
 add_library(deqalloc SHARED ${ALL_SOURCES})
-target_compile_definitions(deqalloc PUBLIC -DNDEBUG -D_REENTRANT=1)
+target_compile_definitions(deqalloc PUBLIC -DNDEBUG -D_REENTRANT=1 ${DEFINES})
 
 # Let CMake handle platform-specific library settings
 set_target_properties(deqalloc PROPERTIES 
@@ -58,14 +65,17 @@ if(Threads_FOUND)
     target_link_libraries(deqalloc Threads::Threads)
 endif()
 
-#include rapidcheck unit test library
-include(FetchContent)
-FetchContent_Declare(
-  rapidcheck
-  GIT_REPOSITORY https://github.com/emil-e/rapidcheck.git
-  GIT_TAG        master
-)
-FetchContent_MakeAvailable(rapidcheck)
-target_compile_options(rapidcheck PUBLIC -fconcepts)
-include_directories(${rapidcheck_SOURCE_DIR})
-add_subdirectory(unit)
+#Conditionally compile unit tests if UNIT_TESTS is set
+if(UNIT_TESTS)
+  #include rapidcheck unit test library
+  include(FetchContent)
+  FetchContent_Declare(
+    rapidcheck
+    GIT_REPOSITORY https://github.com/emil-e/rapidcheck.git
+    GIT_TAG        master
+  )
+  FetchContent_MakeAvailable(rapidcheck)
+  target_compile_options(rapidcheck PUBLIC -fconcepts)
+  include_directories(${rapidcheck_SOURCE_DIR})
+  add_subdirectory(unit)
+endif()
