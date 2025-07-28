@@ -357,6 +357,15 @@ pushNode_n_retry:
           return sz;
         }
 
+        void initialize(size_t sz) {
+          size_t numObjects = getMaxNumObjects(sz);
+          typename header_t::list_size_t h = typename header_t::list_size_t(true, 0, numObjects, 0);
+          head.store(h);
+          for(int i = 0; i < num_sz_replicas; i++)
+            size_threadlocal[i].sz = sz;
+          //Don't initialize linked list on segment creation, initialize as we go
+        }
+
         node_t* getNodePointer(uint32_t index) {
           return getNodePointer(getBase(), index, getSize());
         }
@@ -386,7 +395,7 @@ pushNode_n_retry:
         inline void* getBase() {
           return this;
         }
-      };
+      }; //header_t
 
       //Largest small size class has to fit inside of a segment
       static_assert(SmallSizeClassMax <= (SegmentSize - sizeof(header_t)));
@@ -464,12 +473,7 @@ pushNode_n_retry:
         header_t* header = popSegmentPool();
         if(header == nullptr)
           header = static_cast<header_t*>(AlignedMmapHeap::malloc(getActualSegmentSize(sz), SegmentSize));
-        size_t numObjects = getMaxNumObjects(sz);
-        for(int i = 0; i < max_threads; i++)
-          header->size_threadlocal[i].sz = sz;
-        //Don't initialize linked list on segment creation, initialize as we go
-        typename header_t::list_size_t h = typename header_t::list_size_t(true, 0, numObjects, 0);
-        header->head.store(h);
+        header->initialize(sz);
         return header;
       }
 
