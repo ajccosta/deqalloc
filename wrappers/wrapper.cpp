@@ -457,6 +457,14 @@ void * FLATTEN operator new[] (size_t size)
   throw std::bad_alloc();
 }
 
+void * FLATTEN operator new(size_t size, std::align_val_t alignment) {
+  return xxmemalign(static_cast<size_t>(alignment), size);
+}
+
+void FLATTEN operator delete(void* ptr, std::align_val_t alignment) {
+  xxfree(ptr);
+}
+
 void * FLATTEN operator new[] (size_t sz, const std::nothrow_t&)
   throw()
  {
@@ -474,6 +482,14 @@ void FLATTEN operator delete[] (void * ptr)
 #endif
 {
   CUSTOM_FREE (ptr);
+}
+
+void * FLATTEN operator new[] (size_t size,  std::align_val_t alignment) {
+  return xxmemalign(static_cast<size_t>(alignment), size);
+}
+
+void FLATTEN operator delete[] (void * ptr, std::align_val_t alignment) {
+  xxfree(ptr);
 }
 
 #if defined(__cpp_sized_deallocation) && __cpp_sized_deallocation >= 201309
