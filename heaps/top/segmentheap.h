@@ -455,12 +455,18 @@ pushNode_n_retry:
       header_t* popSegmentPool() {
         if(segment_pool != nullptr) {
           header_t* h = segment_pool;
-          segment_pool = nullptr;
+          segment_pool = h->next_segment;
           return h;
         } else {
           return nullptr;
         }
       }
+
+      void pushSegmentPool(header_t* h) {
+        h->next_segment = segment_pool;
+        segment_pool = h;
+      }
+
 
       //Allocate and initialize new segment
       header_t* allocateSegment(size_t sz) {
@@ -472,10 +478,9 @@ pushNode_n_retry:
       }
 
       void freeSegment(header_t* header) {
-        if(segment_pool == nullptr)
-          segment_pool = header;
-        else
-          AlignedMmapHeap::free(header, getActualSegmentSize(header->getSize()));
+        //TODO Add logic to choose between adding to the pool and actually freeing
+        pushSegmentPool(header);
+        //AlignedMmapHeap::free(header, getActualSegmentSize(header->getSize()));
       }
 
       enum SegmentType { NORMAL, LARGE };
@@ -499,7 +504,7 @@ pushNode_n_retry:
           if(!header->emptyList()) return;
           seglist.remove(&header->next_segment, [&](header_t* h){this->addToRetireList(h);});
         } else { //This segment is not shared, we are the only one to have a reference to it
-          addToRetireList(header);
+          freeSegment(header);
         }
       }
 
