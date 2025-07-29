@@ -2,7 +2,6 @@
 #define THREADMANAGER_H_
 
 #include <atomic>
-#include <array>
 #include <iostream>
 
 constexpr size_t max_threads = 256;
