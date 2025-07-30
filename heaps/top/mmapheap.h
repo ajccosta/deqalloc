@@ -146,7 +146,11 @@ namespace HL {
   class AlignedMmapHeap : public SizedMmapHeap {
 
     public:
-      static inline void* malloc (size_t sz, size_t alignment) {
+      static constexpr int OS_DECIDES_HUGE_PAGES = 1;
+      static constexpr int NO_HUGE_PAGES = 1;
+      static constexpr int USE_HUGE_PAGES = 2;
+
+      static inline void* malloc (size_t sz, size_t alignment, int use_huge_pages = 0) {
         assert(alignment % CPUInfo::PageSize == 0 && "alignment must be multiple of page size");
         assert((alignment & (alignment-1)) == 0 && "alignment must be power of 2");
         //allocate more than we need to
@@ -170,8 +174,8 @@ namespace HL {
         uintptr_t p = (uintptr_t) ptr;
         //address aligned to <alignment>
         uintptr_t aligned_addr = (p + alignment - 1) & ~(alignment - 1);
-        //madvise((void*)aligned_addr, sz, MADV_NOHUGEPAGE);
-        //madvise((void*)aligned_addr, sz, MADV_HUGEPAGE);
+        if(use_huge_pages == 1) madvise((void*)aligned_addr, sz, MADV_NOHUGEPAGE);
+        else if(use_huge_pages == 2) madvise((void*)aligned_addr, sz, MADV_HUGEPAGE);
         assert(aligned_addr >= p);
         size_t prefix_sz = aligned_addr - p;
         size_t suffix_sz = alignment - prefix_sz;
