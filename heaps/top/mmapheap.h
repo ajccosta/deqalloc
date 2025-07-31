@@ -146,7 +146,7 @@ namespace HL {
   class AlignedMmapHeap : public SizedMmapHeap {
 
     public:
-      static constexpr int OS_DECIDES_HUGE_PAGES = 1;
+      static constexpr int OS_DECIDES_HUGE_PAGES = 0;
       static constexpr int NO_HUGE_PAGES = 1;
       static constexpr int USE_HUGE_PAGES = 2;
 

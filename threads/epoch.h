@@ -88,7 +88,7 @@ namespace uepoch {
           advance();
           pid.epoch = curr_ep;
         }
-        long heuristic_threshold = 2*num_threads();
+        long heuristic_threshold = num_threads();
         if (++pid.count == heuristic_threshold) { 
           pid.count = 0;
           update_epoch();
