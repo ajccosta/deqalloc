@@ -59,6 +59,7 @@ namespace HL {
       static inline constexpr size_t getMaxNumObjects(size_t sz) {
         switch(getSegmentType(sz)) {
           case SegmentType::NORMAL:
+          case SegmentType::MEDIUM:
             {
               size_t remaining_sz = SegmentSize - sizeof(header_t);
               size_t numObjects = remaining_sz / sz;
@@ -401,8 +402,9 @@ pushNode_n_retry:
       static_assert(SmallSizeClassMax <= (SegmentSize - sizeof(header_t)));
 
       //Insert segment into linked list of segments
-      bool insertSegment(header_t* header, header_t* expected) {
-        return seglist.compare_and_add(&header->next_segment, expected);
+      bool insertSegment(header_t* header, header_t* expected, bool _internal_call) {
+        if(!_internal_call) return seglist.compare_and_add(&header->next_segment, expected);
+        else return seglist.add(&header->next_segment);
       }
 
       static inline void* getBasePointer(void* ptr) {
@@ -432,13 +434,14 @@ pushNode_n_retry:
 
       //Round up to the size of a page.
       static constexpr size_t roundToPageSize(size_t sz) {
-            return (sz + CPUInfo::PageSize - 1) & (size_t) ~(CPUInfo::PageSize - 1);
+        return (sz + CPUInfo::PageSize - 1) & (size_t) ~(CPUInfo::PageSize - 1);
       }
 
       //sz: node size
       static inline size_t getActualSegmentSize(size_t sz) {
         switch(getSegmentType(sz)) {
           case SegmentType::NORMAL:
+          case SegmentType::MEDIUM:
             return SegmentSize;
           case SegmentType::LARGE:
             return roundToPageSize(sz + sizeof(header_t));
@@ -450,7 +453,7 @@ pushNode_n_retry:
 
 
       //Don't free segments, add them to a pool
-      //  (We actually want this to be accross all NORMAL size classes,
+      //  (We actually want this to be accross all size classes,
       //  so we use these thread_loca variables.)
       //  TODO: refactor, this looks ugly here
       static inline thread_local header_t* segment_pool = nullptr;
@@ -461,35 +464,34 @@ pushNode_n_retry:
         if(getActualSegmentSize(sz) == SegmentSize && segment_pool != nullptr) {
           header = segment_pool;
           segment_pool = nullptr;
+          deq_assert_msg(getActualSegmentSize(header->getSize()) == getActualSegmentSize(sz),
+            "header sz: %zu, requested sz: %zu\n", getActualSegmentSize(header->getSize()), getActualSegmentSize(sz));
         } else {
-          auto use_huge_pages = getSegmentType(sz) == SegmentType::NORMAL
-            ? AlignedMmapHeap::USE_HUGE_PAGES
-            : AlignedMmapHeap::NO_HUGE_PAGES;
-          header = static_cast<header_t*>(AlignedMmapHeap::malloc(getActualSegmentSize(sz), SegmentSize, use_huge_pages));
+          header = static_cast<header_t*>(AlignedMmapHeap::malloc(getActualSegmentSize(sz), SegmentSize));
+          deq_assert_msg(header != nullptr, "Allocation of size %zu failed\n", getActualSegmentSize(sz));
         }
         header->initialize(sz);
         return header;
       }
 
-      //Decides whether to pool a segment or give it back to the OS
       void freeOrPoolSegment(header_t* header) {
-        if(getActualSegmentSize(header->getSize()) == SegmentSize
-          && segment_pool == nullptr) {
+        size_t actual_sz = getActualSegmentSize(header->getSize());
+        if(actual_sz == SegmentSize && segment_pool == nullptr)
           segment_pool = header;
-        } else {
+        else
           freeSegment(header);
-        }
       }
 
       void freeSegment(header_t* header) {
         AlignedMmapHeap::free(header, getActualSegmentSize(header->getSize()));
       }
 
-      enum SegmentType { NORMAL, LARGE };
+      enum SegmentType { NORMAL, MEDIUM, LARGE };
 
       static constexpr SegmentType getSegmentType(size_t sz) {
         if (sz <= SmallSizeClassMax) return SegmentType::NORMAL;
-        return SegmentType::LARGE;
+        else if (sz <= (SegmentSize - sizeof(header_t))) return SegmentType::MEDIUM;
+        else return SegmentType::LARGE;
       }
 
       //Empties segment, removes it from segment list and adds it to be retired later
@@ -570,7 +572,7 @@ pushNode_n_retry:
     public:
 
       //Allocate n blocks of size sz
-      inline std::pair<node_t*, node_t*> malloc(size_t sz, size_t n) {
+      inline std::pair<node_t*, node_t*> malloc(size_t sz, size_t n, bool _internal_call = false) {
         //Don't try to allocate more than what
         //  fits inside a fully filled segment
         deq_assert(n <= getMaxNumObjects(sz));
@@ -581,7 +583,13 @@ mallocN_retry_beginning:
           int to_allocate = n;
 mallocN_retry_partial:
           //TODO: look for non-empty segments to allocate from?
-          header = seglist.peek();
+          if(!_internal_call) { //all seglists have same size segments
+            header = seglist.peek();
+          } else {//call made by malloc(sz), search for segment with correct size
+            //retire function added in case we find segments marked as deleted
+            header = seglist.find([&](header_t* h){ return h->getSize() == sz; }, [&](header_t* h){this->addToRetireList(h);});
+          }
+          deq_assert(header == nullptr || header->getSize() == sz);
           if(header != nullptr) {
             //Segments available, try to pop from them
             deq_assert(getSegmentType(sz) == SegmentType::NORMAL ? sz == header->getSize() : true);
@@ -605,7 +613,7 @@ mallocN_retry_partial:
             deq_assert(to_allocate == allocated);
             to_allocate -= allocated;
             if(getMaxNumObjects(sz) > 1) { //Only publish segments that have other nodes to be shared
-              bool inserted = insertSegment(header, prev_header); //publish new segment
+              bool inserted = insertSegment(header, prev_header, _internal_call); //publish new segment
               if(!inserted) {
                 //Free segment and try again
                 //TODO: have segment pool to avoid freeing and reallocting all the time
@@ -632,10 +640,18 @@ mallocN_retry_partial:
       }
 
       inline void* malloc(size_t sz) {
-        header_t* header = allocateSegment(sz);
-        //TODO no one else has access to this node, implement sync-free popNode
-        void* p = header->popNode();
-        return reinterpret_cast<void*>(p);
+        if(getMaxNumObjects(sz) > 1) { 
+          auto [start_node, end_node] = malloc(sz, 1, true);
+          deq_assert(start_node != nullptr);
+          deq_assert(start_node == end_node);
+          return start_node;
+        } else {
+          //Segment will only have 1 node, just allocate and return a new one
+          // without publishing it.
+          header_t* header = allocateSegment(sz);
+          void* p = header->popNode();
+          return reinterpret_cast<void*>(p);
+        }
       }
 
       inline void free(node_t* start, node_t* end) {
@@ -673,17 +689,28 @@ mallocN_retry_partial:
         });
       }
 
-      //Only LARGE segments use this interface
-      //Since LARGE segments only have 1 element, we can free this segment immediately
-      //  as the user must have taken care of safe memory reclamation and we do not
-      //  hold any pointer to this segment.
       inline void free(void* ptr) {
         header_t* header = (header_t*) getBasePointer(ptr);
-        //No need to actually push the node into the list
-        //size_t num_nodes = header->pushNode(ptr);
-        //deq_assert(num_nodes <= getMaxNumObjects(header->getSize()));
-        deq_assert(1 == getMaxNumObjects(header->getSize()));
-        freeSegment(header);
+        //deq_assert(getSegmentType(header->getSize()) == SegmentType::LARGE);
+        if(getMaxNumObjects(header->getSize()) > 1) { 
+          uepoch::with_epoch([&]{
+            //Since we only have one node, no need to traverse lists.
+            // Simply push this node to its list.
+            size_t num_nodes = header->pushNode(ptr);
+            if(num_nodes == getMaxNumObjects(header->getSize())) {
+              //Segment is full again, attempt to retire it
+              retireSegment(header);
+            }
+          }, [&]{
+            this->advanceEpoch();
+          });
+        } else {
+          //size_t num_nodes = header->pushNode(ptr);
+          //deq_assert(num_nodes <= getMaxNumObjects(header->getSize()));
+          deq_assert(1 == getMaxNumObjects(header->getSize()));
+          //Segment is full again, attempt to retire it
+          freeSegment(header);
+        }
       }
 
       //No need to be inside of an epoch. The getSize can only be called on a valid

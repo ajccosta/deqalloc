@@ -68,7 +68,7 @@ public:
         head.next = tail;
     }
 
-    void add(T* new_node_, bool retry = true) {
+    bool add(T* new_node_, bool retry = true) {
         Node* new_node = (Node*) new_node_;
         Node* left_node;
         do {
@@ -76,8 +76,10 @@ public:
             left_node = &head;
             Node* right_node = left_node->next.load();
             new_node->next.store(right_node);
-            if (left_node->next.compare_exchange_strong(right_node, new_node) || !retry) /*C2*/
-                return;
+            if (left_node->next.compare_exchange_strong(right_node, new_node)) /*C2*/
+                return true;
+            if (!retry)
+                return false;
         } while (true); /*B3*/
     }
 
@@ -93,8 +95,10 @@ public:
             if((uintptr_t)expected != (uintptr_t)right_node && right_node != tail)
                 return false;
             new_node->next.store(right_node);
-            if (left_node->next.compare_exchange_strong(right_node, new_node) || !retry) /*C2*/
+            if (left_node->next.compare_exchange_strong(right_node, new_node)) /*C2*/
                 return true;
+            if(!retry)
+                return false;
         } while (true); /*B3*/
     }
 
@@ -120,18 +124,26 @@ public:
         return true;
     }
 
-    template <typename F>
-    T* find(std::function<F> search_f) {
+    template <typename Thunk, typename SearchThunk>
+    T find(const SearchThunk& search_f, const Thunk& retire) {
+        Node* right_node;
+        Node* right_node_next;
+        Node* left_node;
+        right_node = search(search_f, left_node, retire);
+        if ((right_node == tail) || !search_f((T)right_node))
+            return nullptr;
+        else
+            return (T) right_node;
+
         //Node* node = head.next;
+        //size_t trav = 0;
         //while(node != tail) {
-        //  if(node->key >= key) break;
+        //  trav++;
+        //  if(search_f((T)node)) break;
         //  node = getUnmarked(node->next);
         //} 
-        //if ((node == tail) || (node->key != key))
-        //  return nullptr;
-        //else
-        //  return node->value;
-        return nullptr;
+        //if ((node == tail) || !search_f((T)node)) return nullptr;
+        //else return (T) node;
     }
 
     //Returns first element in list
@@ -141,9 +153,14 @@ public:
     }
 
 private:
+
     template <typename Thunk>
     Node* search(Node* search_node_, Node*& left_node, const Thunk& retire) {
-        Node* search_node = static_cast<Node*>(search_node_);
+        return search([&](T h){ return h == ((T)search_node_); }, left_node, retire);
+    }
+
+    template <typename Thunk, typename SearchThunk>
+    Node* search(const SearchThunk& search_f, Node*& left_node, const Thunk& retire) {
         search_again:
         do {
             Node* left_node_next;
@@ -157,7 +174,7 @@ private:
                 right_node = getUnmarked(t_next);
                 if (right_node == tail) break;
                 t_next = right_node->next.load();
-            } while (isMarked(t_next) || (right_node != search_node)); /*B1*/
+            } while (isMarked(t_next) || !search_f((T)right_node)); /*B1*/
             /* 2: Check nodes are adjacent */
             if (left_node_next == right_node)
                 if ((right_node != tail) && isMarked(right_node->next.load())) goto search_again; /*G1*/

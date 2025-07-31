@@ -45,8 +45,6 @@ class TheDeqallocHeapType : public MiniSegHeap<
                                          SegmentHeap<SEGMENT_SIZE, SMALL_SIZE_CLASS_MAX>>>,
                                      SegmentHeap<SEGMENT_SIZE, SMALL_SIZE_CLASS_MAX>> {};
 
-
-
 inline static TheDeqallocHeapType* getDeqallocHeap() {
   static char thBuf[sizeof(TheDeqallocHeapType)];
   static TheDeqallocHeapType * th = new (thBuf) TheDeqallocHeapType;
