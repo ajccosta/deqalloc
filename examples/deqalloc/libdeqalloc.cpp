@@ -38,26 +38,13 @@ using namespace HL;
 #define SEGMENT_SIZE 2*1024*1024 //2 MiB
 #define SMALL_SIZE_CLASS_MAX 32*1024 //32 KiB
 
-//#define PROFILE //define in order to get profiling results (memory consumption of each heap)
-
-#ifndef PROFILE
 class TheDeqallocHeapType : public MiniSegHeap<
                                      SMALL_SIZE_CLASS_MAX,
                                      ThreadLocalStack<
                                        DequeHeap<
-                                         SegmentHeap<SEGMENT_SIZE>>>,
-                                     SegmentHeap<SEGMENT_SIZE>> {};
-#else
-class TheDeqallocHeapType : public ConcurrentProfileHeap<0,
-                                    MiniSegHeap<
-                                     SMALL_SIZE_CLASS_MAX,
-                                     ConcurrentProfileHeap<1, ThreadLocalStack<
-                                      ConcurrentProfileHeap<2, DequeHeap<
-                                       ConcurrentProfileHeap<3, SegmentHeap<SEGMENT_SIZE>>>>>>,
-                                      ConcurrentProfileHeap<4, SegmentHeap<SEGMENT_SIZE>>
-                                    >
-                                   > {};
-#endif
+                                         SegmentHeap<SEGMENT_SIZE, SMALL_SIZE_CLASS_MAX>>>,
+                                     SegmentHeap<SEGMENT_SIZE, SMALL_SIZE_CLASS_MAX>> {};
+
 
 
 inline static TheDeqallocHeapType* getDeqallocHeap() {

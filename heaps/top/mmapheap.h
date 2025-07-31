@@ -155,20 +155,6 @@ namespace HL {
         assert((alignment & (alignment-1)) == 0 && "alignment must be power of 2");
         //allocate more than we need to
         void* ptr;
-        //static constexpr size_t huge_page_size = 2*1024*1024;
-        //if(sz >= huge_page_size && alignment == huge_page_size) {
-        //  //Try to allocate a huge page first. It will be aligned to 2MiB.
-        //  ptr = SizedMmapHeap::malloc(sz);
-        //  if(ptr != nullptr && (uintptr_t)ptr % alignment == 0) {
-        //    //Successfull aligned allocation, great!
-        //    return ptr;
-        //  } else if(ptr != nullptr) {
-        //    //Allocation was successfull but is not aligned.
-        //    //Deallocate it and use other methods.
-        //    //SizedMmapHeap::free(ptr, sz);
-        //    //madvise(ptr, sz, MADV_FREE);
-        //  }
-        //}
         ptr = SizedMmapHeap::malloc(sz + alignment);
         if(ptr == nullptr) return nullptr;
         uintptr_t p = (uintptr_t) ptr;
