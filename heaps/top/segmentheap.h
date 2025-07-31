@@ -450,37 +450,39 @@ pushNode_n_retry:
 
 
       //Don't free segments, add them to a pool
+      //  (We actually want this to be accross all NORMAL size classes,
+      //  so we use these thread_loca variables.)
+      //  TODO: refactor, this looks ugly here
       static inline thread_local header_t* segment_pool = nullptr;
-
-      header_t* popSegmentPool() {
-        if(segment_pool != nullptr) {
-          header_t* h = segment_pool;
-          segment_pool = h->next_segment;
-          return h;
-        } else {
-          return nullptr;
-        }
-      }
-
-      void pushSegmentPool(header_t* h) {
-        h->next_segment = segment_pool;
-        segment_pool = h;
-      }
-
 
       //Allocate and initialize new segment
       header_t* allocateSegment(size_t sz) {
-        header_t* header = popSegmentPool();
-        if(header == nullptr)
-          header = static_cast<header_t*>(AlignedMmapHeap::malloc(getActualSegmentSize(sz), SegmentSize));
+        header_t* header = nullptr;
+        if(getActualSegmentSize(sz) == SegmentSize && segment_pool != nullptr) {
+          header = segment_pool;
+          segment_pool = nullptr;
+        } else {
+          auto use_huge_pages = getSegmentType(sz) == SegmentType::NORMAL
+            ? AlignedMmapHeap::USE_HUGE_PAGES
+            : AlignedMmapHeap::NO_HUGE_PAGES;
+          header = static_cast<header_t*>(AlignedMmapHeap::malloc(getActualSegmentSize(sz), SegmentSize, use_huge_pages));
+        }
         header->initialize(sz);
         return header;
       }
 
+      //Decides whether to pool a segment or give it back to the OS
+      void freeOrPoolSegment(header_t* header) {
+        if(getActualSegmentSize(header->getSize()) == SegmentSize
+          && segment_pool == nullptr) {
+          segment_pool = header;
+        } else {
+          freeSegment(header);
+        }
+      }
+
       void freeSegment(header_t* header) {
-        //TODO Add logic to choose between adding to the pool and actually freeing
-        pushSegmentPool(header);
-        //AlignedMmapHeap::free(header, getActualSegmentSize(header->getSize()));
+        AlignedMmapHeap::free(header, getActualSegmentSize(header->getSize()));
       }
 
       enum SegmentType { NORMAL, LARGE };
@@ -607,7 +609,7 @@ mallocN_retry_partial:
               if(!inserted) {
                 //Free segment and try again
                 //TODO: have segment pool to avoid freeing and reallocting all the time
-                freeSegment(header);
+                freeOrPoolSegment(header);
                 if(n - allocated > 0) { //We have allocated a few nodes from the head segment, don't leak them
                   to_allocate += allocated; //Nodes allocated from this new segment were freed
                   goto mallocN_retry_partial;
@@ -630,33 +632,10 @@ mallocN_retry_partial:
       }
 
       inline void* malloc(size_t sz) {
-        return uepoch::with_epoch([&] {
-malloc1_retry:
-          header_t* header;
-          void* p = nullptr;
-          //TODO: look for non-empty segments to allocate from?
-          header = seglist.peek();
-          if(header != nullptr) {//Segments available, try to pop from them
-            deq_assert(getSegmentType(sz) == SegmentType::NORMAL ? sz == header->getSize() : true);
-            p = header->popNode();
-          }
-          if(p == nullptr) { //Need to allocate new segment
-            header_t* prev_header = header;
-            header = allocateSegment(sz);
-            p = header->popNode();
-            if(getMaxNumObjects(sz) > 1) { //Only publish segments that have other nodes to be shared
-              bool inserted = insertSegment(header, prev_header); //publish new segment
-              if(!inserted) {
-                //Free segment and try again
-                freeSegment(header);
-                goto malloc1_retry;
-              }
-            }
-          }
-          return reinterpret_cast<void*>(p);
-        }, [&]{
-          this->advanceEpoch();
-        });
+        header_t* header = allocateSegment(sz);
+        //TODO no one else has access to this node, implement sync-free popNode
+        void* p = header->popNode();
+        return reinterpret_cast<void*>(p);
       }
 
       inline void free(node_t* start, node_t* end) {
@@ -694,20 +673,17 @@ malloc1_retry:
         });
       }
 
+      //Only LARGE segments use this interface
+      //Since LARGE segments only have 1 element, we can free this segment immediately
+      //  as the user must have taken care of safe memory reclamation and we do not
+      //  hold any pointer to this segment.
       inline void free(void* ptr) {
-        uepoch::with_epoch([&]{
-          header_t* header = (header_t*) getBasePointer(ptr);
-          size_t num_nodes = header->pushNode(ptr);
-          deq_assert(num_nodes <= getMaxNumObjects(header->getSize()));
-          if(num_nodes == getMaxNumObjects(header->getSize())) {
-            //Segment is full again, attempt to retire it
-            if(header != seglist.peek()) { //Don't deallocate the first segment
-              retireSegment(header);
-            }
-          }
-        }, [&]{
-          this->advanceEpoch();
-        });
+        header_t* header = (header_t*) getBasePointer(ptr);
+        //No need to actually push the node into the list
+        //size_t num_nodes = header->pushNode(ptr);
+        //deq_assert(num_nodes <= getMaxNumObjects(header->getSize()));
+        deq_assert(1 == getMaxNumObjects(header->getSize()));
+        freeSegment(header);
       }
 
       //No need to be inside of an epoch. The getSize can only be called on a valid
