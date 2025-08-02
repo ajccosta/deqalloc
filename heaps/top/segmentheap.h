@@ -19,6 +19,7 @@
 #define HL_SEGMENTHEAP_H
 
 #include "heaps/top/mmapheap.h"
+#include "heaps/combining/minisegheap.h"
 #include "threads/cpuinfo.h"
 #include "threads/epoch.h"
 #include "threads/structures/HarrisLinkedList.h"
@@ -79,6 +80,8 @@ namespace HL {
       };
 
     private:
+      //Just to be able to use sizeToRealSize
+      using MSH = MiniSegHeap<SmallSizeClassMax, SegmentHeap, SegmentHeap>;
 
       struct alignas(64) header_t {
         //Auxiliary struct to allow pointer to list and number of nodes to be modified atomically
@@ -641,7 +644,12 @@ mallocN_retry_partial:
 
       inline void* malloc(size_t sz) {
         if(getMaxNumObjects(sz) > 1) { 
-          auto [start_node, end_node] = malloc(sz, 1, true);
+          //We go back to MiniSegHeap here because we want sizeToRealSize.
+          //This is way we don't have to write a weird interface, and can
+          //  distinguish between MEDIUM and LARGE segments entirely inside
+          //  SegmentHeap.
+          size_t actual_sz = MSH::sizeToRealSize(sz);
+          auto [start_node, end_node] = malloc(actual_sz, 1, true);
           deq_assert(start_node != nullptr);
           deq_assert(start_node == end_node);
           return start_node;
