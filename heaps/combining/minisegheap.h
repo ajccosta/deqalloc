@@ -192,6 +192,13 @@ class MiniSegHeap : public SmallHeap {
     inline size_t getSize(void* ptr) {
       return SmallHeap::getSize(ptr);
     }
+
+    //From user size to actual, size class ajusted, real size
+    static inline size_t sizeToRealSize(size_t sz) {
+      const size_t sizeClass = size2Class_slow(sz);
+      const size_t realSize = class2Size(sizeClass);
+      return realSize;
+    }
 };
 
 #endif
