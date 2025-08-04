@@ -35,7 +35,7 @@ volatile int anyThreadCreated = 1;
 
 using namespace HL;
 
-#define SEGMENT_SIZE 8*1024*1024 //8 MiB
+#define SEGMENT_SIZE 2*1024*1024 //2 MiB
 #define SMALL_SIZE_CLASS_MAX 32*1024 //32 KiB
 
 class TheDeqallocHeapType : public MiniSegHeap<
