@@ -71,6 +71,7 @@
 extern "C" {
   WEAK_REDEF1(void *, malloc, size_t);
   WEAK_REDEF1(void, free, void *);
+  WEAK_REDEF2(void, freesz, void *, size_t);
   WEAK_REDEF1(void, cfree, void *);
   WEAK_REDEF2(void *, calloc, size_t, size_t);
   WEAK_REDEF2(void *, realloc, void *, size_t);

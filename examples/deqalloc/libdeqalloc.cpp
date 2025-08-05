@@ -72,16 +72,23 @@ extern "C" {
 extern "C" {
   
   void * xxmalloc (size_t sz) {
-    auto ptr = getDeqallocHeap()->malloc (sz);
+    auto ptr = getDeqallocHeap()->malloc(sz);
     deq_assert((uintptr_t)ptr % 8 == 0); //Should atleast be 8 bytes aligned
     return ptr;
   }
 
   void xxfree (void * ptr) {
 #ifdef NULL_FREE
-    if(ptr)
+    if(ptr == nullptr) return;
 #endif
-      getDeqallocHeap()->free(ptr);
+    getDeqallocHeap()->free(ptr);
+  }
+
+  void xxfreesz (void * ptr, size_t sz) {
+#ifdef NULL_FREE
+    if(ptr == nullptr) return;
+#endif
+    getDeqallocHeap()->free(ptr, sz);
   }
 
   void * xxmemalign(size_t alignment, size_t sz) {
