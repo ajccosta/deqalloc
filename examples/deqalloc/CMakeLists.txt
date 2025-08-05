@@ -65,6 +65,9 @@ if(Threads_FOUND)
     target_link_libraries(deqalloc Threads::Threads)
 endif()
 
+#NOTE: Uncomment the following line in case you need to link statically
+#target_link_libraries(deqalloc dl)
+
 #Conditionally compile unit tests if UNIT_TESTS is set
 if(UNIT_TESTS)
   #include rapidcheck unit test library
