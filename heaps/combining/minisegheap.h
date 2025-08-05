@@ -136,7 +136,7 @@ class MiniSegHeap : public SmallHeap {
 
     static constexpr size_t get_list_length(size_t sz /*size of objects*/) {
       size_t s1 = DEFAULT_LIST_BYTES / sz;
-      size_t s2 = s1 < 1 ? 1 : s1; //minimum list_length of 2;
+      size_t s2 = s1 <= 1 ? 2 : s1; //minimum list_length of 2;
       return s2;
     }
 
