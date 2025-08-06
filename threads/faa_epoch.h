@@ -32,7 +32,7 @@ namespace faa_uepoch {
       inline void unannounce() { inflight.fetch_sub(1, std::memory_order_seq_cst); }
 
       //distinguished thread
-      inline bool check_inflight() { return inflight.load(std::memory_order_relaxed) == 0; };
+      inline bool check_inflight() { return inflight.load(std::memory_order_acquire) == 0; };
 
       //f: what to execute inside an epoch
       template <typename Thunk>
