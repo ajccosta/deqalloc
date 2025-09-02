@@ -33,17 +33,25 @@ volatile int anyThreadCreated = 1;
 
 #define NULL_FREE //Whether to deal with free(nullptr);
 
+//#define TRACE
+
 using namespace HL;
 
 #define SEGMENT_SIZE 2*1024*1024 //2 MiB
 #define SMALL_SIZE_CLASS_MAX 32*1024 //32 KiB
 
-class TheDeqallocHeapType : public MiniSegHeap<
+class TheDeqallocHeapType_ : public MiniSegHeap<
                                      SMALL_SIZE_CLASS_MAX,
                                      ThreadLocalStack<
                                        DequeHeap<
                                          SegmentHeap<SEGMENT_SIZE, SMALL_SIZE_CLASS_MAX>>>,
                                      SegmentHeap<SEGMENT_SIZE, SMALL_SIZE_CLASS_MAX>> {};
+
+#ifdef TRACE
+  using TheDeqallocHeapType = TraceHeap<TheDeqallocHeapType_, SegmentHeap<SEGMENT_SIZE, SMALL_SIZE_CLASS_MAX>>;
+#else
+  using TheDeqallocHeapType = TheDeqallocHeapType_;
+#endif
 
 inline static TheDeqallocHeapType* getDeqallocHeap() {
   static char thBuf[sizeof(TheDeqallocHeapType)];
