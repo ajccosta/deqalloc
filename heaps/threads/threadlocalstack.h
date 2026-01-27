@@ -23,16 +23,15 @@ class ThreadLocalStack : public Super {
 
   private:
 
-    struct alignas(64) thread_state {
-      //reads/writes to aligned variables are faster, hence alignas(8)
-      alignas(8) size_t sz = 0; //number of objects in this stack
-      alignas(8) node_t* head = nullptr; //start of the stack
-      alignas(8) node_t* mid = nullptr; //middle of the stack
-      alignas(8) node_t* tail = nullptr; //tail of the stack
+    struct alignas(128) thread_state {
+      size_t sz = 0; //number of objects in this stack
+      node_t* head = nullptr; //start of the stack
+      node_t* mid = nullptr; //middle of the stack
+      node_t* tail = nullptr; //tail of the stack
     };
 
-    //Check that thread state fits in single a cache line
-    static_assert(sizeof(thread_state) <= 64);
+    //Check that thread state fits in two cache lines
+    static_assert(sizeof(thread_state) <= 128);
 
     thread_state thread_states[max_threads];
     inline thread_state& get_thread_state() { return thread_states[thread_id()]; }
@@ -67,7 +66,6 @@ class ThreadLocalStack : public Super {
         Super::free(ts.mid->next, ts.tail);
         ts.tail = ts.mid;
         ts.mid->next = nullptr;
-        //ts.mid = nullptr;
         ts.sz = list_length;
       }
       node_t* n = new (ptr) node_t{ts.head};
