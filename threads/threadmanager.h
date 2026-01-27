@@ -4,7 +4,7 @@
 #include <atomic>
 #include <iostream>
 
-constexpr size_t max_threads = 256;
+constexpr size_t max_threads = 512;
 static std::atomic<size_t> thread_counter{0};
 
 //default initialized to false, so we use false as "available"
@@ -28,14 +28,12 @@ struct threadmanager {
                 t = available; //read value (unavailable) was loaded into t
             }
         }
-#ifndef NDEBUG
         if (id >= max_threads) { //No id available
-            std::cerr << "Too many threads. To fix this, increase the maximum "
+            std::cerr << "deqalloc: Too many threads. To fix this, increase the maximum "
                       << "number of threads (currently " << max_threads << ") in "
                       << __FILE__ << ":" << __LINE__ << std::endl;
             std::abort();
         }
-#endif
         thread_counter.fetch_add(1);
     }
 
@@ -50,8 +48,8 @@ extern inline std::atomic<size_t>& num_threads() {
   return thread_counter;
 }
 
-extern inline size_t thread_id() {
-    static thread_local threadmanager manager;
+static inline __attribute__((always_inline)) size_t thread_id() noexcept {
+    static thread_local __attribute__((tls_model ("initial-exec"))) threadmanager manager;
     return manager.id;
 }
 

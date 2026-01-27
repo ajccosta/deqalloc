@@ -12,6 +12,7 @@ set(CMAKE_BUILD_TYPE RelWithDebInfo)
 # Generate position-independent code; required for shared libraries on many platforms
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
+add_compile_options(-ftls-model=initial-exec)
 
 # Include directories
 include_directories(. ../.. ../../util)
