@@ -5,16 +5,9 @@
 #include <cstdio>
 #include <fstream>
 #include <filesystem>
-#include <x86intrin.h>
 #include <cstdint>
 #include <mutex>
 #include "threads/threadmanager.h"
-
-inline uint64_t rdtsc() {
-    unsigned hi, lo;
-    asm volatile ("rdtsc" : "=a"(lo), "=d"(hi));
-    return ((uint64_t)hi << 32) | lo;
-}
 
 //Some destructors may be called after a thread exits
 //This prevents calling TraceHeap functions after a tracemanager has been destructed
@@ -42,7 +35,6 @@ class TraceHeap : public SuperHeap {
         uint64_t last_ts;
 
         static uint64_t get_ts() {
-          //return rdtsc();
           static std::atomic<uint64_t> atomic_ts {0};
           return ++atomic_ts;
         }
