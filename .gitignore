@@ -2,3 +2,5 @@
 /bazel-*
 .vscode/
 *.swp
+build/
+build/_deps/heaplayers-src
