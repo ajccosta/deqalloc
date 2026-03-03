@@ -40,13 +40,43 @@ add_custom_target(build_setbench
   COMMENT "Building and copying setbench binaries..."
 )
 
-#umbrella target for all benchmarks#
+#build other allocators
+set(ALLOCATOR_LIB_DIR ${CMAKE_BINARY_DIR}/allocators)
+add_custom_target(build_allocators
+  COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/build_allocators.sh
+  COMMAND ${CMAKE_COMMAND} -E create_symlink
+    ${CMAKE_BINARY_DIR}/libdeqalloc.so
+    ${ALLOCATOR_LIB_DIR}/libdeqalloc.so
+  BYPRODUCTS
+    ${ALLOCATOR_LIB_DIR}/libjemalloc.so
+    ${ALLOCATOR_LIB_DIR}/libmesh.so
+    ${ALLOCATOR_LIB_DIR}/libmimalloc.so
+    ${ALLOCATOR_LIB_DIR}/libhoard.so
+    ${ALLOCATOR_LIB_DIR}/libscalloc.so
+    ${ALLOCATOR_LIB_DIR}/libtcmalloc.so
+    ${ALLOCATOR_LIB_DIR}/libsnmalloc.so
+    ${ALLOCATOR_LIB_DIR}/liblockfree.so
+    ${ALLOCATOR_LIB_DIR}/librpmalloc.so
+    ${ALLOCATOR_LIB_DIR}/libtbbmalloc.so
+  WORKING_DIRECTORY ${ALLOCATOR_LIB_DIR}/..
+  COMMENT "Building third-party allocators..."
+)
+
+set_target_properties(build_allocators PROPERTIES EXCLUDE_FROM_ALL TRUE)
+
+
+#umbrella target for all benchmarks and allocators
 add_custom_target(benchmarks
-  DEPENDS build_flock build_setbench
+  DEPENDS build_flock build_setbench build_allocators
   COMMENT "Building all benchmarks..."
 )
 
 #exclude both from the default build target
-set_target_properties(build_flock build_setbench benchmarks PROPERTIES
+set_target_properties(
+  build_flock
+  build_setbench
+  build_allocators
+  benchmarks
+  PROPERTIES
   EXCLUDE_FROM_ALL TRUE
 )
