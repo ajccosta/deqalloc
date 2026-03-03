@@ -15,7 +15,6 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 add_compile_options(-ftls-model=initial-exec)
 
 # Include directories
-#include_directories(heaps threads utility wrappers)
 include_directories(.)
 
 #include heap layers
@@ -40,13 +39,13 @@ FetchContent_MakeAvailable(printf)
 include_directories(${printf_SOURCE_DIR})
 
 set(UNIX_SOURCES
-  ${heaplayers_SOURCE_DIR}/wrappers/gnuwrapper.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/deqalloc/wrappers/gnuwrapper.cpp
   libdeqalloc.cpp
   ${printf_SOURCE_DIR}/printf.cpp
 )
 
 set(MACOS_SOURCES
-  ${heaplayers_SOURCE_DIR}/wrappers/macwrapper.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/deqalloc/wrappers/macwrapper.cpp
   libdeqalloc.cpp
   ${printf_SOURCE_DIR}/printf.cpp
 )
