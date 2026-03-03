@@ -96,3 +96,5 @@ if(UNIT_TESTS)
   include_directories(${rapidcheck_SOURCE_DIR})
   add_subdirectory(unit)
 endif()
+
+add_subdirectory(benchmarks)
