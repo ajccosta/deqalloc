@@ -49,6 +49,15 @@ DS_LABELS = {
     "list_lck":       "Linked-List",
 }
 
+DS_TYPES = {
+    "btree_lck":      "normal",
+    "hash_block_lck": "normal",
+    "leaftree_lck":   "normal",
+    "skiplist_lck":   "normal",
+    "arttree_lck":    "normal",
+    "list_lck":       "list",
+}
+
 ALLOC_MARKERS = {
     'deqalloc': 's',
     'mimalloc': 'o',
@@ -86,7 +95,7 @@ ALLOC_ZORDER = {
 
 FIG_CONFIGS = {
     "figsize": (2.4, 1.8),
-    "linewidth": 2,
+    "linewidth": 1.8,
     "markersize": 3.5,
     "xlabel_fontsize": 8,
     "ylabel_fontsize": 8,
@@ -99,6 +108,18 @@ FIG_CONFIGS = {
     "pad_inches": 0.015,
     "xtick_end_margin": 0.1,
 }
+
+DEFAULT_PARAMS = {
+    "update": 100,
+    "size": {
+        "normal": 200000,
+        "list": 2000,
+    }
+
+}
+
+#which data structures to show for the paper for the varying plots
+PAPER_DS = ["skiplist_lck", "leaftree_lck", "hash_block_lck"]
 
 def style_fig(fig, ax, paper_print):
     ax.tick_params(axis='x', labelsize=FIG_CONFIGS["xtick_fontsize"])
@@ -114,9 +135,9 @@ def style_fig(fig, ax, paper_print):
 
     fig.patch.set_edgecolor('none')
 
-    l, r = ax.get_xlim()
-    margin = FIG_CONFIGS["xtick_end_margin"]
-    ax.set_xlim(l - margin, r + margin)
+    #l, r = ax.get_xlim()
+    #margin = FIG_CONFIGS["xtick_end_margin"]
+    #ax.set_xlim(l - margin, r + margin)
 
     ax.set_ylim(bottom=0)
 
@@ -219,9 +240,7 @@ def merge_pdfs_horizontally(pdf_list, output_path):
 
 # -- Plot 1: Throughput vs key_size (100% writes) -----------------------------
 def plot_size(rows, out_dir, fmt):
-    target_update = 100
-    #which data structures to show for the paper
-    paper_ds = ["skiplist_lck", "leaftree_lck", "hash_block_lck"]
+    target_update = DEFAULT_PARAMS.get("update")
 
     data = [r for r in rows if r["update"] == target_update and r["gmean"] > 0]
     dss = sorted(set(r["ds"] for r in data))
@@ -254,7 +273,7 @@ def plot_size(rows, out_dir, fmt):
             ax.set_xlabel("Size (n)")
             ax.set_title(f'{DS_LABELS.get(ds)}')
 
-            if not paper_dir or ds == paper_ds[0]:
+            if not paper_dir or ds == PAPER_DS[0]:
                 ax.set_ylabel('Throughput (Mops/s)', fontsize=FIG_CONFIGS["ylabel_fontsize"])
                 ylabel = ax.yaxis.label
                 ylabel.set_y(ylabel.get_position()[1] - 0.05)
@@ -266,10 +285,136 @@ def plot_size(rows, out_dir, fmt):
                 pad_inches=FIG_CONFIGS["pad_inches"])
             plt.close(fig)
 
-    paper_ds_list = [ f"{out_dir}/paper/size_{ds}.{fmt}" for ds in paper_ds ] 
+    paper_ds_list = [ f"{out_dir}/paper/size_{ds}.{fmt}" for ds in PAPER_DS ] 
     merge_pdfs_horizontally(paper_ds_list, f"{out_dir}/paper/size.{fmt}")
 
-    return
+
+# -- Plot 2: Throughput vs update rate -----------------------------
+def plot_update(rows, out_dir, fmt):
+    for paper_print in [True, False]: #print a paper version and a viewing version
+        paper_dir = "paper/" if paper_print else ""
+        os.makedirs(f"{out_dir}/{paper_dir}", exist_ok=True)
+
+        dss = sorted(set(r["ds"] for r in rows))
+
+        for i, ds in enumerate(dss):
+
+            data = [r for r in rows if r["key_size"] == DEFAULT_PARAMS["size"][DS_TYPES[ds]] and r["gmean"] > 0]
+
+            fig, ax = plt.subplots(figsize=FIG_CONFIGS["figsize"])
+
+            ds_rows = [r for r in data if r["ds"] == ds]
+            allocs = sorted(set(r["allocator"] for r in ds_rows))
+            updates  = sorted(set(r["update"] for r in ds_rows))
+
+            for alloc in allocs:
+                pts = {r["update"]: r["gmean"] for r in ds_rows if r["allocator"] == alloc}
+                ys = [pts.get(s, None) for s in updates]
+                ax.plot(range(len(updates)),
+                        ys,
+                        label=alloc,
+                        linewidth=FIG_CONFIGS["linewidth"],
+                        color=ALLOC_PALETTE.get(alloc),
+                        marker=ALLOC_MARKERS.get(alloc),
+                        markersize=FIG_CONFIGS["markersize"], 
+                        zorder=ALLOC_ZORDER.get(alloc))
+
+            xlabels = updates
+            plt.xticks(range(len(updates)), xlabels)
+            ax.set_xlabel("Update (%)")
+            ax.set_title(f'{DS_LABELS.get(ds)}')
+
+            if not paper_dir or ds == PAPER_DS[0]:
+                ax.set_ylabel('Throughput (Mops/s)', fontsize=FIG_CONFIGS["ylabel_fontsize"])
+                ylabel = ax.yaxis.label
+                ylabel.set_y(ylabel.get_position()[1] - 0.05)
+
+            style_fig(fig, ax, paper_print)
+            fig.savefig(f"{out_dir}/{paper_dir}update_{ds}.{fmt}",
+                dpi=FIG_CONFIGS["dpi"],
+                bbox_inches="tight",
+                pad_inches=FIG_CONFIGS["pad_inches"])
+            plt.close(fig)
+
+    paper_ds_list = [ f"{out_dir}/paper/update_{ds}.{fmt}" for ds in PAPER_DS ] 
+    merge_pdfs_horizontally(paper_ds_list, f"{out_dir}/paper/update.{fmt}")
+
+
+# -- Plot 3: Geomean Bars per data structure -----------------------
+def plot_geomean(rows, out_dir, fmt):
+
+    for paper_print in [True, False]: #print a paper version and a viewing version
+        paper_dir = "paper/" if paper_print else ""
+        os.makedirs(f"{out_dir}/{paper_dir}", exist_ok=True)
+
+        dss = sorted(set(r["ds"] for r in rows))
+
+        for i, ds in enumerate(dss):
+
+            data = [r for r in rows if r["gmean"] > 0]
+
+            fig, ax = plt.subplots(figsize=FIG_CONFIGS["figsize"])
+
+            ds_rows = [r for r in data if r["ds"] == ds]
+            allocs = sorted(set(r["allocator"] for r in ds_rows))
+
+            nbars = len(allocs)
+            width = 0.6 / max(nbars, 1)
+            inner_spacing = 1
+
+            x = np.arange(len(allocs))
+            bars = []
+
+            for j, alloc in enumerate(allocs):
+                ds_rows_alloc = [r for r in ds_rows if r["allocator"] == alloc]
+                all_values = []
+                for r in ds_rows_alloc:
+                    all_values.extend(r["values"])
+                y = stat.geometric_mean(all_values)
+
+                offset = (j - nbars / 2 + 0.5) * width * inner_spacing
+                bars.append((
+                        ax.bar(x[j] + offset,
+                        y,
+                        label=alloc,
+                        linewidth=FIG_CONFIGS["linewidth"],
+                        color=ALLOC_PALETTE.get(alloc),
+                        zorder=ALLOC_ZORDER.get(alloc)),
+                        y
+                ))
+
+            xlabels = allocs
+            plt.xticks([])
+            #plt.xticks(range(len(xlabels)), xlabels, rotation=45)
+            ax.set_xlabel("Data Structure")
+            ax.set_title(f'{DS_LABELS.get(ds)}')
+
+            for bar, ys in bars:
+                for b in bar:
+                    ax.text(
+                        b.get_x() + b.get_width() / 2,
+                        b.get_height(),
+                        f'{ys:.1f}',
+                        ha='center',
+                        va='bottom',
+                        fontsize=4,
+                    )
+
+            if not paper_dir or ds == PAPER_DS[0]:
+                ax.set_ylabel('Throughput (Mops/s)', fontsize=FIG_CONFIGS["ylabel_fontsize"])
+                ylabel = ax.yaxis.label
+                ylabel.set_y(ylabel.get_position()[1] - 0.05)
+
+            style_fig(fig, ax, paper_print)
+            fig.savefig(f"{out_dir}/{paper_dir}geomean_{ds}.{fmt}",
+                dpi=FIG_CONFIGS["dpi"],
+                bbox_inches="tight",
+                pad_inches=FIG_CONFIGS["pad_inches"])
+            plt.close(fig)
+
+    paper_ds_list = [ f"{out_dir}/paper/geomean_{ds}.{fmt}" for ds in PAPER_DS ] 
+    merge_pdfs_horizontally(paper_ds_list, f"{out_dir}/paper/geomean.{fmt}")
+
 
 # -- Main ----------------------------------------------------------------------
 def main():
@@ -279,15 +424,11 @@ def main():
     parser.add_argument('-o', '--output-dir', type=str, default='plots',
                        help='Output directory for plots (default: plots)')
     parser.add_argument('--plots', nargs='+',
-                       choices=['geomean',
-                                'varying',
-                                'range',
-                                'combined',
-                                'tpcc',
-                                'nontrivial',
-                                'ablation',
-                                'machines',
-                                'paper',
+                       choices=['size',
+                                'update',
+                                'geomean',
+                                #'ablation',
+                                #'machines',
                                 'all'],
                        default=['all'],
                        help='Which plots to generate (default: all)')
@@ -308,7 +449,10 @@ def main():
     print(f"  {len(rows)} data rows, {len(crashes)} crash records")
     print(f"Saving plots to: {args.output_dir}/\n")
 
-    plot_size(rows, args.output_dir, args.format)
+    do_all = "all" in args.plots
+    if "size" in args.plots or do_all: plot_size(rows, args.output_dir, args.format)
+    if "update" in args.plots or do_all: plot_update(rows, args.output_dir, args.format)
+    if "geomean" in args.plots or do_all: plot_geomean(rows, args.output_dir, args.format)
 
 if __name__ == "__main__":
     main()
