@@ -13,6 +13,8 @@ from matplotlib.colors import LinearSegmentedColormap
 from collections import defaultdict
 import argparse
 import statistics as stat
+from matplotlib.patches import Patch
+import matplotlib as mpl
 
 pdfmerge = True
 try:
@@ -93,15 +95,27 @@ ALLOC_ZORDER = {
     "rpmalloc":  0,
 }
 
+ALLOC_HATCHES = {
+    "deqalloc":  "///",
+    "mimalloc":  "\\\\\\",
+    "jemalloc":  "|||",
+    "snmalloc":  "---",
+    "hoard":     "+++",
+    "tcmalloc":  "xxx",
+    "tbbmalloc": "ooo",
+    "lockfree":  "OOO",
+    "rpmalloc":  "...",
+}
+
 FIG_CONFIGS = {
     "figsize": (2.4, 1.8),
     "linewidth": 1.8,
     "markersize": 3.5,
-    "xlabel_fontsize": 8,
-    "ylabel_fontsize": 8,
-    "xtick_fontsize": 7,
-    "ytick_fontsize": 7,
-    "legend_fontsize": 6,
+    "xlabel_fontsize": 7.5,
+    "ylabel_fontsize": 7.5,
+    "xtick_fontsize": 6.5,
+    "ytick_fontsize": 6.5,
+    "legend_fontsize": 4.5,
     "title_fontsize": 8,
     "legend_ncols": len(ALLOC_PALETTE)/3,
     "dpi": 300,
@@ -120,6 +134,8 @@ DEFAULT_PARAMS = {
 
 #which data structures to show for the paper for the varying plots
 PAPER_DS = ["skiplist_lck", "leaftree_lck", "hash_block_lck"]
+
+mpl.rcParams["hatch.linewidth"] = 0.7
 
 def style_fig(fig, ax, paper_print):
     ax.tick_params(axis='x', labelsize=FIG_CONFIGS["xtick_fontsize"])
@@ -141,7 +157,7 @@ def style_fig(fig, ax, paper_print):
 
     ax.set_ylim(bottom=0)
 
-    if not paper_print:
+    if not paper_print and ax.get_legend() is not None:
         ax.legend(
             bbox_to_anchor=(0.5, -0.5),
             frameon=True,
@@ -153,7 +169,6 @@ def style_fig(fig, ax, paper_print):
 
     else:
         plt.tight_layout()
-
 
 # -- Parser -------------------------------------------------------------------
 def parse_flock(path):
@@ -342,78 +357,128 @@ def plot_update(rows, out_dir, fmt):
 
 # -- Plot 3: Geomean Bars per data structure -----------------------
 def plot_geomean(rows, out_dir, fmt):
+    bar_width = 1
+    inter_group_gap = 1.5
+    intra_group_gap = 0.3
 
-    for paper_print in [True, False]: #print a paper version and a viewing version
-        paper_dir = "paper/" if paper_print else ""
-        os.makedirs(f"{out_dir}/{paper_dir}", exist_ok=True)
+    dss = sorted(set(r["ds"] for r in rows))
+    
+    szx, szy = FIG_CONFIGS["figsize"]
+    fig, ax = plt.subplots(figsize=(len(ALLOC_PALETTE)*0.6462, szy))
+    
+    data = [r for r in rows if r["gmean"] > 0]
+    seen_allocs = set()
 
-        dss = sorted(set(r["ds"] for r in rows))
+    for i, ds in enumerate(dss):
+        ds_rows = [r for r in data if r["ds"] == ds]
+        allocs = sorted(set(r["allocator"] for r in ds_rows))
+        nbars = len(allocs)
+    
+        width = 0.8 / max(nbars, 1)
+        
+        group_width = nbars * bar_width + (nbars - 1) * intra_group_gap
+        group_start = i * (group_width + inter_group_gap * bar_width)
+        x = np.arange(len(allocs))
+    
+        bars = []
+        per_struct = {}
+        for j, alloc in enumerate(allocs):
+            ds_rows_alloc = [r for r in ds_rows if r["allocator"] == alloc]
+            all_values = []
+            for r in ds_rows_alloc:
+                all_values.extend(r["values"])
+            y = stat.geometric_mean(all_values)
+            per_struct[alloc] = y
+    
+        best_performing = max([per_struct[alloc] for alloc in allocs])
+    
+        for j, alloc in enumerate(allocs):
+            label = alloc if alloc not in seen_allocs else None
+            seen_allocs.add(alloc)
 
-        for i, ds in enumerate(dss):
+            offset = group_start + j * (bar_width + intra_group_gap)
+            y = per_struct[alloc] / best_performing
+            bars.append((
+                    ax.bar(offset,
+                    y,
+                    width=bar_width,
+                    hatch=ALLOC_HATCHES.get(alloc),
+                    color=ALLOC_PALETTE.get(alloc),
+                    edgecolor="black",
+                    linewidth=1,
+                    label=label,
+                    zorder=ALLOC_ZORDER.get(alloc)),
+                    per_struct[alloc]
+            ))
+    
+    
+        for bar, ys in bars:
+            for b in bar:
+                ax.text(
+                    b.get_x() + b.get_width() / 2,
+                    b.get_height()*1.01,
+                    f'{ys:.1f}',
+                    ha='center',
+                    va='bottom',
+                    fontweight='bold',
+                    fontsize=4,
+                    zorder=ALLOC_ZORDER.get("deqalloc")+1,
+                )
 
-            data = [r for r in rows if r["gmean"] > 0]
+        group_center = group_start + (group_width - intra_group_gap) / 2
+        ax.text(
+            group_center,
+            -0.05,  # just below x-axis, in axes coordinates
+            DS_LABELS.get(ds, ds),
+            ha='center',
+            va='top',
+            fontsize=FIG_CONFIGS.get("xtick_fontsize")-1,
+            transform=ax.get_xaxis_transform(),  # x in data coords, y in axes coords
+        )
+    
+    #claude.ai aligned bars!
+    last_group_start = (len(dss) - 1) * (group_width + inter_group_gap * bar_width)
+    first_bar_center = 0  # group_start when i=0, j=0
+    last_bar_center = last_group_start + (nbars - 1) * (bar_width + intra_group_gap)
+    margin = bar_width / 2 + bar_width * inter_group_gap
+    ax.set_xlim(first_bar_center - margin, last_bar_center + margin)
 
-            fig, ax = plt.subplots(figsize=FIG_CONFIGS["figsize"])
+    ax.set_ylim(0, 1.08)
 
-            ds_rows = [r for r in data if r["ds"] == ds]
-            allocs = sorted(set(r["allocator"] for r in ds_rows))
+    plt.xticks([])
+    ax.set_xlabel("Data Structure", labelpad=11)
+    
+    ax.legend(
+        ncol=len(allocs),
+        frameon=True,
+        fontsize=FIG_CONFIGS.get("legend_fontsize"),
+        loc="upper center",
+        alignment="center",
+        bbox_to_anchor=(0.5, 1.155),
+        labelcolor="black",
+        edgecolor="black",
+        fancybox=False,
+        handlelength=2,
+        handleheight=1,
+        handletextpad=0.5,
+        columnspacing=2.17,
+    )
+    ax.get_legend().get_frame().set_linewidth(0.8)
 
-            nbars = len(allocs)
-            width = 0.6 / max(nbars, 1)
-            inner_spacing = 1
+    ax.set_ylabel("Geomean Throughput (Mops/s)")
+    
+    style_fig(fig, ax, True)
 
-            x = np.arange(len(allocs))
-            bars = []
+    #override some style_fig
+    ax.yaxis.label.set_fontsize(FIG_CONFIGS["ylabel_fontsize"]-1.5)
+    ax.xaxis.label.set_fontsize(FIG_CONFIGS["xlabel_fontsize"]-1.5)
+    ax.tick_params(axis='y', labelsize=FIG_CONFIGS["ytick_fontsize"]-1)
 
-            for j, alloc in enumerate(allocs):
-                ds_rows_alloc = [r for r in ds_rows if r["allocator"] == alloc]
-                all_values = []
-                for r in ds_rows_alloc:
-                    all_values.extend(r["values"])
-                y = stat.geometric_mean(all_values)
-
-                offset = (j - nbars / 2 + 0.5) * width * inner_spacing
-                bars.append((
-                        ax.bar(x[j] + offset,
-                        y,
-                        label=alloc,
-                        linewidth=FIG_CONFIGS["linewidth"],
-                        color=ALLOC_PALETTE.get(alloc),
-                        zorder=ALLOC_ZORDER.get(alloc)),
-                        y
-                ))
-
-            xlabels = allocs
-            plt.xticks([])
-            #plt.xticks(range(len(xlabels)), xlabels, rotation=45)
-            ax.set_xlabel("Data Structure")
-            ax.set_title(f'{DS_LABELS.get(ds)}')
-
-            for bar, ys in bars:
-                for b in bar:
-                    ax.text(
-                        b.get_x() + b.get_width() / 2,
-                        b.get_height(),
-                        f'{ys:.1f}',
-                        ha='center',
-                        va='bottom',
-                        fontsize=4,
-                    )
-
-            if not paper_dir or ds == PAPER_DS[0]:
-                ax.set_ylabel('Throughput (Mops/s)', fontsize=FIG_CONFIGS["ylabel_fontsize"])
-                ylabel = ax.yaxis.label
-                ylabel.set_y(ylabel.get_position()[1] - 0.05)
-
-            style_fig(fig, ax, paper_print)
-            fig.savefig(f"{out_dir}/{paper_dir}geomean_{ds}.{fmt}",
-                dpi=FIG_CONFIGS["dpi"],
-                bbox_inches="tight",
-                pad_inches=FIG_CONFIGS["pad_inches"])
-            plt.close(fig)
-
-    paper_ds_list = [ f"{out_dir}/paper/geomean_{ds}.{fmt}" for ds in PAPER_DS ] 
-    merge_pdfs_horizontally(paper_ds_list, f"{out_dir}/paper/geomean.{fmt}")
+    fig.savefig(f"{out_dir}/paper/geomean.{fmt}",
+        dpi=FIG_CONFIGS["dpi"],
+        bbox_inches="tight",
+        pad_inches=FIG_CONFIGS["pad_inches"])
+    plt.close(fig)
 
 
 # -- Main ----------------------------------------------------------------------
