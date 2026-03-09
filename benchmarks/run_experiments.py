@@ -1,27 +1,4 @@
 #!/usr/bin/env python3
-"""
-Usage:
-    ./run_experiments.py <experiment> [options]
-
-Experiments:
-    flock      - Run flock allocator benchmarks (vary allocator, update%, ds, size)
-    setbench   - Run setbench allocator+tracker benchmarks (vary allocator, tracker, update%, ds, size)
-    all        - Run both flock and setbench experiments
-
-Options:
-    --output DIR        Output directory for results
-    --flock-dir DIR     Path to flock benchmark binaries (default: ../build/benchmarks/flock)
-    --setbench-dir DIR  Path to setbench benchmark binaries (default: ../build/benchmarks/setbench)
-    --runs N            Number of runs to average (default: 5)
-    --allocator NAME    Run only a specific allocator
-    --ds NAME           Run only a specific data structure
-
-Examples:
-    ./run_experiments.py flock
-    ./run_experiments.py setbench
-    ./run_experiments.py all --output ./results
-    ./run_experiments.py flock --runs 3 --allocator deqalloc
-"""
 
 import argparse
 import os
@@ -31,8 +8,79 @@ import sys
 import time
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Dict
 
+# ---------------------------------------------------------------------------
+# TODO
+#   - producer consumer
+#   - IBR benchmarks (?)
+#   - --ds flag
+# ---------------------------------------------------------------------------
+
+# ---------------------------------------------------------------------------
+# Benchmark runner helpers
+# ---------------------------------------------------------------------------
+
+def run_command(cmd: str, timeout_sec: int = 600) -> Tuple[str, str]:
+    """Run a shell command, streaming output. Returns (output, status)."""
+    try:
+        proc = subprocess.Popen(
+            cmd, shell=True, text=True,
+            stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+        )
+        lines = []
+        for line in proc.stdout:
+            #print(line, end="")
+            lines.append(line)
+        try:
+            proc.communicate(timeout=timeout_sec)
+        except subprocess.TimeoutExpired:
+            proc.kill()
+
+        output = "".join(lines)
+        rc = proc.returncode
+        if rc in (124, 137):
+            print(f"  TIMEOUT ({timeout_sec}s): {cmd}", file=sys.stderr)
+            return output, "timeout"
+        elif rc != 0:
+            print(f"  CRASH (exit={rc}): {cmd}", file=sys.stderr)
+            return output, "crash"
+        return output, "ok"
+    except Exception as e:
+        print(f"  ERROR: {cmd}: {e}", file=sys.stderr)
+        return "", "error"
+
+def get_machine_info() -> str:
+    try:
+        result = subprocess.run(["lscpu"], capture_output=True, text=True)
+        for line in result.stdout.split("\n"):
+            if "Model name" in line:
+                return line.strip()[-5:].replace(" ", "")
+    except Exception:
+        pass
+    return "unknown"
+
+#requires numactl, which we depend on anyway
+def get_num_numa_nodes() -> int:
+    out = subprocess.check_output(["numactl", "--hardware"], text=True)
+    m = re.search(r'available:\s+(\d+)\s+nodes', out)
+    return int(m.group(1))
+
+#get a reasonable thread sequence taking number of numa sockets into account
+#author: claude.ai
+def get_numa_aware_thread_sequence(nproc: int, num_nodes: int) -> List[int]:
+    threads_per_node = nproc // num_nodes
+    points = set()
+    p = 1
+    while p <= nproc:
+        points.add(p)
+        p *= 2
+    for n in range(1, num_nodes + 1):
+        points.add(n * threads_per_node)
+    points.add(nproc)
+    #also add oversubscribed case
+    points.add(nproc * 2)
+    return sorted(points)
 
 # ---------------------------------------------------------------------------
 # Configuration
@@ -56,9 +104,31 @@ class FlockConfig:
         "rpmalloc::df",
     ])
 
+    rideables: List[str] = field(default_factory=lambda: [
+        "btree_lck",
+        "hash_block_lck",
+        "leaftree_lck",
+        "skiplist_lck",
+        "arttree_lck",
+        "list_lck",
+    ])
+
+    #default sizes for experiments other than varying size
+    default_rideables_sizes: Dict[str, int] = field(default_factory=lambda: dict(
+        btree_lck =      200_000,
+        hash_block_lck = 200_000,
+        leaftree_lck =   200_000,
+        skiplist_lck =   200_000,
+        arttree_lck =    200_000,
+        list_lck =         2_000,
+    ))
+
+    default_update_perc: int = 100
+
+    #for varying updates experiment
     update_percs: List[int] = field(default_factory=lambda: [1, 5, 50, 90, 100])
 
-    # (rideable, size) pairs — same grouping as bash script
+    #for varying size experiment
     rideables_sizes: List[Tuple[str, int]] = field(default_factory=lambda: [
         # small
         ("btree_lck",      5_000),
@@ -80,19 +150,29 @@ class FlockConfig:
         ("leaftree_lck",    2_000_000),
         ("skiplist_lck",    2_000_000),
         ("arttree_lck",     2_000_000),
-        ("list_lck",            10_000),
+        ("list_lck",           10_000),
         # large
         ("btree_lck",      200_000_000),
         ("hash_block_lck", 200_000_000),
         ("leaftree_lck",    20_000_000),
         ("skiplist_lck",    20_000_000),
         ("arttree_lck",     20_000_000),
-        ("list_lck",             10_000),
+        ("list_lck",            10_000),
     ])
+
+    thread_counts: List[int] = field(default_factory=lambda:
+        get_numa_aware_thread_sequence(os.cpu_count(), get_num_numa_nodes())
+    )
 
     runs: int = 5
     trial_time_sec: int = 5
     nproc: int = field(default_factory=os.cpu_count)
+
+    args: argparse.ArgumentParser = None
+
+    def __post_init__(self):
+        self.runs = self.args.runs
+        self.trial_time_sec = self.args.time
 
 
 @dataclass
@@ -111,13 +191,34 @@ class SetbenchConfig:
         "rpmalloc::df",
     ])
 
+    rideables: List[str] = field(default_factory=lambda: [
+        "guerraoui_ext_bst_ticket",
+        "brown_ext_abtree_lf",
+        "hm_hashtable",
+        "hmlist",
+    ])
+
+    #default sizes for experiments other than varying size
+    default_rideables_sizes: Dict[str, int] = field(default_factory=lambda: dict(
+        guerraoui_ext_bst_ticket = 200_000,
+        brown_ext_abtree_lf =      200_000,
+        hm_hashtable =             200_000,
+        hmlist =                   2_000,
+    ))
+
     trackers: List[str] = field(default_factory=lambda: [
         "2geibr", "debra", "he", "ibr_hp", "ibr_rcu",
         "nbr", "nbrplus", "qsbr", "wfe",
     ])
 
+    default_update_perc: int = 100
+
+    default_tracker: str = "debra"
+ 
+    #for varying updates experiment
     update_percs: List[int] = field(default_factory=lambda: [1, 5, 50, 90, 100])
 
+    #for varying size experiment
     rideables_sizes: List[Tuple[str, int]] = field(default_factory=lambda: [
         # small
         ("guerraoui_ext_bst_ticket",   5_000),
@@ -141,10 +242,19 @@ class SetbenchConfig:
         ("hmlist",                         10_000),
     ])
 
+    thread_counts: List[int] = field(default_factory=lambda:
+        get_numa_aware_thread_sequence(os.cpu_count(), get_num_numa_nodes())
+    )
+
     runs: int = 5
     trial_time_ms: int = 5000
     nproc: int = field(default_factory=os.cpu_count)
 
+    args: argparse.ArgumentParser = None
+
+    def __post_init__(self):
+        self.runs = self.args.runs
+        self.ttrial_time_secrial_time_sec = self.args.time * 1000
 
 # ---------------------------------------------------------------------------
 # Allocator helpers
@@ -164,57 +274,13 @@ def find_allocator_lib(alloc_dir: str, name: str) -> Optional[str]:
     return lib if os.path.isfile(lib) else None
 
 
-# ---------------------------------------------------------------------------
-# Benchmark runner helpers
-# ---------------------------------------------------------------------------
-
-def run_command(cmd: str, timeout_sec: int = 600) -> Tuple[str, str]:
-    """Run a shell command, streaming output. Returns (output, status)."""
-    try:
-        proc = subprocess.Popen(
-            cmd, shell=True, text=True,
-            stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-        )
-        lines = []
-        for line in proc.stdout:
-            print(line, end="")
-            lines.append(line)
-        try:
-            proc.communicate(timeout=timeout_sec)
-        except subprocess.TimeoutExpired:
-            proc.kill()
-
-        output = "".join(lines)
-        rc = proc.returncode
-        if rc in (124, 137):
-            print(f"  TIMEOUT ({timeout_sec}s): {cmd}", file=sys.stderr)
-            return output, "timeout"
-        elif rc != 0:
-            print(f"  CRASH (exit={rc}): {cmd}", file=sys.stderr)
-            return output, "crash"
-        return output, "ok"
-    except Exception as e:
-        print(f"  ERROR: {cmd}: {e}", file=sys.stderr)
-        return "", "error"
-
-
-def get_machine_info() -> str:
-    try:
-        result = subprocess.run(["lscpu"], capture_output=True, text=True)
-        for line in result.stdout.split("\n"):
-            if "Model name" in line:
-                return line.strip()[-5:].replace(" ", "")
-    except Exception:
-        pass
-    return "unknown"
-
 
 # ---------------------------------------------------------------------------
 # Output / results file helpers
 # ---------------------------------------------------------------------------
 
 class ResultsFile:
-    def __init__(self, path: str, experiment: str):
+    def __init__(self, path: str, alloc_dir: str, experiment: str):
         today = datetime.now().strftime("%m-%d-%Y")
         self.f = open(path, "w")
         self.f.write(f"Date: {today}\n")
@@ -233,12 +299,23 @@ class ResultsFile:
             self.f.write(f"Git: {git.stdout.strip()}\n")
         except Exception:
             pass
+
+        try:
+            allocator_versions = open(f"{alloc_dir}/versions.txt", "r")
+            self.f.write(f"allocator versions:\n")
+            for line in allocator_versions.readlines():
+                line = line.strip()
+                alloc, version = line.split(' ')
+                self.f.write(f"\t{alloc}: {version}\n")
+        except Exception:
+            pass
         self.f.write("---\n")
         self.f.flush()
 
     def write(self, line: str):
         self.f.write(line)
         self.f.flush()
+        print(line, end="", flush=True)
 
     def close(self):
         self.f.close()
@@ -257,6 +334,11 @@ class FlockRunner:
         self.alloc_dir = alloc_dir
         self.output_dir = output_dir
 
+        self.fmt = "{:<17} {:<10} {:<20} {:<10} {:<9} {:<6} {}"
+        self.header = self.fmt.format("allocator", "update%", "ds", "key_size", "#threads", "numa", "results")
+        self.path = self._output_path("flock")
+        self.rf = ResultsFile(self.path, self.alloc_dir, "flock")
+
     def _output_path(self, name: str) -> str:
         today   = datetime.now().strftime("%m-%d-%Y")
         machine = get_machine_info()
@@ -269,78 +351,113 @@ class FlockRunner:
         path = os.path.join(self.bench_dir, rideable)
         return path if os.path.isfile(path) else None
 
-    def run(self):
+    #run one experiment accross all allocators
+    def run_all_allocs(self, rideable, update_perc=None, size=None, nthreads=None):
+        if size is None:
+            size = self.config.default_rideables_sizes.get(rideable)
+        if update_perc is None:
+            update_perc = self.config.default_update_perc
+        if nthreads is None:
+            nthreads = self.config.nproc
+
         cfg = self.config
-        path = self._output_path("flock_allocators")
-        print(f"Output: {path}")
-        rf = ResultsFile(path, "flock_allocators")
-
-        fmt = "{:<12} {:<10} {:<20} {:<10} {:<6} {}"
-        header = fmt.format("allocator", "update%", "ds", "key_size", "numa", "results")
-        rf.write(header + "\n")
-        print(header)
-
-        for rideable, size in cfg.rideables_sizes:
-            binary = self._binary(rideable)
-            if binary is None:
+        for raw_alloc in cfg.allocators_raw:
+            alloc, use_numa, _ = parse_allocator(raw_alloc)
+            lib = find_allocator_lib(self.alloc_dir, alloc)
+            if lib is None:
+                print(f"  WARNING: allocator lib not found: {alloc}", file=sys.stderr)
                 continue
 
-            for update_perc in cfg.update_percs:
-                for raw_alloc in cfg.allocators_raw:
-                    alloc, use_numa, _ = parse_allocator(raw_alloc)
-                    lib = find_allocator_lib(self.alloc_dir, alloc)
-                    if lib is None:
-                        print(f"  WARNING: allocator lib not found: {alloc}", file=sys.stderr)
-                        continue
+            numa_cmd = "numactl -i all" if use_numa else ""
+            prefix = self.fmt.format(alloc, update_perc, rideable, size, nthreads, str(use_numa), "[ ")
+            self.rf.write(prefix)
 
-                    numa_cmd = "numactl -i all" if use_numa else ""
-                    prefix = fmt.format(alloc, update_perc, rideable, size, str(use_numa), "[ ")
-                    print(prefix, end="", flush=True)
-                    rf.write(prefix)
+            binary = self._binary(rideable)
+            if binary is None:
+                print(f"  WARNING: binary not found: {binary}", file=sys.stderr)
+                continue
 
-                    # flock binary accepts -r for multiple runs internally
-                    half_n = size // 2
-                    cmd = (
-                        f"PARLAY_NUM_THREADS={cfg.nproc} "
-                        f"LD_PRELOAD={lib} "
-                        f'/usr/bin/time -f "%M KiloBytes" '
-                        f"{numa_cmd} "
-                        f"{binary} "
-                        f"-p {cfg.nproc} -u {update_perc} -n {half_n} "
-                        f"-t {cfg.trial_time_sec} -r {cfg.runs}"
-                    ).strip()
+            # flock binary accepts -r for multiple runs internally
+            half_n = size // 2
+            cmd = (
+                f"PARLAY_NUM_THREADS={cfg.nproc} "
+                f"LD_PRELOAD={lib} "
+                f'/usr/bin/time -f "%M KiloBytes" '
+                f"{numa_cmd} "
+                f"{binary} "
+                f"-p {nthreads} -u {update_perc} -n {half_n} "
+                f"-t {cfg.trial_time_sec} -r {cfg.runs}"
+            ).strip()
 
-                    output, status = run_command(cmd)
+            output, status = run_command(cmd)
 
-                    # parse — binary emits one mops line per run then a summary
-                    output = re.sub(r"linebreak", "\n", output)
-                    memusage_kb = None
-                    m = re.search(r"(\d+)\s+KiloBytes", output)
-                    if m:
-                        memusage_kb = int(m.group(1))
+            # parse — binary emits one mops line per run then a summary
+            output = re.sub(r"linebreak", "\n", output)
+            memusage_kb = None
+            m = re.search(r"(\d+)\s+KiloBytes", output)
+            if m:
+                memusage_kb = int(m.group(1))
 
-                    tps = []
-                    for line in output.split("\n"):
-                        # last comma-separated field after the last comma is mops
-                        m2 = re.search(r",\s*([\d.]+)\s*$", line)
-                        if m2:
-                            try:
-                                tps.append(float(m2.group(1)))
-                            except ValueError:
-                                pass
+            tps = []
+            for line in output.split("\n"):
+                # last comma-separated field after the last comma is mops
+                m2 = re.search(r",\s*([\d.]+)\s*$", line)
+                if m2:
+                    try:
+                        tps.append(float(m2.group(1)))
+                    except ValueError:
+                        pass
 
-                    tps_str = " ".join(f"{v}" for v in tps)
-                    tp_avg = sum(tps) / len(tps) if tps else 0.0
-                    mem_str = f"{memusage_kb} KB" if memusage_kb is not None else "N/A"
-                    suffix = f"{tps_str}] {tp_avg:.4f}, {mem_str}\n"
-                    print(suffix, end="")
-                    rf.write(suffix)
+            tps_str = " ".join(f"{v}" for v in tps)
+            tp_avg = sum(tps) / len(tps) if tps else 0.0
+            mem_str = f"{memusage_kb} KB" if memusage_kb is not None else "N/A"
+            suffix = f"{tps_str} ] {tp_avg:.4f}, {mem_str}\n"
+            self.rf.write(suffix)
 
-                    if status != "ok":
-                        rf.write(f"# {status.upper()}: {rideable} alloc={alloc} u={update_perc} n={size}\n")
+            if status != "ok":
+                self.rf.write(f"# {status.upper()}: {rideable} alloc={alloc} u={update_perc} n={size}\n")
 
-        rf.close()
-        print(f"Flock results written to: {path}")
+    #vary update%
+    def run_updates(self):
+        for rideable in self.config.rideables:
+            for update_perc in self.config.update_percs:
+                self.run_all_allocs(
+                    rideable=rideable,
+                    update_perc=update_perc,
+                )
+
+    #vary number if threads
+    def run_threads(self):
+        for rideable in self.config.rideables:
+            for nthreads in self.config.thread_counts:
+                self.run_all_allocs(
+                    rideable=rideable,
+                    nthreads=nthreads
+                )
+
+    #vary data structure size
+    def run_sizes(self):
+        for rideable, size in self.config.rideables_sizes:
+            self.run_all_allocs(
+                rideable=rideable,
+                size=size,
+            )
+
+    #vary reclamation scheme
+    def run_trackers(self):
+        for tracker in self.config.trackers:
+            self.run_all_allocs(
+                rideable=rideable,
+                tracker=tracker,
+            )
+
+    def run(self):
+        self.rf.write(self.header + "\n")
+        self.run_trackers()
+        self.run_updates()
+        self.run_threads()
+        self.run_sizes()
+        self.rf.close()
 
 
 # ---------------------------------------------------------------------------
@@ -356,6 +473,11 @@ class SetbenchRunner:
         self.alloc_dir = alloc_dir
         self.output_dir = output_dir
 
+        self.fmt = "{:<17} {:<10} {:<10} {:<25} {:<10} {:<9} {:<6} {}"
+        self.header = self.fmt.format("allocator", "update%", "scheme", "ds", "key_size", "#threads", "numa", "results")
+        self.path = self._output_path("setbench")
+        self.rf = ResultsFile(self.path, self.alloc_dir, "setbench")
+
     def _output_path(self, name: str) -> str:
         today   = datetime.now().strftime("%m-%d-%Y")
         machine = get_machine_info()
@@ -370,92 +492,116 @@ class SetbenchRunner:
         path = os.path.join(self.bench_dir, name)
         return path if os.path.isfile(path) else None
 
-    def run(self):
+    #run one experiment accross all allocators
+    def run_all_allocs(self, rideable, update_perc=None, size=None, nthreads=None, tracker=None):
+        if size is None:
+            size = self.config.default_rideables_sizes.get(rideable)
+        if update_perc is None:
+            update_perc = self.config.default_update_perc
+        if nthreads is None:
+            nthreads = self.config.nproc
+        if tracker is None:
+            tracker = self.config.default_tracker
+
         cfg = self.config
-        path = self._output_path("setbench_allocators")
-        print(f"Output: {path}")
-        rf = ResultsFile(path, "setbench_allocators")
+        for raw_alloc in cfg.allocators_raw:
+            alloc, use_numa, use_df = parse_allocator(raw_alloc)
+            df_suffix = "_df" if use_df else ""
+            scheme_label = f"{tracker}{df_suffix}"
 
-        fmt = "{:<17} {:<10} {:<10} {:<25} {:<10} {:<6} {}"
-        header = fmt.format("allocator", "update%", "scheme", "ds", "key_size", "numa", "results")
-        rf.write(header + "\n")
-        print(header)
+            binary = self._binary(rideable, tracker, use_df)
+            if binary is None:
+                print(f"  WARNING: binary not found: {binary}", file=sys.stderr)
+                continue
 
-        for rideable, size in cfg.rideables_sizes:
-            for tracker in cfg.trackers:
-                for update_perc in cfg.update_percs:
-                    for raw_alloc in cfg.allocators_raw:
-                        alloc, use_numa, use_df = parse_allocator(raw_alloc)
-                        df_suffix = "_df" if use_df else ""
-                        scheme_label = f"{tracker}{df_suffix}"
+            lib = find_allocator_lib(self.alloc_dir, alloc)
+            if lib is None:
+                print(f"  WARNING: allocator lib not found: {alloc}", file=sys.stderr)
+                continue
 
-                        binary = self._binary(rideable, tracker, use_df)
-                        if binary is None:
-                            continue
+            numa_cmd = "numactl -i all" if use_numa else ""
+            update_half = round(update_perc / 2, 2)
 
-                        lib = find_allocator_lib(self.alloc_dir, alloc)
-                        if lib is None:
-                            print(f"  WARNING: allocator lib not found: {alloc}", file=sys.stderr)
-                            continue
+            prefix = self.fmt.format(alloc, update_perc, scheme_label,
+                                rideable, size, nthreads, str(use_numa), "[ ")
+            self.rf.write(prefix)
 
-                        numa_cmd = "numactl -i all" if use_numa else ""
-                        update_half = round(update_perc / 2, 2)
+            tp_avg      = 0.0
+            memusage_avg = 0
+            tps         = []
+            last_status = "ok"
 
-                        prefix = fmt.format(alloc, update_perc, scheme_label,
-                                            rideable, size, str(use_numa), "[ ")
-                        print(prefix, end="", flush=True)
-                        rf.write(prefix)
+            for _ in range(cfg.runs):
+                cmd = (
+                    f"NO_DESTRUCT=1 "
+                    f"LD_PRELOAD={lib} "
+                    f'/usr/bin/time -f "%M KiloBytes /usr/bin/time output" '
+                    f"{numa_cmd} "
+                    f"{binary} "
+                    f"-nwork {cfg.nproc} -nprefill {cfg.nproc} "
+                    f"-i {update_half} -d {update_half} "
+                    f"-rq 0 -rqsize 1 -k {size} -nrq 0 "
+                    f"-t {cfg.trial_time_ms}"
+                ).strip()
 
-                        tp_avg      = 0.0
-                        memusage_avg = 0
-                        tps         = []
-                        last_status = "ok"
+                output, status = run_command(cmd)
+                if status != "ok":
+                    last_status = status
 
-                        for _ in range(cfg.runs):
-                            cmd = (
-                                f"NO_DESTRUCT=1 "
-                                f"LD_PRELOAD={lib} "
-                                f'/usr/bin/time -f "%M KiloBytes /usr/bin/time output" '
-                                f"{numa_cmd} "
-                                f"{binary} "
-                                f"-nwork {cfg.nproc} -nprefill {cfg.nproc} "
-                                f"-i {update_half} -d {update_half} "
-                                f"-rq 0 -rqsize 1 -k {size} -nrq 0 "
-                                f"-t {cfg.trial_time_ms}"
-                            ).strip()
+                # throughput
+                m_tp = re.search(r"total throughput\s*[:\s]\s*([\d.]+)", output)
+                if m_tp:
+                    tp = float(m_tp.group(1)) / 10**6 #show in mops
+                    tps.append(tp)
+                    tp_avg += tp / cfg.runs
 
-                            output, status = run_command(cmd)
-                            if status != "ok":
-                                last_status = status
+                # memory
+                m_mem = re.search(r"(\d+)\s+KiloBytes /usr/bin/time output", output)
+                if m_mem:
+                    memusage_avg += int(m_mem.group(1)) // cfg.runs
 
-                            # throughput
-                            m_tp = re.search(r"total throughput\s*[:\s]\s*([\d.]+)", output)
-                            if m_tp:
-                                tp = float(m_tp.group(1))
-                                tps.append(tp)
-                                tp_avg += tp / cfg.runs
+            tps_str = " ".join(str(v) for v in tps)
+            suffix  = f"{tps_str} ] {tp_avg:.4f}, {memusage_avg} KB\n"
+            self.rf.write(suffix)
 
-                            # memory
-                            m_mem = re.search(r"(\d+)\s+KiloBytes /usr/bin/time output", output)
-                            if m_mem:
-                                memusage_avg += int(m_mem.group(1)) // cfg.runs
+            if last_status != "ok":
+                self.rf.write(
+                    f"# {last_status.upper()}: {rideable} "
+                    f"tracker={scheme_label} alloc={alloc} u={update_perc} k={size}\n"
+                )
 
-                            print(f"{m_tp.group(1) if m_tp else '?'} ", end="", flush=True)
+    #vary update%
+    def run_updates(self):
+        for rideable in self.config.rideables:
+            for update_perc in self.config.update_percs:
+                self.run_all_allocs(
+                    rideable=rideable,
+                    update_perc=update_perc,
+                )
 
-                        tps_str = " ".join(str(v) for v in tps)
-                        suffix  = f"{tps_str}] {tp_avg:.4f}, {memusage_avg} KB\n"
-                        print(suffix, end="")
-                        rf.write(suffix)
+    #vary number if threads
+    def run_threads(self):
+        for rideable in self.config.rideables:
+            for nthreads in self.config.thread_counts:
+                self.run_all_allocs(
+                    rideable=rideable,
+                    nthreads=nthreads
+                )
 
-                        if last_status != "ok":
-                            rf.write(
-                                f"# {last_status.upper()}: {rideable} "
-                                f"tracker={scheme_label} alloc={alloc} u={update_perc} k={size}\n"
-                            )
+    #vary data structure size
+    def run_sizes(self):
+        for rideable, size in self.config.rideables_sizes:
+            self.run_all_allocs(
+                rideable=rideable,
+                size=size,
+            )
 
-        rf.close()
-        print(f"Setbench results written to: {path}")
-
+    def run(self):
+        self.rf.write(self.header + "\n")
+        self.run_updates()
+        self.run_threads()
+        self.run_sizes()
+        self.rf.close()
 
 # ---------------------------------------------------------------------------
 # Main
@@ -479,21 +625,19 @@ def main():
                         default=os.path.join(script_dir, "../build/benchmarks/flock"),
                         help="Path to flock benchmark binaries")
     parser.add_argument("--setbench-dir", metavar="DIR",
-                        default=os.path.join(script_dir, "../build/benchmarks/setbench/bin"),
+                        default=os.path.join(script_dir, "../build/benchmarks/setbench"),
                         help="Path to setbench benchmark binaries")
-    parser.add_argument("--flock-alloc-dir", metavar="DIR",
-                        default=os.path.join(script_dir, "../build/benchmarks/flock/lib/allocators"),
+    parser.add_argument("--alloc-dir", metavar="DIR",
+                        default=os.path.join(script_dir, "../build/allocators"),
                         help="Path to allocator .so files for flock")
-    parser.add_argument("--setbench-alloc-dir", metavar="DIR",
-                        default=os.path.join(script_dir, "../build/benchmarks/setbench/lib/allocators"),
-                        help="Path to allocator .so files for setbench")
     parser.add_argument("--runs",        type=int, default=5,  help="Number of runs (default: 5)")
     parser.add_argument("--allocator",   default=None,         help="Run only this allocator")
     parser.add_argument("--ds",          default=None,         help="Run only this data structure")
+    parser.add_argument("--time",        type=int, default=5,  help="Amount of time each run takes (defailt: 5)")
     args = parser.parse_args()
 
     # -- flock config --
-    flock_cfg = FlockConfig(runs=args.runs)
+    flock_cfg = FlockConfig(args=args)
     if args.allocator:
         flock_cfg.allocators_raw = [a for a in flock_cfg.allocators_raw
                                     if a.split(":")[0] == args.allocator]
@@ -501,15 +645,15 @@ def main():
         flock_cfg.rideables_sizes = [(r, s) for r, s in flock_cfg.rideables_sizes if r == args.ds]
 
     # -- setbench config --
-    sb_cfg = SetbenchConfig(runs=args.runs)
+    sb_cfg = SetbenchConfig(args=args)
     if args.allocator:
         sb_cfg.allocators_raw = [a for a in sb_cfg.allocators_raw
                                  if a.split(":")[0] == args.allocator]
     if args.ds:
         sb_cfg.rideables_sizes = [(r, s) for r, s in sb_cfg.rideables_sizes if r == args.ds]
 
-    flock_runner   = FlockRunner(flock_cfg,   args.flock_dir,    args.flock_alloc_dir,    args.output)
-    setbench_runner = SetbenchRunner(sb_cfg,  args.setbench_dir, args.setbench_alloc_dir, args.output)
+    flock_runner    = FlockRunner(flock_cfg,  args.flock_dir,    args.alloc_dir, args.output)
+    setbench_runner = SetbenchRunner(sb_cfg,  args.setbench_dir, args.alloc_dir, args.output)
 
     experiments = {
         "flock":    [(flock_runner.run,    "Flock Allocator Benchmarks")],
