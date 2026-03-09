@@ -6,9 +6,12 @@
 mkdir -p allocators
 pushd allocators
 
+rm versions.txt
+
 #compile jemalloc
 git clone https://github.com/jemalloc/jemalloc
 pushd jemalloc
+echo jemalloc $(git rev-parse --short HEAD) >> ../versions.txt
 ./autogen.sh --enable-doc=no --enable-static=no --disable-stats
 make -j 8
 popd
@@ -18,6 +21,7 @@ rm -rf jemalloc
 #compile mesh
 git clone https://github.com/plasma-umass/mesh
 pushd mesh
+echo mesh $(git rev-parse --short HEAD) >> ../versions.txt
 cmake .
 make -j 8
 make -j 8 #for some reason it only builds on the second attempt
@@ -28,6 +32,7 @@ rm -rf mesh
 #compile mimalloc
 git clone https://github.com/microsoft/mimalloc.git
 pushd mimalloc
+echo mimalloc $(git rev-parse --short HEAD) >> ../versions.txt
 git checkout master
 cmake -B out/release
 cmake --build out/release --parallel 8
@@ -38,6 +43,7 @@ rm -rf mimalloc
 #compile hoard
 git clone https://github.com/emeryberger/Hoard
 pushd Hoard/src
+echo hoard $(git rev-parse --short HEAD) >> ../../versions.txt
 make -j 8
 popd
 cp $(readlink -f Hoard/src/libhoard.so) libhoard.so
@@ -46,6 +52,7 @@ rm -rf Hoard
 #compile scalloc
 git clone https://github.com/cksystemsgroup/scalloc
 pushd scalloc
+echo scalloc $(git rev-parse --short HEAD) >> ../versions.txt
 ./tools/make_deps.sh
 ./tools/gyp --depth=. scalloc.gyp
 BUILDTYPE=Release make
@@ -56,6 +63,7 @@ rm -rf scalloc
 #compile tcmalloc
 git clone https://github.com/google/tcmalloc
 pushd tcmalloc
+echo tcmalloc $(git rev-parse --short HEAD) >> ../versions.txt
 ORIG=""
 sed -i $ORIG '/linkstatic/d' tcmalloc/BUILD
 sed -i $ORIG '/linkstatic/d' tcmalloc/internal/BUILD
@@ -73,6 +81,7 @@ rm -rf tcmalloc
 git clone https://github.com/microsoft/snmalloc
 mkdir -p snmalloc/build
 pushd snmalloc/build
+echo snmalloc $(git rev-parse --short HEAD) >> ../../versions.txt
 env CXX=clang++ cmake -G Ninja .. -DCMAKE_BUILD_TYPE=Release
 ninja libsnmallocshim.so libsnmallocshim-checks.so
 popd
@@ -82,6 +91,7 @@ rm -rf snmalloc
 #compile lockfree 
 git clone https://github.com/Begun/lockfree-malloc
 pushd lockfree-malloc
+echo lockfree $(git rev-parse --short HEAD) >> ../versions.txt
 make -j $procs liblite-malloc-shared.so
 popd
 cp $(readlink -f lockfree-malloc/liblite-malloc-shared.so) liblockfree.so
@@ -90,6 +100,7 @@ rm -rf lockfree-malloc
 #compile rpmalloc
 git clone https://github.com/mjansson/rpmalloc
 pushd rpmalloc
+echo rpmalloc $(git rev-parse --short HEAD) >> ../versions.txt
 CC=clang-16 CXX=clang++-16 python3 configure.py
 # fix build using clang-16
 # see https://github.com/mjansson/rpmalloc/issues/316
@@ -102,11 +113,24 @@ rm -rf rpmalloc
 #compile tbbmalloc
 git clone https://github.com/oneapi-src/oneTBB
 pushd oneTBB
+echo tbbmalloc $(git rev-parse --short HEAD) >> ../versions.txt
 cmake -DCMAKE_BUILD_TYPE=Release -DTBB_BUILD=OFF -DTBB_TEST=OFF -DTBB_OUTPUT_DIR_BASE=bench .
 make -j $procs
 popd
 cp $(readlink -f oneTBB/bench_release/libtbbmalloc.so) ./libtbbmalloc.so
 rm -rf oneTBB
+
+#compile mimalloc-batchit
+#https://www.microsoft.com/en-us/research/wp-content/uploads/2024/05/preprint_batchit.pdf
+git clone https://github.com/mjp41/mimalloc.git
+pushd mimalloc
+echo mimalloc-batchit $(git rev-parse --short HEAD) >> ../versions.txt
+git checkout dev-remote-cache
+cmake -B out/release
+cmake --build out/release --parallel 8
+popd
+cp $(readlink -f mimalloc/out/release/libmimalloc.so) libmimalloc-batchit.so
+rm -rf mimalloc
 
 popd
 
