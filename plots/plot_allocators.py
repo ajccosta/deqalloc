@@ -43,21 +43,29 @@ ALLOC_PALETTE = {
 }
 
 DS_LABELS = {
-    "btree_lck":      "B-Tree",
-    "hash_block_lck": "Hash-Block",
-    "leaftree_lck":   "Leaf-Tree",
-    "skiplist_lck":   "Skip-List",
-    "arttree_lck":    "ART-Tree",
-    "list_lck":       "Linked-List",
+    "btree_lck"                 : "b-tree",
+    "hash_block_lck"            : "hash-block",
+    "leaftree_lck"              : "leaf-tree",
+    "skiplist_lck"              : "skip-list",
+    "arttree_lck"               : "art-tree",
+    "list_lck"                  : "linked-list",
+    "guerraoui_ext_bst_ticket"  : "bst-tk",
+    "brown_ext_abtree_lf"       : "abtree",
+    "hmlist"                    : "hmlist",
+    "hm_hashtable"              : "hmhash",
 }
 
 DS_TYPES = {
-    "btree_lck":      "normal",
-    "hash_block_lck": "normal",
-    "leaftree_lck":   "normal",
-    "skiplist_lck":   "normal",
-    "arttree_lck":    "normal",
-    "list_lck":       "list",
+    "btree_lck"                 : "normal",
+    "hash_block_lck"            : "normal",
+    "leaftree_lck"              : "normal",
+    "skiplist_lck"              : "normal",
+    "arttree_lck"               : "normal",
+    "list_lck"                  : "list"  ,
+    "guerraoui_ext_bst_ticket"  : "normal",
+    "brown_ext_abtree_lf"       : "normal",
+    "hmlist"                    : "list"  ,
+    "hm_hashtable"              : "normal",
 }
 
 ALLOC_MARKERS = {
@@ -121,6 +129,7 @@ FIG_CONFIGS = {
     "dpi": 300,
     "pad_inches": 0.015,
     "xtick_end_margin": 0.1,
+    "bar_linewidth": 0.7,
 }
 
 DEFAULT_PARAMS = {
@@ -133,9 +142,10 @@ DEFAULT_PARAMS = {
 }
 
 #which data structures to show for the paper for the varying plots
-PAPER_DS = ["skiplist_lck", "leaftree_lck", "hash_block_lck"]
+PAPER_DS_FLOCK = ["skiplist_lck", "leaftree_lck", "hash_block_lck"]
+PAPER_DS_SETBENCH = ["guerraoui_ext_bst_ticket", "brown_ext_abtree_lf", "hm_hashtable", "hmlist"]
 
-mpl.rcParams["hatch.linewidth"] = 0.7
+mpl.rcParams["hatch.linewidth"] = FIG_CONFIGS.get("bar_linewidth")
 
 def style_fig(fig, ax, paper_print):
     ax.tick_params(axis='x', labelsize=FIG_CONFIGS["xtick_fontsize"])
@@ -210,6 +220,51 @@ def parse_flock(path):
                     print(f"Error in mean checksum. Given: {float(m.group(7))}, Calculated: {mean}")
     return rows, crashes
 
+import re
+import statistics as stat
+
+def parse_setbench(path):
+    rows = []
+    crashes = []
+    crash_re = re.compile(r"#\s*CRASH:\s*(\w+)\s+alloc=(\w+)\s+u=(\d+)\s+n=(\d+)")
+    row_re   = re.compile(
+        r"^(\w+)\s+(\d+)\s+(\w+)\s+(\w+)\s+(\d+)\s+(\d+)\s+(True|False)\s+\[([^\]]*)\]\s+([\d.]+),\s*([\d.]+)\s*KB"
+    )
+    with open(path) as f:
+        for line in f:
+            line = line.strip()
+            m = crash_re.match(line)
+            if m:
+                crashes.append(dict(ds=m.group(1), allocator=m.group(2),
+                                    update=int(m.group(3)), key_size=int(m.group(4))))
+                continue
+            m = row_re.match(line)
+            if m:
+                vals_str = m.group(8).strip()
+                vals = [float(x) for x in vals_str.split()] if vals_str else []
+                mean = stat.mean(vals) if len(vals) > 0 else 0
+                gmean = stat.geometric_mean(vals) if len(vals) > 0 else 0
+                
+                entry = dict(
+                    allocator=m.group(1),
+                    update=int(m.group(2)),
+                    reclamation=m.group(3),
+                    ds=m.group(4),
+                    key_size=int(m.group(5)),
+                    threads=int(m.group(6)),
+                    numa=m.group(7) == "True",
+                    values=vals,
+                    mean=mean,
+                    gmean=gmean,
+                    mem_kb=float(m.group(10)),
+                )
+                rows.append(entry)
+                if abs(mean - gmean) > 0.5 * 10**1:
+                    print("Reasonable difference in gmean", entry)
+                if abs(mean - float(m.group(9))) > 10**-3:
+                    print(f"Error in mean checksum. Given: {float(m.group(9))}, Calculated: {mean}")
+    return rows, crashes
+
 # -- Helpers ------------------------------------------------------------------
 def group_by(rows, *keys):
     d = defaultdict(list)
@@ -252,6 +307,16 @@ def merge_pdfs_horizontally(pdf_list, output_path):
     out_doc.close()
     print(f"merged {len(pdf_list)} pdfs to {output_path}")
 
+def which_paper_ds(dss):
+    paper_ds = []
+    if set(dss).intersection(set(PAPER_DS_FLOCK)):
+        paper_ds = PAPER_DS_FLOCK
+    if set(dss).intersection(set(PAPER_DS_SETBENCH)):
+        assert(paper_ds == [])
+        paper_ds = PAPER_DS_SETBENCH
+    assert(paper_ds != [])
+    return paper_ds
+
 
 # -- Plot 1: Throughput vs key_size (100% writes) -----------------------------
 def plot_size(rows, out_dir, fmt):
@@ -259,6 +324,8 @@ def plot_size(rows, out_dir, fmt):
 
     data = [r for r in rows if r["update"] == target_update and r["gmean"] > 0]
     dss = sorted(set(r["ds"] for r in data))
+
+    paper_ds = which_paper_ds(dss)
 
     for paper_print in [True, False]: #print a paper version and a viewing version
         paper_dir = "paper/" if paper_print else ""
@@ -288,7 +355,7 @@ def plot_size(rows, out_dir, fmt):
             ax.set_xlabel("Size (n)")
             ax.set_title(f'{DS_LABELS.get(ds)}')
 
-            if not paper_dir or ds == PAPER_DS[0]:
+            if not paper_dir or ds == paper_ds[0]:
                 ax.set_ylabel('Throughput (Mops/s)', fontsize=FIG_CONFIGS["ylabel_fontsize"])
                 ylabel = ax.yaxis.label
                 ylabel.set_y(ylabel.get_position()[1] - 0.05)
@@ -300,7 +367,7 @@ def plot_size(rows, out_dir, fmt):
                 pad_inches=FIG_CONFIGS["pad_inches"])
             plt.close(fig)
 
-    paper_ds_list = [ f"{out_dir}/paper/size_{ds}.{fmt}" for ds in PAPER_DS ] 
+    paper_ds_list = [ f"{out_dir}/paper/size_{ds}.{fmt}" for ds in paper_ds ] 
     merge_pdfs_horizontally(paper_ds_list, f"{out_dir}/paper/size.{fmt}")
 
 
@@ -311,6 +378,7 @@ def plot_update(rows, out_dir, fmt):
         os.makedirs(f"{out_dir}/{paper_dir}", exist_ok=True)
 
         dss = sorted(set(r["ds"] for r in rows))
+        paper_ds = which_paper_ds(dss)
 
         for i, ds in enumerate(dss):
 
@@ -339,7 +407,7 @@ def plot_update(rows, out_dir, fmt):
             ax.set_xlabel("Update (%)")
             ax.set_title(f'{DS_LABELS.get(ds)}')
 
-            if not paper_dir or ds == PAPER_DS[0]:
+            if not paper_dir or ds == paper_ds[0]:
                 ax.set_ylabel('Throughput (Mops/s)', fontsize=FIG_CONFIGS["ylabel_fontsize"])
                 ylabel = ax.yaxis.label
                 ylabel.set_y(ylabel.get_position()[1] - 0.05)
@@ -351,7 +419,7 @@ def plot_update(rows, out_dir, fmt):
                 pad_inches=FIG_CONFIGS["pad_inches"])
             plt.close(fig)
 
-    paper_ds_list = [ f"{out_dir}/paper/update_{ds}.{fmt}" for ds in PAPER_DS ] 
+    paper_ds_list = [ f"{out_dir}/paper/update_{ds}.{fmt}" for ds in paper_ds ] 
     merge_pdfs_horizontally(paper_ds_list, f"{out_dir}/paper/update.{fmt}")
 
 
@@ -368,6 +436,8 @@ def plot_geomean(rows, out_dir, fmt):
     
     data = [r for r in rows if r["gmean"] > 0]
     seen_allocs = set()
+
+    all_values_global = {}
 
     for i, ds in enumerate(dss):
         ds_rows = [r for r in data if r["ds"] == ds]
@@ -387,6 +457,10 @@ def plot_geomean(rows, out_dir, fmt):
             all_values = []
             for r in ds_rows_alloc:
                 all_values.extend(r["values"])
+
+                if alloc not in all_values_global:
+                    all_values_global[alloc] = []
+                all_values_global[alloc].extend(r["values"])
             y = stat.geometric_mean(all_values)
             per_struct[alloc] = y
     
@@ -405,7 +479,7 @@ def plot_geomean(rows, out_dir, fmt):
                     hatch=ALLOC_HATCHES.get(alloc),
                     color=ALLOC_PALETTE.get(alloc),
                     edgecolor="black",
-                    linewidth=1,
+                    linewidth=FIG_CONFIGS.get("bar_linewidth"),
                     label=label,
                     zorder=ALLOC_ZORDER.get(alloc)),
                     per_struct[alloc]
@@ -416,12 +490,13 @@ def plot_geomean(rows, out_dir, fmt):
             for b in bar:
                 ax.text(
                     b.get_x() + b.get_width() / 2,
-                    b.get_height()*1.01,
+                    b.get_height()*1.015+0.01,
                     f'{ys:.1f}',
                     ha='center',
                     va='bottom',
                     fontweight='bold',
                     fontsize=4,
+                    rotation=90,
                     zorder=ALLOC_ZORDER.get("deqalloc")+1,
                 )
 
@@ -435,6 +510,11 @@ def plot_geomean(rows, out_dir, fmt):
             fontsize=FIG_CONFIGS.get("xtick_fontsize")-1,
             transform=ax.get_xaxis_transform(),  # x in data coords, y in axes coords
         )
+
+    for alloc in all_values_global.keys():
+        gm = stat.geometric_mean(all_values_global[alloc])
+        sd = stat.stdev(all_values_global[alloc])
+        print(alloc, gm, (sd/gm)*100)
     
     #claude.ai aligned bars!
     last_group_start = (len(dss) - 1) * (group_width + inter_group_gap * bar_width)
@@ -443,7 +523,7 @@ def plot_geomean(rows, out_dir, fmt):
     margin = bar_width / 2 + bar_width * inter_group_gap
     ax.set_xlim(first_bar_center - margin, last_bar_center + margin)
 
-    ax.set_ylim(0, 1.08)
+    ax.set_ylim(0, 1.25)
 
     plt.xticks([])
     ax.set_xlabel("Data Structure", labelpad=11)
@@ -510,14 +590,20 @@ def main():
 
     os.makedirs(args.output_dir, exist_ok=True)
 
-    rows, crashes = parse_flock(f"{args.input_dir}/flock_allocators")
+    rows, crashes = parse_flock(f"{args.input_dir}/flock")
     print(f"  {len(rows)} data rows, {len(crashes)} crash records")
     print(f"Saving plots to: {args.output_dir}/\n")
 
     do_all = "all" in args.plots
-    if "size" in args.plots or do_all: plot_size(rows, args.output_dir, args.format)
-    if "update" in args.plots or do_all: plot_update(rows, args.output_dir, args.format)
-    if "geomean" in args.plots or do_all: plot_geomean(rows, args.output_dir, args.format)
+    if "size" in args.plots or do_all: plot_size(rows, f"{args.output_dir}/flock", args.format)
+    if "update" in args.plots or do_all: plot_update(rows, f"{args.output_dir}/flock", args.format)
+    if "geomean" in args.plots or do_all: plot_geomean(rows, f"{args.output_dir}/flock", args.format)
+
+    rows, crashes = parse_setbench(f"{args.input_dir}/setbench")
+    do_all = "all" in args.plots
+    if "size" in args.plots or do_all: plot_size(rows, f"{args.output_dir}/setbench", args.format)
+    if "update" in args.plots or do_all: plot_update(rows, f"{args.output_dir}/setbench", args.format)
+    if "geomean" in args.plots or do_all: plot_geomean(rows, f"{args.output_dir}/setbench", args.format)
 
 if __name__ == "__main__":
     main()
