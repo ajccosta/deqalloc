@@ -41,7 +41,7 @@ cp $(readlink -f mimalloc/out/release/libmimalloc.so) libmimalloc.so
 rm -rf mimalloc
 
 #compile hoard
-git clone https://github.com/emeryberger/Hoard
+git clone https://github.com/ajccosta/Hoard.git
 pushd Hoard/src
 echo hoard $(git rev-parse --short HEAD) >> ../../versions.txt
 make -j 8
@@ -101,7 +101,8 @@ rm -rf lockfree-malloc
 git clone https://github.com/mjansson/rpmalloc
 pushd rpmalloc
 echo rpmalloc $(git rev-parse --short HEAD) >> ../versions.txt
-CC=clang-16 CXX=clang++-16 python3 configure.py
+#CC=clang-16 CXX=clang++-16 python3 configure.py
+python configure.py --toolchain gcc
 # fix build using clang-16
 # see https://github.com/mjansson/rpmalloc/issues/316
 sed -i 's/-Werror//' build.ninja
@@ -131,6 +132,38 @@ cmake --build out/release --parallel 8
 popd
 cp $(readlink -f mimalloc/out/release/libmimalloc.so) libmimalloc-batchit.so
 rm -rf mimalloc
+
+#courtsey of gemini:
+echo ""
+echo "==================================================="
+echo "                 BUILD SUMMARY                     "
+echo "==================================================="
+
+# List of expected allocators and their corresponding output .so files
+declare -a allocators=(
+    "jemalloc:libjemalloc.so"
+    "mesh:libmesh.so"
+    "mimalloc:libmimalloc.so"
+    "hoard:libhoard.so"
+    "scalloc:libscalloc.so"
+    "tcmalloc:libtcmalloc.so"
+    "snmalloc:libsnmalloc.so"
+    "lockfree:liblockfree.so"
+    "rpmalloc:librpmalloc.so"
+    "tbbmalloc:libtbbmalloc.so"
+    "mimalloc-batchit:libmimalloc-batchit.so"
+)
+
+for entry in "${allocators[@]}"; do
+    alloc_name="${entry%%:*}"
+    so_file="${entry##*:}"
+    if [[ -f "$so_file" ]]; then
+        echo "$alloc_name allocator successfully built"
+    else
+        echo "$alloc_name allocator WAS NOT built"
+    fi
+done
+echo "==================================================="
 
 popd
 
