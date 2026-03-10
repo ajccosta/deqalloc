@@ -6,7 +6,7 @@
 mkdir -p allocators
 pushd allocators
 
-rm versions.txt
+rm -f versions.txt
 
 #compile jemalloc
 git clone https://github.com/jemalloc/jemalloc
@@ -101,12 +101,16 @@ rm -rf lockfree-malloc
 git clone https://github.com/mjansson/rpmalloc
 pushd rpmalloc
 echo rpmalloc $(git rev-parse --short HEAD) >> ../versions.txt
-#CC=clang-16 CXX=clang++-16 python3 configure.py
-python configure.py --toolchain gcc
+if CC=clang-16 CXX=clang++-16 python3 configure.py && sed -i 's/-Werror//' build.ninja && ninja; then
+    echo "Successfully built rpmalloc with Clang 16."
+else
+    rm -rf build build.ninja
+    python3 configure.py --toolchain gcc
+    #sed -i 's/-Werror//' build.ninja
+    ninja
+fi
 # fix build using clang-16
 # see https://github.com/mjansson/rpmalloc/issues/316
-sed -i 's/-Werror//' build.ninja
-ninja
 popd
 cp rpmalloc/build/ninja/linux/release/x86-64/rpmalloc-cccf0ca/librpmalloc.so .
 rm -rf rpmalloc
