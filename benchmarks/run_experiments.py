@@ -271,7 +271,11 @@ def parse_allocator(raw: str) -> Tuple[str, bool, bool]:
 
 def find_allocator_lib(alloc_dir: str, name: str) -> Optional[str]:
     lib = os.path.join(alloc_dir, f"lib{name}.so")
-    return lib if os.path.isfile(lib) else None
+    if os.path.isfile(lib):
+        return lib
+    if os.path.islink(lib) and os.path.exists(lib):
+        return lib
+    return None
 
 
 
@@ -443,17 +447,8 @@ class FlockRunner:
                 size=size,
             )
 
-    #vary reclamation scheme
-    def run_trackers(self):
-        for tracker in self.config.trackers:
-            self.run_all_allocs(
-                rideable=rideable,
-                tracker=tracker,
-            )
-
     def run(self):
         self.rf.write(self.header + "\n")
-        self.run_trackers()
         self.run_updates()
         self.run_threads()
         self.run_sizes()
@@ -538,7 +533,7 @@ class SetbenchRunner:
                     f'/usr/bin/time -f "%M KiloBytes /usr/bin/time output" '
                     f"{numa_cmd} "
                     f"{binary} "
-                    f"-nwork {cfg.nproc} -nprefill {cfg.nproc} "
+                    f"-nwork {nthreads} -nprefill {nthreads} "
                     f"-i {update_half} -d {update_half} "
                     f"-rq 0 -rqsize 1 -k {size} -nrq 0 "
                     f"-t {cfg.trial_time_ms}"
@@ -596,8 +591,18 @@ class SetbenchRunner:
                 size=size,
             )
 
+    #vary reclamation scheme
+    def run_trackers(self):
+        for rideable in self.config.rideables:
+            for tracker in self.config.trackers:
+                self.run_all_allocs(
+                    rideable=rideable,
+                    tracker=tracker,
+                )
+
     def run(self):
         self.rf.write(self.header + "\n")
+        self.run_trackers()
         self.run_updates()
         self.run_threads()
         self.run_sizes()
@@ -608,6 +613,11 @@ class SetbenchRunner:
 # ---------------------------------------------------------------------------
 
 def main():
+    #make sure we are in the right directory
+    benchmark_dir=subprocess.getoutput("realpath "+re.sub(os.path.basename(__file__), "", os.path.realpath(__file__)))+"/"
+    curr_dir = os.getcwd()
+    os.chdir(benchmark_dir) #pushd
+
     script_dir = os.path.dirname(os.path.realpath(__file__))
 
     parser = argparse.ArgumentParser(
@@ -671,6 +681,7 @@ def main():
         elapsed = time.time() - start
         print(f"Completed in {elapsed:.1f}s ({elapsed/60:.1f}m)")
 
+    os.chdir(curr_dir) #popd
 
 if __name__ == "__main__":
     main()
