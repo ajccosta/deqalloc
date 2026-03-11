@@ -128,6 +128,8 @@ class FlockConfig:
     #for varying updates experiment
     update_percs: List[int] = field(default_factory=lambda: [1, 5, 50, 90, 100])
 
+    thread_percs: List[int] = field(default_factory=lambda: ["50;50", "75;25", "100;0"])
+
     #for varying size experiment
     rideables_sizes: List[Tuple[str, int]] = field(default_factory=lambda: [
         # small
@@ -356,7 +358,7 @@ class FlockRunner:
         return path if os.path.isfile(path) else None
 
     #run one experiment accross all allocators
-    def run_all_allocs(self, rideable, update_perc=None, size=None, nthreads=None):
+    def run_all_allocs(self, rideable, update_perc=None, size=None, nthreads=None, add_args=""):
         if size is None:
             size = self.config.default_rideables_sizes.get(rideable)
         if update_perc is None:
@@ -390,7 +392,8 @@ class FlockRunner:
                 f"{numa_cmd} "
                 f"{binary} "
                 f"-p {nthreads} -u {update_perc} -n {half_n} "
-                f"-t {cfg.trial_time_sec} -r {cfg.runs}"
+                f"-t {cfg.trial_time_sec} -r {cfg.runs} "
+                f"{add_args} "
             ).strip()
 
             output, status = run_command(cmd)
@@ -447,11 +450,30 @@ class FlockRunner:
                 size=size,
             )
 
+    #vary update skewness (some threads might do more deletes, others more inserts)
+    def run_thread_perc(self):
+        for rideable in self.config.rideables:
+            for thread_perc in self.config.thread_percs:
+                self.run_all_allocs(
+                    rideable=rideable,
+                    add_args=f"-thread-perc \"{thread_perc}\"",
+                )
+
+    #do upserts instead of regular insters
+    def run_upserts(self):
+        for rideable in self.config.rideables:
+            self.run_all_allocs(
+                rideable=rideable,
+                add_args=f"-upsert",
+            )
+
     def run(self):
         self.rf.write(self.header + "\n")
         self.run_updates()
         self.run_threads()
         self.run_sizes()
+        self.run_thread_perc()
+        self.run_upserts()
         self.rf.close()
 
 
@@ -668,8 +690,8 @@ def main():
     experiments = {
         "flock":    [(flock_runner.run,    "Flock Allocator Benchmarks")],
         "setbench": [(setbench_runner.run, "Setbench Allocator+Tracker Benchmarks")],
-        "all":      [(flock_runner.run,    "Flock Allocator Benchmarks"),
-                     (setbench_runner.run, "Setbench Allocator+Tracker Benchmarks")],
+        "all":      [(setbench_runner.run, "Setbench Allocator+Tracker Benchmarks"),
+                     (flock_runner.run,    "Flock Allocator Benchmarks")],
     }
 
     for func, label in experiments[args.experiment]:
