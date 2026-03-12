@@ -140,6 +140,7 @@ DEFAULT_PARAMS = {
         "list": 2000,
     },
     "reclamation": "debra",
+    "threads": -1,
 }
 
 #which data structures to show for the paper for the varying plots
@@ -187,6 +188,7 @@ def parse_flock(path):
     crashes = []
     crash_re = re.compile(r"#\s*CRASH:\s*(\w+)\s+alloc=(\w+)\s+u=(\d+)\s+n=(\d+)")
     row_re   = re.compile(
+        #TODO UPDATE
         r"^(\w+)\s+(\d+)\s+(\w+)\s+(\d+)\s+(True|False)\s+\[([^\]]*)\]\s+([\d.]+),\s*([\d.]+)\s*KB"
     )
     with open(path) as f:
@@ -328,7 +330,7 @@ def merge_entries(data):
         merged_data[k] = conf
         for i in range(1, len(data)):
             if(not(data[i][k] == conf)):
-                print(data)
+                print(data[i][k], conf)
             assert(data[i][k] == conf)
     new_values = []
     new_mem_kb = 0
@@ -467,7 +469,6 @@ def plot_threads(rows, out_dir, fmt):
             data = []
             allocs = sorted(set(r["allocator"] for r in rows if r["ds"] == ds))
 
-            #print(allocs)
             for t in thread_counts:
                 for a in allocs:
                     d = [r for r in rows if
@@ -480,8 +481,6 @@ def plot_threads(rows, out_dir, fmt):
                         r["threads"] == t]
 
                     data.append(merge_entries(d))
-
-            #data = [r for r in rows if r["key_size"] == DEFAULT_PARAMS["size"][DS_TYPES[ds]] and r["gmean"] > 0]
 
             fig, ax = plt.subplots(figsize=FIG_CONFIGS["figsize"])
 
@@ -612,10 +611,10 @@ def plot_geomean(rows, out_dir, fmt):
             transform=ax.get_xaxis_transform(),  # x in data coords, y in axes coords
         )
 
-    for alloc in all_values_global.keys():
-        gm = stat.geometric_mean(all_values_global[alloc])
-        sd = stat.stdev(all_values_global[alloc])
-        print(alloc, gm, (sd/gm)*100)
+    #for alloc in all_values_global.keys():
+    #    gm = stat.geometric_mean(all_values_global[alloc])
+    #    sd = stat.stdev(all_values_global[alloc])
+    #    print(alloc, gm, (sd/gm)*100)
     
     #claude.ai aligned bars!
     last_group_start = (len(dss) - 1) * (group_width + inter_group_gap * bar_width)
@@ -662,6 +661,152 @@ def plot_geomean(rows, out_dir, fmt):
     plt.close(fig)
 
 
+# -- Plot 5: Throughput in various reclamation schemes -----------------------------
+def plot_trackers(rows, out_dir, fmt):
+    bar_width = 1
+    inter_group_gap = 1.5
+    intra_group_gap = 0.3
+
+    dss = sorted(set(r["ds"] for r in rows))
+    trackers = sorted(set(r["reclamation"].replace("_df", "") for r in rows))
+
+    szx, szy = FIG_CONFIGS["figsize"]
+    fig, ax = plt.subplots(figsize=(len(trackers)*0.6462, szy))
+
+    seen_allocs = set()
+
+    all_values_global = {}
+
+    data = [r for r in rows if
+        DEFAULT_PARAMS["size"][DS_TYPES[r["ds"]]] == r["key_size"] and
+        DEFAULT_PARAMS["threads"] == r["threads"] and
+        DEFAULT_PARAMS["update"] == r["update"] and
+        #tracker == r["reclamation"].replace("_df", "") and
+        r["gmean"] > 0]
+
+    for i, tracker in enumerate(trackers):
+        tracker_rows = [r for r in data if r["reclamation"].replace("_df", "") == tracker]
+        allocs = sorted(set(r["allocator"] for r in tracker_rows))
+
+        nbars = len(allocs)
+        width = 0.8 / max(nbars, 1)
+        
+        group_width = nbars * bar_width + (nbars - 1) * intra_group_gap
+        group_start = i * (group_width + inter_group_gap * bar_width)
+        x = np.arange(len(allocs))
+    
+        bars = []
+        per_struct = {}
+
+        for alloc in allocs:
+            ds_rows_alloc = [r for r in tracker_rows if r["allocator"] == alloc]
+            all_values = []
+            for r in ds_rows_alloc:
+                all_values.extend(r["values"])
+
+                if alloc not in all_values_global:
+                    all_values_global[alloc] = []
+                all_values_global[alloc].extend(r["values"])
+            y = stat.geometric_mean(all_values)
+            per_struct[alloc] = y
+    
+        best_performing = max([per_struct[alloc] for alloc in allocs])
+    
+        for j, alloc in enumerate(allocs):
+            label = alloc if alloc not in seen_allocs else None
+            seen_allocs.add(alloc)
+
+            offset = group_start + j * (bar_width + intra_group_gap)
+            y = per_struct[alloc] / best_performing
+            bars.append((
+                    ax.bar(offset,
+                    y,
+                    width=bar_width,
+                    hatch=ALLOC_HATCHES.get(alloc),
+                    color=ALLOC_PALETTE.get(alloc),
+                    edgecolor="black",
+                    linewidth=FIG_CONFIGS.get("bar_linewidth"),
+                    label=label,
+                    zorder=ALLOC_ZORDER.get(alloc)),
+                    per_struct[alloc]
+            ))
+    
+        for bar, ys in bars:
+            for b in bar:
+                ax.text(
+                    b.get_x() + b.get_width() / 2,
+                    b.get_height()*1.015+0.01,
+                    f'{ys:.1f}',
+                    ha='center',
+                    va='bottom',
+                    fontweight='bold',
+                    fontsize=4,
+                    rotation=90,
+                    zorder=ALLOC_ZORDER.get("deqalloc")+1,
+                )
+
+        group_center = group_start + (group_width - intra_group_gap) / 2
+        ax.text(
+            group_center,
+            -0.05,  # just below x-axis, in axes coordinates
+            tracker,
+            ha='center',
+            va='top',
+            fontsize=FIG_CONFIGS.get("xtick_fontsize")-1,
+            transform=ax.get_xaxis_transform(),  # x in data coords, y in axes coords
+        )
+
+    #for alloc in all_values_global.keys():
+    #    gm = stat.geometric_mean(all_values_global[alloc])
+    #    sd = stat.stdev(all_values_global[alloc])
+    #    print(alloc, gm, (sd/gm)*100)
+    
+    #claude.ai aligned bars!
+    last_group_start = (len(trackers) - 1) * (group_width + inter_group_gap * bar_width)
+    first_bar_center = 0  # group_start when i=0, j=0
+    last_bar_center = last_group_start + (nbars - 1) * (bar_width + intra_group_gap)
+    margin = bar_width / 2 + bar_width * inter_group_gap
+    ax.set_xlim(first_bar_center - margin, last_bar_center + margin)
+
+    ax.set_ylim(0, 1.25)
+
+    plt.xticks([])
+    ax.set_xlabel("Reclamation Scheme", labelpad=11)
+    
+    ax.legend(
+        ncol=len(allocs),
+        frameon=True,
+        fontsize=FIG_CONFIGS.get("legend_fontsize"),
+        loc="upper center",
+        alignment="center",
+        bbox_to_anchor=(0.5, 1.155),
+        labelcolor="black",
+        edgecolor="black",
+        fancybox=False,
+        handlelength=2,
+        handleheight=1,
+        handletextpad=0.5,
+        columnspacing=2.17,
+    )
+    ax.get_legend().get_frame().set_linewidth(0.8)
+
+    ax.set_ylabel("Geomean Throughput (Mops/s)")
+    
+    style_fig(fig, ax, True)
+
+    #override some style_fig
+    ax.yaxis.label.set_fontsize(FIG_CONFIGS["ylabel_fontsize"]-1.5)
+    ax.xaxis.label.set_fontsize(FIG_CONFIGS["xlabel_fontsize"]-1.5)
+    ax.tick_params(axis='y', labelsize=FIG_CONFIGS["ytick_fontsize"]-1)
+
+    fig.savefig(f"{out_dir}/paper/trackers.{fmt}",
+        dpi=FIG_CONFIGS["dpi"],
+        bbox_inches="tight",
+        pad_inches=FIG_CONFIGS["pad_inches"])
+    plt.close(fig)
+
+
+
 # -- Main ----------------------------------------------------------------------
 def main():
     parser = argparse.ArgumentParser(description='Plot deqalloc experiments')
@@ -674,6 +819,7 @@ def main():
                                 'update',
                                 'geomean',
                                 'threads',
+                                'trackers',
                                 #'ablation',
                                 #'machines',
                                 'all'],
@@ -693,6 +839,7 @@ def main():
     os.makedirs(args.output_dir, exist_ok=True)
 
     rows, crashes = parse_flock(f"{args.input_dir}/flock")
+    #max_nthreads = max([r["threads"] for r in rows if r["gmean"] > 0])
     print(f"  {len(rows)} data rows, {len(crashes)} crash records")
     print(f"Saving plots to: {args.output_dir}/\n")
 
@@ -702,11 +849,15 @@ def main():
     if "geomean" in args.plots or do_all: plot_geomean(rows, f"{args.output_dir}/flock", args.format)
 
     rows, crashes = parse_setbench(f"{args.input_dir}/setbench")
+    nthreads = sorted(set([r["threads"] for r in rows if r["gmean"] > 0]))
+    #index -1 is oversubscribed, use the previous thread count as the default
+    DEFAULT_PARAMS["threads"] = nthreads[-2]
     do_all = "all" in args.plots
     if "size" in args.plots or do_all: plot_size(rows, f"{args.output_dir}/setbench", args.format)
     if "update" in args.plots or do_all: plot_update(rows, f"{args.output_dir}/setbench", args.format)
     if "geomean" in args.plots or do_all: plot_geomean(rows, f"{args.output_dir}/setbench", args.format)
     if "threads" in args.plots or do_all: plot_threads(rows, f"{args.output_dir}/setbench", args.format)
+    if "trackers" in args.plots or do_all: plot_trackers(rows, f"{args.output_dir}/setbench", args.format)
 
 if __name__ == "__main__":
     main()
