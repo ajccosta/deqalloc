@@ -117,8 +117,8 @@ ALLOC_HATCHES = {
 
 FIG_CONFIGS = {
     "figsize": (2.4, 1.8),
-    "linewidth": 1.8,
-    "markersize": 3.5,
+    "linewidth": 1.4,
+    "markersize": 3,
     "xlabel_fontsize": 7.5,
     "ylabel_fontsize": 7.5,
     "xtick_fontsize": 6.5,
@@ -130,6 +130,7 @@ FIG_CONFIGS = {
     "pad_inches": 0.015,
     "xtick_end_margin": 0.1,
     "bar_linewidth": 0.7,
+    "linestyle": 'dashed',
 }
 
 DEFAULT_PARAMS = {
@@ -137,8 +138,8 @@ DEFAULT_PARAMS = {
     "size": {
         "normal": 200000,
         "list": 2000,
-    }
-
+    },
+    "reclamation": "debra",
 }
 
 #which data structures to show for the paper for the varying plots
@@ -219,9 +220,6 @@ def parse_flock(path):
                 if abs(mean - float(m.group(7))) > 10**-3:
                     print(f"Error in mean checksum. Given: {float(m.group(7))}, Calculated: {mean}")
     return rows, crashes
-
-import re
-import statistics as stat
 
 def parse_setbench(path):
     rows = []
@@ -317,6 +315,32 @@ def which_paper_ds(dss):
     assert(paper_ds != [])
     return paper_ds
 
+def merge_entries(data):
+    if len(data) == 1:
+        return data[0]
+    if len(data) == 0:
+        return {}
+    merged_data = {}
+    config_keys = ['allocator', 'update', 'reclamation', 'ds', 'key_size', 'threads', 'numa']
+    #check that config_keys are equal
+    for k in config_keys:
+        conf = data[0][k]
+        merged_data[k] = conf
+        for i in range(1, len(data)):
+            if(not(data[i][k] == conf)):
+                print(data)
+            assert(data[i][k] == conf)
+    new_values = []
+    new_mem_kb = 0
+    for d in data:
+        new_values.extend(d["values"].copy())
+        new_mem_kb += d["mem_kb"] / len(data)
+    merged_data["values"] = new_values
+    merged_data["mean"] = stat.mean(new_values)
+    merged_data["gmean"] = stat.geometric_mean(new_values)
+    merged_data["mem_kb"] = new_mem_kb
+    return merged_data
+
 
 # -- Plot 1: Throughput vs key_size (100% writes) -----------------------------
 def plot_size(rows, out_dir, fmt):
@@ -348,6 +372,7 @@ def plot_size(rows, out_dir, fmt):
                         color=ALLOC_PALETTE.get(alloc),
                         marker=ALLOC_MARKERS.get(alloc),
                         markersize=FIG_CONFIGS["markersize"], 
+                        linestyle=FIG_CONFIGS["linestyle"],
                         zorder=ALLOC_ZORDER.get(alloc))
 
             xlabels = get_nice_scinot_labels(sizes)
@@ -400,6 +425,7 @@ def plot_update(rows, out_dir, fmt):
                         color=ALLOC_PALETTE.get(alloc),
                         marker=ALLOC_MARKERS.get(alloc),
                         markersize=FIG_CONFIGS["markersize"], 
+                        linestyle=FIG_CONFIGS["linestyle"],
                         zorder=ALLOC_ZORDER.get(alloc))
 
             xlabels = updates
@@ -423,7 +449,82 @@ def plot_update(rows, out_dir, fmt):
     merge_pdfs_horizontally(paper_ds_list, f"{out_dir}/paper/update.{fmt}")
 
 
-# -- Plot 3: Geomean Bars per data structure -----------------------
+# -- Plot 3: Throughput vs update rate -----------------------------
+def plot_threads(rows, out_dir, fmt):
+    for paper_print in [True, False]: #print a paper version and a viewing version
+        paper_dir = "paper/" if paper_print else ""
+        os.makedirs(f"{out_dir}/{paper_dir}", exist_ok=True)
+
+        dss = sorted(set(r["ds"] for r in rows))
+        paper_ds = which_paper_ds(dss)
+
+        thread_counts = set()
+        for r in rows:
+            thread_counts.add(r['threads'])
+        thread_counts = sorted(thread_counts)
+
+        for i, ds in enumerate(dss):
+            data = []
+            allocs = sorted(set(r["allocator"] for r in rows if r["ds"] == ds))
+
+            #print(allocs)
+            for t in thread_counts:
+                for a in allocs:
+                    d = [r for r in rows if
+                        DEFAULT_PARAMS["size"][DS_TYPES[ds]] == r["key_size"] and
+                        DEFAULT_PARAMS["reclamation"] in r["reclamation"] and
+                        DEFAULT_PARAMS["update"] == r["update"] and
+                        r["ds"] == ds and
+                        r["allocator"] == a and
+                        r["gmean"] > 0 and
+                        r["threads"] == t]
+
+                    data.append(merge_entries(d))
+
+            #data = [r for r in rows if r["key_size"] == DEFAULT_PARAMS["size"][DS_TYPES[ds]] and r["gmean"] > 0]
+
+            fig, ax = plt.subplots(figsize=FIG_CONFIGS["figsize"])
+
+            ds_rows = [r for r in data if r.get("ds") == ds]
+            threads  = sorted(set(r["threads"] for r in ds_rows))
+
+            for alloc in allocs:
+                pts = {r["threads"]: r["gmean"] for r in ds_rows if r["allocator"] == alloc}
+                ys = [pts.get(s, None) for s in threads]
+                ax.plot(range(len(threads)),
+                        ys,
+                        label=alloc,
+                        linewidth=FIG_CONFIGS["linewidth"],
+                        color=ALLOC_PALETTE.get(alloc),
+                        marker=ALLOC_MARKERS.get(alloc),
+                        markersize=FIG_CONFIGS["markersize"], 
+                        linestyle=FIG_CONFIGS["linestyle"],
+                        zorder=ALLOC_ZORDER.get(alloc))
+
+            xlabels = threads
+            plt.xticks(range(len(threads)), xlabels, rotation=90)
+            ax.set_xlabel("Thread count")
+            ax.set_title(f'{DS_LABELS.get(ds)}')
+
+            if not paper_dir or ds == paper_ds[0]:
+                ax.set_ylabel('Throughput (Mops/s)', fontsize=FIG_CONFIGS["ylabel_fontsize"])
+                ylabel = ax.yaxis.label
+                ylabel.set_y(ylabel.get_position()[1] - 0.05)
+
+            style_fig(fig, ax, paper_print)
+            fig.savefig(f"{out_dir}/{paper_dir}threads_{ds}.{fmt}",
+                dpi=FIG_CONFIGS["dpi"],
+                bbox_inches="tight",
+                pad_inches=FIG_CONFIGS["pad_inches"])
+            plt.close(fig)
+
+    paper_ds_list = [ f"{out_dir}/paper/threads_{ds}.{fmt}" for ds in paper_ds ] 
+    merge_pdfs_horizontally(paper_ds_list, f"{out_dir}/paper/threads.{fmt}")
+
+
+
+
+# -- Plot 4: Geomean Bars per data structure -----------------------
 def plot_geomean(rows, out_dir, fmt):
     bar_width = 1
     inter_group_gap = 1.5
@@ -572,6 +673,7 @@ def main():
                        choices=['size',
                                 'update',
                                 'geomean',
+                                'threads',
                                 #'ablation',
                                 #'machines',
                                 'all'],
@@ -604,6 +706,7 @@ def main():
     if "size" in args.plots or do_all: plot_size(rows, f"{args.output_dir}/setbench", args.format)
     if "update" in args.plots or do_all: plot_update(rows, f"{args.output_dir}/setbench", args.format)
     if "geomean" in args.plots or do_all: plot_geomean(rows, f"{args.output_dir}/setbench", args.format)
+    if "threads" in args.plots or do_all: plot_threads(rows, f"{args.output_dir}/setbench", args.format)
 
 if __name__ == "__main__":
     main()
