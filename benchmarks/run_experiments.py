@@ -149,16 +149,16 @@ class FlockConfig:
         # medium-large
         ("btree_lck",      20_000_000),
         ("hash_block_lck", 20_000_000),
-        ("leaftree_lck",    2_000_000),
-        ("skiplist_lck",    2_000_000),
-        ("arttree_lck",     2_000_000),
+        ("leaftree_lck",   20_000_000),
+        ("skiplist_lck",   20_000_000),
+        ("arttree_lck",    20_000_000),
         ("list_lck",           10_000),
         # large
         ("btree_lck",      200_000_000),
         ("hash_block_lck", 200_000_000),
-        ("leaftree_lck",    20_000_000),
-        ("skiplist_lck",    20_000_000),
-        ("arttree_lck",     20_000_000),
+        ("leaftree_lck",   200_000_000),
+        ("skiplist_lck",   200_000_000),
+        ("arttree_lck",    200_000_000),
         ("list_lck",            10_000),
     ])
 
@@ -235,13 +235,13 @@ class SetbenchConfig:
         # medium-large
         ("guerraoui_ext_bst_ticket",   20_000_000),
         ("brown_ext_abtree_lf",        20_000_000),
-        ("hm_hashtable",                2_000_000),
+        ("hm_hashtable",               20_000_000),
         ("hmlist",                         10_000),
         # large
         ("guerraoui_ext_bst_ticket",   200_000_000),
         ("brown_ext_abtree_lf",        200_000_000),
-        ("hm_hashtable",                20_000_000),
-        ("hmlist",                         10_000),
+        ("hm_hashtable",               200_000_000),
+        ("hmlist",                          10_000),
     ])
 
     thread_counts: List[int] = field(default_factory=lambda:
@@ -340,8 +340,8 @@ class FlockRunner:
         self.alloc_dir = alloc_dir
         self.output_dir = output_dir
 
-        self.fmt = "{:<17} {:<10} {:<20} {:<10} {:<9} {:<6} {}"
-        self.header = self.fmt.format("allocator", "update%", "ds", "key_size", "#threads", "numa", "results")
+        self.fmt = "{:<17} {:<7} {:<20} {:<10} {:<9} {:<6} {:<21} {}"
+        self.header = self.fmt.format("allocator", "update%", "ds", "key_size", "#threads", "numa", "thread-perc", "results")
         self.path = self._output_path("flock")
         self.rf = ResultsFile(self.path, self.alloc_dir, "flock")
 
@@ -375,7 +375,7 @@ class FlockRunner:
                 continue
 
             numa_cmd = "numactl -i all" if use_numa else ""
-            prefix = self.fmt.format(alloc, update_perc, rideable, size, nthreads, str(use_numa), "[ ")
+            prefix = self.fmt.format(alloc, update_perc, rideable, size, nthreads, str(use_numa), add_args, "[ ")
             self.rf.write(prefix)
 
             binary = self._binary(rideable)
@@ -469,11 +469,12 @@ class FlockRunner:
 
     def run(self):
         self.rf.write(self.header + "\n")
-        self.run_updates()
-        self.run_threads()
-        self.run_sizes()
-        self.run_thread_perc()
-        self.run_upserts()
+        b = self.config.args.benchmark
+        if b == "all" or b == "thread-perc": self.run_thread_perc()
+        if b == "all" or b == "upserts": self.run_upserts()
+        if b == "all" or b == "updates": self.run_updates()
+        if b == "all" or b == "threads": self.run_threads()
+        if b == "all" or b == "sizes": self.run_sizes()
         self.rf.close()
 
 
@@ -624,10 +625,11 @@ class SetbenchRunner:
 
     def run(self):
         self.rf.write(self.header + "\n")
-        self.run_trackers()
-        self.run_updates()
-        self.run_threads()
-        self.run_sizes()
+        b = self.config.args.benchmark
+        if b == "all" or b == "trackers": self.run_trackers()
+        if b == "all" or b == "updates": self.run_updates()
+        if b == "all" or b == "threads": self.run_threads()
+        if b == "all" or b == "sizes": self.run_sizes()
         self.rf.close()
 
 # ---------------------------------------------------------------------------
@@ -662,10 +664,13 @@ def main():
     parser.add_argument("--alloc-dir", metavar="DIR",
                         default=os.path.join(script_dir, "../build/allocators"),
                         help="Path to allocator .so files for flock")
-    parser.add_argument("--runs",        type=int, default=5,  help="Number of runs (default: 5)")
-    parser.add_argument("--allocator",   default=None,         help="Run only this allocator")
-    parser.add_argument("--ds",          default=None,         help="Run only this data structure")
-    parser.add_argument("--time",        type=int, default=5,  help="Amount of time each run takes (defailt: 5)")
+    parser.add_argument("--runs",        type=int, default=5,      help="Number of runs (default: 5)")
+    parser.add_argument("--allocator",   default=None,             help="Run only this allocator")
+    parser.add_argument("--ds",          default=None,             help="Run only this data structure")
+    parser.add_argument("--time",        type=int, default=5,      help="Amount of time each run takes (default: 5)")
+    parser.add_argument("--benchmark",   type=str, default="all",  help="Run one specific benchmark (default: all)",
+                            choices=["updates", "sizes", "threads", "trackers", "thread-perc", "upserts", "all"])
+
     args = parser.parse_args()
 
     # -- flock config --

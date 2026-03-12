@@ -5,7 +5,7 @@
 #include <iostream>
 #include <array>
 
-constexpr size_t max_threads = 512;
+constexpr size_t max_threads = 1024;
 static std::atomic<size_t> thread_counter{0};
 
 //default initialized to false, so we use false as "available"
