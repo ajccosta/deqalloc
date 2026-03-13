@@ -55,6 +55,27 @@ DS_LABELS = {
     "hm_hashtable"              : "hmhash",
 }
 
+TRACKER_LABELS = {
+    "2geibr"    : "ibr",
+    "debra"     : "debra",
+    "he"        : "he",
+    "ibr_hp"    : "hp",
+    "ibr_rcu"   : "ebr",
+    "nbr"       : "nbr",
+    "nbrplus"   : "nbr+",
+    "qsbr"      : "qsbr",
+    "wfe"       : "wfe",
+    "2geibr_df"    : "ibr",
+    "debra_df"     : "debra",
+    "he_df"        : "he",
+    "ibr_hp_df"    : "hp",
+    "ibr_rcu_df"   : "ebr",
+    "nbr_df"       : "nbr",
+    "nbrplus_df"   : "nbr+",
+    "qsbr_df"      : "qsbr",
+    "wfe_df"       : "wfe",
+}
+
 DS_TYPES = {
     "btree_lck"                 : "normal",
     "hash_block_lck"            : "normal",
@@ -115,16 +136,18 @@ ALLOC_HATCHES = {
     "rpmalloc":  "...",
 }
 
+scale = 1.5
+
 FIG_CONFIGS = {
-    "figsize": (2.4, 1.8),
+    "figsize": (2.5, 1.5),
     "linewidth": 1.4,
     "markersize": 3,
-    "xlabel_fontsize": 7.5,
-    "ylabel_fontsize": 7.5,
-    "xtick_fontsize": 6.5,
-    "ytick_fontsize": 6.5,
-    "legend_fontsize": 4.5,
-    "title_fontsize": 8,
+    "xlabel_fontsize": scale * 7.5,
+    "ylabel_fontsize": scale * 6.0,
+    "xtick_fontsize":  scale * 6.5,
+    "ytick_fontsize":  scale * 6.5,
+    "legend_fontsize": scale * 4.5,
+    "title_fontsize":  scale * 8,
     "legend_ncols": len(ALLOC_PALETTE)/3,
     "dpi": 300,
     "pad_inches": 0.015,
@@ -143,9 +166,12 @@ DEFAULT_PARAMS = {
     "threads": -1,
 }
 
-#which data structures to show for the paper for the varying plots
+#which data structures/trackers to show for the paper for the varying plots
 PAPER_DS_FLOCK = ["skiplist_lck", "leaftree_lck", "hash_block_lck"]
-PAPER_DS_SETBENCH = ["guerraoui_ext_bst_ticket", "brown_ext_abtree_lf", "hm_hashtable", "hmlist"]
+
+#PAPER_DS_SETBENCH = ["guerraoui_ext_bst_ticket", "brown_ext_abtree_lf", "hm_hashtable", "hmlist"]
+PAPER_DS_SETBENCH = ["guerraoui_ext_bst_ticket", "brown_ext_abtree_lf", "hm_hashtable"]
+PAPER_TRACKERS_SETBENCH = ["ibr", "debra", "he", "hp", "ebr", "nbr+", "qsbr", "wfe"]
 
 mpl.rcParams["hatch.linewidth"] = FIG_CONFIGS.get("bar_linewidth")
 
@@ -180,7 +206,8 @@ def style_fig(fig, ax, paper_print):
         )
 
     else:
-        plt.tight_layout()
+        #plt.tight_layout()
+        pass
 
 # -- Parser -------------------------------------------------------------------
 def parse_flock(path):
@@ -248,7 +275,7 @@ def parse_setbench(path):
                 entry = dict(
                     allocator=m.group(1),
                     update=int(m.group(2)),
-                    reclamation=m.group(3),
+                    reclamation=TRACKER_LABELS.get(m.group(3)),
                     ds=m.group(4),
                     key_size=int(m.group(5)),
                     threads=int(m.group(6)),
@@ -288,6 +315,8 @@ def get_nice_scinot_labels(x_vals):
     return labels
 
 def merge_pdfs_horizontally(pdf_list, output_path):
+    if pdf_list == []:
+        return
     if not pdfmerge: #package not imported
         return
     docs = [fitz.open(pdf) for pdf in pdf_list]
@@ -314,7 +343,7 @@ def which_paper_ds(dss):
     if set(dss).intersection(set(PAPER_DS_SETBENCH)):
         assert(paper_ds == [])
         paper_ds = PAPER_DS_SETBENCH
-    assert(paper_ds != [])
+    #assert(paper_ds != [])
     return paper_ds
 
 def merge_entries(data):
@@ -663,15 +692,16 @@ def plot_geomean(rows, out_dir, fmt):
 
 # -- Plot 5: Throughput in various reclamation schemes -----------------------------
 def plot_trackers(rows, out_dir, fmt):
-    bar_width = 1
-    inter_group_gap = 1.5
+    bar_width = 0.6
+    inter_group_gap = 1.2
     intra_group_gap = 0.3
 
     dss = sorted(set(r["ds"] for r in rows))
-    trackers = sorted(set(r["reclamation"].replace("_df", "") for r in rows))
+    trackers = sorted(r["reclamation"] for r in rows)
+    trackers = sorted(set(trackers).intersection(set(PAPER_TRACKERS_SETBENCH)))
 
     szx, szy = FIG_CONFIGS["figsize"]
-    fig, ax = plt.subplots(figsize=(len(trackers)*0.6462, szy))
+    fig, ax = plt.subplots(figsize=(len(trackers)*1.15, szy))
 
     seen_allocs = set()
 
@@ -685,7 +715,7 @@ def plot_trackers(rows, out_dir, fmt):
         r["gmean"] > 0]
 
     for i, tracker in enumerate(trackers):
-        tracker_rows = [r for r in data if r["reclamation"].replace("_df", "") == tracker]
+        tracker_rows = [r for r in data if r["reclamation"] == tracker]
         allocs = sorted(set(r["allocator"] for r in tracker_rows))
 
         nbars = len(allocs)
@@ -771,7 +801,7 @@ def plot_trackers(rows, out_dir, fmt):
     ax.set_ylim(0, 1.25)
 
     plt.xticks([])
-    ax.set_xlabel("Reclamation Scheme", labelpad=11)
+    ax.set_xlabel("Reclamation Scheme", labelpad=15)
     
     ax.legend(
         ncol=len(allocs),
@@ -779,14 +809,14 @@ def plot_trackers(rows, out_dir, fmt):
         fontsize=FIG_CONFIGS.get("legend_fontsize"),
         loc="upper center",
         alignment="center",
-        bbox_to_anchor=(0.5, 1.155),
+        bbox_to_anchor=(0.5, 1.22),
         labelcolor="black",
         edgecolor="black",
         fancybox=False,
         handlelength=2,
         handleheight=1,
         handletextpad=0.5,
-        columnspacing=2.17,
+        columnspacing=1.65,
     )
     ax.get_legend().get_frame().set_linewidth(0.8)
 
@@ -814,6 +844,8 @@ def main():
                        help='Path to directory containing timing files')
     parser.add_argument('-o', '--output-dir', type=str, default='plots',
                        help='Output directory for plots (default: plots)')
+    parser.add_argument('-b', '--benchmark', type=str, default='all', choices=['flock', 'setbench', 'all'],
+                       help='Benchmark suite to plot (default: all)')
     parser.add_argument('--plots', nargs='+',
                        choices=['size',
                                 'update',
@@ -838,26 +870,25 @@ def main():
 
     os.makedirs(args.output_dir, exist_ok=True)
 
-    rows, crashes = parse_flock(f"{args.input_dir}/flock")
-    #max_nthreads = max([r["threads"] for r in rows if r["gmean"] > 0])
-    print(f"  {len(rows)} data rows, {len(crashes)} crash records")
-    print(f"Saving plots to: {args.output_dir}/\n")
+    if args.benchmark == "all" or args.benchmark == "flock":
+        rows, crashes = parse_flock(f"{args.input_dir}/flock")
+        #max_nthreads = max([r["threads"] for r in rows if r["gmean"] > 0])
+        do_all = "all" in args.plots
+        if "size" in args.plots or do_all: plot_size(rows, f"{args.output_dir}/flock", args.format)
+        if "update" in args.plots or do_all: plot_update(rows, f"{args.output_dir}/flock", args.format)
+        if "geomean" in args.plots or do_all: plot_geomean(rows, f"{args.output_dir}/flock", args.format)
 
-    do_all = "all" in args.plots
-    if "size" in args.plots or do_all: plot_size(rows, f"{args.output_dir}/flock", args.format)
-    if "update" in args.plots or do_all: plot_update(rows, f"{args.output_dir}/flock", args.format)
-    if "geomean" in args.plots or do_all: plot_geomean(rows, f"{args.output_dir}/flock", args.format)
-
-    rows, crashes = parse_setbench(f"{args.input_dir}/setbench")
-    nthreads = sorted(set([r["threads"] for r in rows if r["gmean"] > 0]))
-    #index -1 is oversubscribed, use the previous thread count as the default
-    DEFAULT_PARAMS["threads"] = nthreads[-2]
-    do_all = "all" in args.plots
-    if "size" in args.plots or do_all: plot_size(rows, f"{args.output_dir}/setbench", args.format)
-    if "update" in args.plots or do_all: plot_update(rows, f"{args.output_dir}/setbench", args.format)
-    if "geomean" in args.plots or do_all: plot_geomean(rows, f"{args.output_dir}/setbench", args.format)
-    if "threads" in args.plots or do_all: plot_threads(rows, f"{args.output_dir}/setbench", args.format)
-    if "trackers" in args.plots or do_all: plot_trackers(rows, f"{args.output_dir}/setbench", args.format)
+    if args.benchmark == "all" or args.benchmark == "setbench":
+        rows, crashes = parse_setbench(f"{args.input_dir}/setbench")
+        nthreads = sorted(set([r["threads"] for r in rows if r["gmean"] > 0]))
+        #index -1 is oversubscribed, use the previous thread count as the default
+        DEFAULT_PARAMS["threads"] = nthreads[-2]
+        do_all = "all" in args.plots
+        if "size" in args.plots or do_all: plot_size(rows, f"{args.output_dir}/setbench", args.format)
+        if "update" in args.plots or do_all: plot_update(rows, f"{args.output_dir}/setbench", args.format)
+        if "geomean" in args.plots or do_all: plot_geomean(rows, f"{args.output_dir}/setbench", args.format)
+        if "threads" in args.plots or do_all: plot_threads(rows, f"{args.output_dir}/setbench", args.format)
+        if "trackers" in args.plots or do_all: plot_trackers(rows, f"{args.output_dir}/setbench", args.format)
 
 if __name__ == "__main__":
     main()
