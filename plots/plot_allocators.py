@@ -693,8 +693,8 @@ def plot_geomean(rows, out_dir, fmt):
 # -- Plot 5: Throughput in various reclamation schemes -----------------------------
 def plot_trackers(rows, out_dir, fmt):
     bar_width = 0.6
-    inter_group_gap = 1.2
-    intra_group_gap = 0.3
+    inter_group_gap = 0.8
+    intra_group_gap = 0.1
 
     dss = sorted(set(r["ds"] for r in rows))
     trackers = sorted(r["reclamation"] for r in rows)
@@ -770,7 +770,7 @@ def plot_trackers(rows, out_dir, fmt):
                     ha='center',
                     va='bottom',
                     fontweight='bold',
-                    fontsize=4,
+                    fontsize=6,
                     rotation=90,
                     zorder=ALLOC_ZORDER.get("deqalloc")+1,
                 )
@@ -798,7 +798,7 @@ def plot_trackers(rows, out_dir, fmt):
     margin = bar_width / 2 + bar_width * inter_group_gap
     ax.set_xlim(first_bar_center - margin, last_bar_center + margin)
 
-    ax.set_ylim(0, 1.25)
+    ax.set_ylim(0, 1.35)
 
     plt.xticks([])
     ax.set_xlabel("Reclamation Scheme", labelpad=15)
@@ -806,17 +806,17 @@ def plot_trackers(rows, out_dir, fmt):
     ax.legend(
         ncol=len(allocs),
         frameon=True,
-        fontsize=FIG_CONFIGS.get("legend_fontsize"),
+        fontsize=FIG_CONFIGS.get("legend_fontsize")+1,
         loc="upper center",
         alignment="center",
-        bbox_to_anchor=(0.5, 1.22),
+        bbox_to_anchor=(0.5, 1.24),
         labelcolor="black",
         edgecolor="black",
         fancybox=False,
         handlelength=2,
         handleheight=1,
         handletextpad=0.5,
-        columnspacing=1.65,
+        columnspacing=0.63,
     )
     ax.get_legend().get_frame().set_linewidth(0.8)
 
