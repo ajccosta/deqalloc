@@ -288,7 +288,7 @@ def find_allocator_lib(alloc_dir: str, name: str) -> Optional[str]:
 class ResultsFile:
     def __init__(self, path: str, alloc_dir: str, experiment: str):
         today = datetime.now().strftime("%m-%d-%Y")
-        self.f = open(path, "w")
+        self.f = open(path, "a")
         self.f.write(f"Date: {today}\n")
         self.f.write(f"Experiment: {experiment}\n")
         try:
@@ -470,11 +470,12 @@ class FlockRunner:
     def run(self):
         self.rf.write(self.header + "\n")
         b = self.config.args.benchmark
-        if b == "all" or b == "thread-perc": self.run_thread_perc()
-        if b == "all" or b == "upserts": self.run_upserts()
-        if b == "all" or b == "updates": self.run_updates()
-        if b == "all" or b == "threads": self.run_threads()
-        if b == "all" or b == "sizes": self.run_sizes()
+        run_all = "all" in b
+        if run_all or "thread-perc" in b: self.run_thread_perc()
+        if run_all or "upserts"     in b: self.run_upserts()
+        if run_all or "updates"     in b: self.run_updates()
+        if run_all or "threads"     in b: self.run_threads()
+        if run_all or "sizes"       in b: self.run_sizes()
         self.rf.close()
 
 
@@ -626,10 +627,11 @@ class SetbenchRunner:
     def run(self):
         self.rf.write(self.header + "\n")
         b = self.config.args.benchmark
-        if b == "all" or b == "trackers": self.run_trackers()
-        if b == "all" or b == "updates": self.run_updates()
-        if b == "all" or b == "threads": self.run_threads()
-        if b == "all" or b == "sizes": self.run_sizes()
+        run_all = "all" in b
+        if run_all or "trackers" in b: self.run_trackers()
+        if run_all or "updates"  in b: self.run_updates()
+        if run_all or "threads"  in b: self.run_threads()
+        if run_all or "sizes"    in b: self.run_sizes()
         self.rf.close()
 
 # ---------------------------------------------------------------------------
@@ -668,8 +670,8 @@ def main():
     parser.add_argument("--allocator",   default=None,             help="Run only this allocator")
     parser.add_argument("--ds",          default=None,             help="Run only this data structure")
     parser.add_argument("--time",        type=int, default=5,      help="Amount of time each run takes (default: 5)")
-    parser.add_argument("--benchmark",   type=str, default="all",  help="Run one specific benchmark (default: all)",
-                            choices=["updates", "sizes", "threads", "trackers", "thread-perc", "upserts", "all"])
+    parser.add_argument("--benchmark",   type=str, default=["all"],  help="Run specific benchmark(s) (default: all)",
+                            nargs="+", choices=["updates", "sizes", "threads", "trackers", "thread-perc", "upserts", "all"])
 
     args = parser.parse_args()
 
