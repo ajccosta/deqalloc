@@ -336,13 +336,19 @@ def merge_pdfs_horizontally(pdf_list, output_path):
     out_doc.close()
     print(f"merged {len(pdf_list)} pdfs to {output_path}")
 
-def which_paper_ds(dss):
+def which_paper_ds(dss, special_case=None):
     paper_ds = []
     if set(dss).intersection(set(PAPER_DS_FLOCK)):
-        paper_ds = PAPER_DS_FLOCK
+        if special_case == "memory":
+            paper_ds = PAPER_DS_FLOCK
+        else:
+            paper_ds = PAPER_DS_FLOCK
     if set(dss).intersection(set(PAPER_DS_SETBENCH)):
         assert(paper_ds == [])
-        paper_ds = PAPER_DS_SETBENCH
+        if special_case == None:
+            paper_ds = PAPER_DS_SETBENCH
+        else:
+            paper_ds = ["guerraoui_ext_bst_ticket", "brown_ext_abtree_lf"]
     #assert(paper_ds != [])
     return paper_ds
 
@@ -835,6 +841,66 @@ def plot_trackers(rows, out_dir, fmt):
         pad_inches=FIG_CONFIGS["pad_inches"])
     plt.close(fig)
 
+# -- Plot 6: Memory usage -----------------------------
+def plot_memory(rows, out_dir, fmt):
+    dss = sorted(set(r["ds"] for r in rows))
+
+    for paper_print in [True, False]: #print a paper version and a viewing version
+        paper_dir = "paper/" if paper_print else ""
+        os.makedirs(f"{out_dir}/{paper_dir}", exist_ok=True)
+
+        dss = sorted(set(r["ds"] for r in rows))
+        paper_ds = which_paper_ds(dss, "memory")
+
+        for i, ds in enumerate(dss):
+            fig, ax = plt.subplots(figsize=FIG_CONFIGS["figsize"])
+
+            ds_rows = [r for r in rows if r["update"] == DEFAULT_PARAMS.get("update")
+                and r["gmean"] > 0
+                and r["reclamation"] == DEFAULT_PARAMS.get("reclamation")
+                and r["threads"] == DEFAULT_PARAMS.get("threads")
+                and r["ds"] == ds]
+
+            allocs = sorted(set(r["allocator"] for r in ds_rows))
+            sizes  = sorted(set(r["key_size"] for r in ds_rows))
+
+            for alloc in allocs:
+                throughput = {r["key_size"]: r["gmean"] for r in ds_rows if r["allocator"] == alloc}
+                memusage = {r["key_size"]: r["mem_kb"] for r in ds_rows if r["allocator"] == alloc}
+                ys = [memusage.get(s, None) / (10**6) for s in sizes] #convert to gb
+
+                ax.plot(range(len(sizes)),
+                        ys,
+                        label=alloc,
+                        linewidth=FIG_CONFIGS["linewidth"],
+                        color=ALLOC_PALETTE.get(alloc),
+                        marker=ALLOC_MARKERS.get(alloc),
+                        markersize=FIG_CONFIGS["markersize"], 
+                        linestyle=FIG_CONFIGS["linestyle"],
+                        zorder=ALLOC_ZORDER.get(alloc))
+
+            xlabels = get_nice_scinot_labels(sizes)
+            plt.xticks(range(len(sizes)), xlabels)
+            ax.set_xlabel("Size (n)")
+            ax.set_title(f'{DS_LABELS.get(ds)}')
+
+            if not paper_dir or ds == paper_ds[0]:
+                ax.set_ylabel('Memory Usage (GB)', fontsize=FIG_CONFIGS["ylabel_fontsize"])
+                ylabel = ax.yaxis.label
+                ylabel.set_y(ylabel.get_position()[1] - 0.05)
+
+            style_fig(fig, ax, paper_print)
+            fig.savefig(f"{out_dir}/{paper_dir}memory_{ds}.{fmt}",
+                dpi=FIG_CONFIGS["dpi"],
+                bbox_inches="tight",
+                pad_inches=FIG_CONFIGS["pad_inches"])
+            plt.close(fig)
+
+    paper_ds_list = [ f"{out_dir}/paper/memory_{ds}.{fmt}" for ds in paper_ds ] 
+    merge_pdfs_horizontally(paper_ds_list, f"{out_dir}/paper/memory.{fmt}")
+
+
+
 
 
 # -- Main ----------------------------------------------------------------------
@@ -852,6 +918,7 @@ def main():
                                 'geomean',
                                 'threads',
                                 'trackers',
+                                'memory',
                                 #'ablation',
                                 #'machines',
                                 'all'],
@@ -872,7 +939,9 @@ def main():
 
     if args.benchmark == "all" or args.benchmark == "flock":
         rows, crashes = parse_flock(f"{args.input_dir}/flock")
-        #max_nthreads = max([r["threads"] for r in rows if r["gmean"] > 0])
+        nthreads = sorted(set([r["threads"] for r in rows if r["gmean"] > 0]))
+        #index -1 is oversubscribed, use the previous thread count as the default
+        DEFAULT_PARAMS["threads"] = nthreads[-2]
         do_all = "all" in args.plots
         if "size" in args.plots or do_all: plot_size(rows, f"{args.output_dir}/flock", args.format)
         if "update" in args.plots or do_all: plot_update(rows, f"{args.output_dir}/flock", args.format)
@@ -889,6 +958,7 @@ def main():
         if "geomean" in args.plots or do_all: plot_geomean(rows, f"{args.output_dir}/setbench", args.format)
         if "threads" in args.plots or do_all: plot_threads(rows, f"{args.output_dir}/setbench", args.format)
         if "trackers" in args.plots or do_all: plot_trackers(rows, f"{args.output_dir}/setbench", args.format)
+        if "memory" in args.plots or do_all: plot_memory(rows, f"{args.output_dir}/setbench", args.format)
 
 if __name__ == "__main__":
     main()
