@@ -159,8 +159,7 @@ def prepare_hugepages(enable: bool, option: str=None):
     else:
         #read current settings
         read_current_hugepage_setting()
-        #change settings for scalloc
-        settings = {"hugepages": "never"}
+        settings = {"hugepages": option}
         write_os_config_states(settings)
 
 

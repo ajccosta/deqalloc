@@ -65,6 +65,7 @@ endif()
 
 # Create shared library
 add_library(deqalloc SHARED ${ALL_SOURCES})
+#target_compile_definitions(deqalloc PUBLIC -DNDEBUG -D_REENTRANT=1 -DLOCAL_SEGLIST ${DEFINES})
 target_compile_definitions(deqalloc PUBLIC -DNDEBUG -D_REENTRANT=1 ${DEFINES})
 
 # Let CMake handle platform-specific library settings

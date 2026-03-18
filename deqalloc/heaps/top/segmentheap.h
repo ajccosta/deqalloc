@@ -404,8 +404,8 @@ pushNode_n_retry:
 
     //Insert segment into linked list of segments
     bool insertSegment(header_t* header, header_t* expected, bool _internal_call) {
-      if(!_internal_call) return seglist.compare_and_add(&header->next_segment, expected);
-      else return seglist.add(&header->next_segment);
+      if(!_internal_call) return get_seglist().compare_and_add(&header->next_segment, expected);
+      else return get_seglist().add(&header->next_segment);
     }
 
     static inline void* getBasePointer(void* ptr) {
@@ -507,7 +507,7 @@ pushNode_n_retry:
     void retireSegment(header_t* header) {
       if(getMaxNumObjects(header->getSize()) > 1) { //Segment is shared, add to retire list
         if(!header->emptyList()) return;
-        seglist.remove(&header->next_segment, [&](header_t* h){this->addToRetireList(h);});
+        get_seglist().remove(&header->next_segment, [&](header_t* h){this->addToRetireList(h);});
       } else { //This segment is not shared, we are the only one to have a reference to it
         freeSegment(header);
       }
@@ -584,11 +584,11 @@ mallocN_retry_beginning:
         int to_allocate = n;
 mallocN_retry_partial:
         //TODO: look for non-empty segments to allocate from?
-        if(!_internal_call) { //all seglists have same size segments
-          header = seglist.peek();
+        if(!_internal_call) { //all get_seglist()s have same size segments
+          header = get_seglist().peek();
         } else {//call made by malloc(sz), search for segment with correct size
           //retire function added in case we find segments marked as deleted
-          header = seglist.find([&](header_t* h){ return h->getSize() == sz; }, [&](header_t* h){this->addToRetireList(h);});
+          header = get_seglist().find([&](header_t* h){ return h->getSize() == sz; }, [&](header_t* h){this->addToRetireList(h);});
         }
         deq_assert(header == nullptr || header->getSize() == sz);
         if(header != nullptr) {
@@ -684,7 +684,7 @@ mallocN_retry_partial:
           size_t num_nodes = curr_header->pushNode(curr_start, curr_end, curr_n_nodes);
           if(num_nodes == getMaxNumObjects(curr_header->getSize())) {
             //Segment is full again, attempt to retire it
-            if(curr_header != seglist.peek()) { //Don't deallocate the first segment
+            if(curr_header != get_seglist().peek()) { //Don't deallocate the first segment
               retireSegment(curr_header);
             }
           }
@@ -737,7 +737,13 @@ mallocN_retry_partial:
   private:
     //linked list of segments
     //TODO: have full/partial/empty list to aid in searching for segments to allocate from?
+#ifndef LOCAL_SEGLIST
     HarrisLinkedList<header_t*> seglist;
+    inline HarrisLinkedList<header_t*>& get_seglist() { return seglist; }
+#else
+    HarrisLinkedList<header_t*> seglists[max_threads];
+    inline HarrisLinkedList<header_t*>& get_seglist() { return seglists[thread_id()]; }
+#endif
 };
 
 #endif
