@@ -13,7 +13,6 @@ from typing import List, Optional, Tuple, Dict
 # ---------------------------------------------------------------------------
 # TODO
 #   - IBR benchmarks (?)
-#   - token smr
 # ---------------------------------------------------------------------------
 
 # ---------------------------------------------------------------------------
@@ -298,7 +297,7 @@ class SetbenchConfig:
 
     trackers: List[str] = field(default_factory=lambda: [
         "2geibr", "debra", "he", "ibr_hp", "ibr_rcu",
-        "nbr", "nbrplus", "qsbr", "wfe",
+        "nbr", "nbrplus", "qsbr", "wfe", "token4",
     ])
 
     default_update_perc: int = 100
@@ -348,6 +347,13 @@ class SetbenchConfig:
         self.runs = self.args.runs
         self.ttrial_time_secrial_time_sec = self.args.time * 1000
         self.hugepages = self.args.hugepages
+        if self.args.tracker:
+            #run only this tracker for tracker benchmarks
+            self.trackers = [self.args.tracker]
+        #change default tracker
+        if self.args.default_tracker:
+            self.default_tracker = self.args.default_tracker
+        
 
 # ---------------------------------------------------------------------------
 # Allocator helpers
@@ -603,7 +609,7 @@ class SetbenchRunner:
         return f"../../timings/{name}_{self.config.nproc}-{machine}_{today}"
 
     def _binary(self, rideable: str, tracker: str, df: bool) -> Optional[str]:
-        df_suffix = "_df" if df else ""
+        df_suffix = "_df" if df and tracker != "token4" else ""
         name = f"ubench_{rideable}.alloc_new.reclaim_{tracker}{df_suffix}.pool_none.out"
         path = os.path.join(self.bench_dir, name)
         return path if os.path.isfile(path) else None
@@ -774,6 +780,8 @@ def main():
     parser.add_argument("--runs",        type=int, default=5,       help="Number of runs (default: 5)")
     parser.add_argument("--allocator",   default=None,              help="Run only this allocator")
     parser.add_argument("--ds",          default=None,              help="Run only this data structure")
+    parser.add_argument("--default-tracker", default="debra",       help="Run benchmarks with this tracker/memory reclamation scheme.")
+    parser.add_argument("--tracker",     default=None,              help="Run only this tracker/memory reclamation scheme for tracker benchmarks.")
     parser.add_argument("--time",        type=int, default=5,       help="Amount of time each run takes (default: 5)")
     parser.add_argument("--benchmark",   type=str, default=["all"], help="Run specific benchmark(s) (default: all)",
                             nargs="+", choices=["updates", "sizes", "threads", "trackers", "thread-perc", "upserts", "all"])
