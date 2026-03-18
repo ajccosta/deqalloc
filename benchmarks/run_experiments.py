@@ -12,9 +12,8 @@ from typing import List, Optional, Tuple, Dict
 
 # ---------------------------------------------------------------------------
 # TODO
-#   - producer consumer
 #   - IBR benchmarks (?)
-#   - --ds flag
+#   - token smr
 # ---------------------------------------------------------------------------
 
 # ---------------------------------------------------------------------------
@@ -82,6 +81,90 @@ def get_numa_aware_thread_sequence(nproc: int, num_nodes: int) -> List[int]:
     points.add(nproc * 2)
     return sorted(points)
 
+def is_sudo():
+    return os.geteuid() == 0
+
+OVERCOMMIT_FILE = '/proc/sys/vm/overcommit_memory'
+HUGEPAGES_FILE = '/sys/kernel/mm/transparent_hugepage/enabled'
+OS_CONFIG_STATES = {}
+
+def read_current_overcommit_setting():
+    try:
+        with open(OVERCOMMIT_FILE, 'r') as f:
+            OS_CONFIG_STATES['overcommit'] = f.read().strip()
+    except IOError as e:
+        print(f"Error reading overcommit: {e}")
+        OS_CONFIG_STATES['overcommit'] = None
+
+def read_current_hugepage_setting():
+    try:
+        with open(HUGEPAGES_FILE, 'r') as f:
+            thp_content = f.read().strip()
+            match = re.search(r'\[(.*?)\]', thp_content)
+            if match:
+                OS_CONFIG_STATES['hugepages'] = match.group(1)
+            else:
+                print(f"Error reading huge pages file: {e}")
+                OS_CONFIG_STATES['hugepages'] = None
+    except IOError as e:
+        print(f"Error reading huge pages file: {e}")
+        OS_CONFIG_STATES['hugepages'] = None
+
+def write_os_config_states(settings):
+    if settings.get('overcommit'):
+        try:
+            with open(OVERCOMMIT_FILE, 'w') as f:
+                f.write(settings['overcommit'] + '\n')
+        except IOError as e:
+            print(f"Failed to restore overcommit: {e}")
+
+    if settings.get('hugepages'):
+        try:
+            with open(HUGEPAGES_FILE, 'w') as f:
+                f.write(settings['hugepages'] + '\n')
+        except IOError as e:
+            print(f"Failed to restore huge pages file: {e}")
+
+def restore_os_config_states():
+    settings = OS_CONFIG_STATES
+    write_os_config_states(settings)
+
+def prepare_scalloc(enable: bool):
+    if(not is_sudo()):
+        print("scalloc requires sudo\n")
+        exit(-1)
+
+    if not enable:
+        #restore settings
+        restore_os_config_states()
+    else:
+        #read current settings
+        read_current_overcommit_setting()
+        read_current_hugepage_setting()
+        #change settings for scalloc
+        settings = {"overcommit": "1", "hugepages": "never"}
+        write_os_config_states(settings)
+
+def prepare_hugepages(enable: bool, option: str=None):
+    if(not is_sudo()):
+        print("disabling/enabling hugepages requires sudo\n")
+        exit(-1)
+    possible_configs = "always never madvise"
+    if option != None and option not in possible_configs.split(' '):
+        print(f"{option} is not a possible option, use one of: {possible_configs}")
+        exit(-1)
+
+    if not enable:
+        #restore settings
+        restore_os_config_states()
+    else:
+        #read current settings
+        read_current_hugepage_setting()
+        #change settings for scalloc
+        settings = {"hugepages": "never"}
+        write_os_config_states(settings)
+
+
 # ---------------------------------------------------------------------------
 # Configuration
 # ---------------------------------------------------------------------------
@@ -102,6 +185,7 @@ class FlockConfig:
         "tbbmalloc::df",
         "lockfree:numa:df",
         "rpmalloc::df",
+        "scalloc", #TODO check whether to use df or numa
     ])
 
     rideables: List[str] = field(default_factory=lambda: [
@@ -170,11 +254,14 @@ class FlockConfig:
     trial_time_sec: int = 5
     nproc: int = field(default_factory=os.cpu_count)
 
+    hugepages: str = None
+
     args: argparse.ArgumentParser = None
 
     def __post_init__(self):
         self.runs = self.args.runs
         self.trial_time_sec = self.args.time
+        self.hugepages = self.args.hugepages
 
 
 @dataclass
@@ -191,6 +278,7 @@ class SetbenchConfig:
         "tbbmalloc::df",
         "lockfree:numa:df",
         "rpmalloc::df",
+        "scalloc", #TODO check whether to use df or numa
     ])
 
     rideables: List[str] = field(default_factory=lambda: [
@@ -252,11 +340,14 @@ class SetbenchConfig:
     trial_time_ms: int = 5000
     nproc: int = field(default_factory=os.cpu_count)
 
+    hugepages: str = None
+
     args: argparse.ArgumentParser = None
 
     def __post_init__(self):
         self.runs = self.args.runs
         self.ttrial_time_secrial_time_sec = self.args.time * 1000
+        self.hugepages = self.args.hugepages
 
 # ---------------------------------------------------------------------------
 # Allocator helpers
@@ -396,7 +487,13 @@ class FlockRunner:
                 f"{add_args} "
             ).strip()
 
+            if alloc == "scalloc": prepare_scalloc(True)
+            if self.config.hugepages: prepare_hugepages(True, self.config.hugepages)
+
             output, status = run_command(cmd)
+
+            if self.config.hugepages: prepare_hugepages(False)
+            if alloc == "scalloc": prepare_scalloc(False)
 
             # parse — binary emits one mops line per run then a summary
             output = re.sub(r"linebreak", "\n", output)
@@ -563,7 +660,15 @@ class SetbenchRunner:
                     f"-t {cfg.trial_time_ms}"
                 ).strip()
 
+
+                if alloc == "scalloc": prepare_scalloc(True)
+                if self.config.hugepages: prepare_hugepages(True, self.config.hugepages)
+
                 output, status = run_command(cmd)
+
+                if self.config.hugepages: prepare_hugepages(False)
+                if alloc == "scalloc": prepare_scalloc(False)
+
                 if status != "ok":
                     last_status = status
 
@@ -666,14 +771,20 @@ def main():
     parser.add_argument("--alloc-dir", metavar="DIR",
                         default=os.path.join(script_dir, "../build/allocators"),
                         help="Path to allocator .so files for flock")
-    parser.add_argument("--runs",        type=int, default=5,      help="Number of runs (default: 5)")
-    parser.add_argument("--allocator",   default=None,             help="Run only this allocator")
-    parser.add_argument("--ds",          default=None,             help="Run only this data structure")
-    parser.add_argument("--time",        type=int, default=5,      help="Amount of time each run takes (default: 5)")
-    parser.add_argument("--benchmark",   type=str, default=["all"],  help="Run specific benchmark(s) (default: all)",
+    parser.add_argument("--runs",        type=int, default=5,       help="Number of runs (default: 5)")
+    parser.add_argument("--allocator",   default=None,              help="Run only this allocator")
+    parser.add_argument("--ds",          default=None,              help="Run only this data structure")
+    parser.add_argument("--time",        type=int, default=5,       help="Amount of time each run takes (default: 5)")
+    parser.add_argument("--benchmark",   type=str, default=["all"], help="Run specific benchmark(s) (default: all)",
                             nargs="+", choices=["updates", "sizes", "threads", "trackers", "thread-perc", "upserts", "all"])
+    parser.add_argument("--hugepages",   default=None,              help="Set hugepages setting",
+                        choices=["never", "always", "madvise"])
 
     args = parser.parse_args()
+
+    if args.hugepages and not is_sudo():
+        print("disabling/enabling hugepages requires sudo\n")
+        exit(-1)
 
     # -- flock config --
     flock_cfg = FlockConfig(args=args)
@@ -690,6 +801,12 @@ def main():
                                  if a.split(":")[0] == args.allocator]
     if args.ds:
         sb_cfg.rideables_sizes = [(r, s) for r, s in sb_cfg.rideables_sizes if r == args.ds]
+
+    if not is_sudo() and \
+       ("scalloc" in flock_cfg.allocators_raw or \
+       "scalloc" in sb_cfg.allocators_raw):
+        print("scalloc requires sudo\n")
+        exit(-1)
 
     flock_runner    = FlockRunner(flock_cfg,  args.flock_dir,    args.alloc_dir, args.output)
     setbench_runner = SetbenchRunner(sb_cfg,  args.setbench_dir, args.alloc_dir, args.output)

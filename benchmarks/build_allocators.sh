@@ -50,7 +50,7 @@ cp $(readlink -f Hoard/src/libhoard.so) libhoard.so
 rm -rf Hoard
 
 #compile scalloc
-git clone https://github.com/cksystemsgroup/scalloc
+git clone https://github.com/ajccosta/scalloc.git
 pushd scalloc
 echo scalloc $(git rev-parse --short HEAD) >> ../versions.txt
 ./tools/make_deps.sh
