@@ -5,3 +5,4 @@
 build/
 build/_deps/heaplayers-src
 .DS_Store
+*.pdf

@@ -31,7 +31,7 @@ TEXT_COL  = "#e8edf5"
 ACCENT    = "#4fc3f7"
 
 ALLOC_PALETTE = {
-    "deqalloc":  "#4fc3f7",
+    "deqalloc":  "#251cc5",
     "mimalloc":  "#81c784",
     "jemalloc":  "#ffb74d",
     "snmalloc":  "#ce93d8",
@@ -194,6 +194,7 @@ def style_fig(fig, ax, paper_print):
     #ax.set_xlim(l - margin, r + margin)
 
     ax.set_ylim(bottom=0)
+    ax.grid(linestyle='--')
 
     if not paper_print and ax.get_legend() is not None:
         ax.legend(
@@ -215,8 +216,7 @@ def parse_flock(path):
     crashes = []
     crash_re = re.compile(r"#\s*CRASH:\s*(\w+)\s+alloc=(\w+)\s+u=(\d+)\s+n=(\d+)")
     row_re   = re.compile(
-        #TODO UPDATE
-        r"^(\w+)\s+(\d+)\s+(\w+)\s+(\d+)\s+(True|False)\s+\[([^\]]*)\]\s+([\d.]+),\s*([\d.]+)\s*KB"
+        r"^([\w-]+)\s+(\d+)\s+(\w+)\s+(\d+)\s+(\d+)\s+(True|False)\s+(.*?)\s+\[([^\]]*)\]\s+([\d.]+),\s*([\d.]+)\s*KB"
     )
     with open(path) as f:
         for line in f:
@@ -228,7 +228,7 @@ def parse_flock(path):
                 continue
             m = row_re.match(line)
             if m:
-                vals_str = m.group(6).strip()
+                vals_str = m.group(8).strip()
                 vals = [float(x) for x in vals_str.split()] if vals_str else []
                 mean = stat.mean(vals) if len(vals) > 0 else 0
                 gmean = stat.geometric_mean(vals) if len(vals) > 0 else 0
@@ -237,17 +237,20 @@ def parse_flock(path):
                     update=int(m.group(2)),
                     ds=m.group(3),
                     key_size=int(m.group(4)),
-                    numa=m.group(5) == "True",
+                    threads=int(m.group(5)),
+                    numa=m.group(6) == "True",
+                    thread_flags=m.group(7).strip(),
                     values=vals,
                     mean=mean,
                     gmean=gmean,
-                    mem_kb=float(m.group(8)),
+                    mem_kb=float(m.group(10)),
+                    reclamation="debra", #hacky way to integrate with other suites
                 )
                 rows.append(entry)
                 if abs(mean - gmean) > 0.5 * 10**1:
                     print("Reasonable difference in gmean", entry)
-                if abs(mean - float(m.group(7))) > 10**-3:
-                    print(f"Error in mean checksum. Given: {float(m.group(7))}, Calculated: {mean}")
+                if abs(mean - float(m.group(9))) > 10**-3:
+                    print(f"Error in mean checksum. Given: {float(m.group(9))}, Calculated: {mean}")
     return rows, crashes
 
 def parse_setbench(path):
@@ -336,19 +339,13 @@ def merge_pdfs_horizontally(pdf_list, output_path):
     out_doc.close()
     print(f"merged {len(pdf_list)} pdfs to {output_path}")
 
-def which_paper_ds(dss, special_case=None):
+def which_paper_ds(dss):
     paper_ds = []
     if set(dss).intersection(set(PAPER_DS_FLOCK)):
-        if special_case == "memory":
-            paper_ds = PAPER_DS_FLOCK
-        else:
-            paper_ds = PAPER_DS_FLOCK
+        paper_ds = PAPER_DS_FLOCK
     if set(dss).intersection(set(PAPER_DS_SETBENCH)):
         assert(paper_ds == [])
-        if special_case == None:
-            paper_ds = PAPER_DS_SETBENCH
-        else:
-            paper_ds = ["guerraoui_ext_bst_ticket", "brown_ext_abtree_lf"]
+        paper_ds = PAPER_DS_SETBENCH
     #assert(paper_ds != [])
     return paper_ds
 
@@ -685,6 +682,7 @@ def plot_geomean(rows, out_dir, fmt):
     style_fig(fig, ax, True)
 
     #override some style_fig
+    ax.grid(visible=False)
     ax.yaxis.label.set_fontsize(FIG_CONFIGS["ylabel_fontsize"]-1.5)
     ax.xaxis.label.set_fontsize(FIG_CONFIGS["xlabel_fontsize"]-1.5)
     ax.tick_params(axis='y', labelsize=FIG_CONFIGS["ytick_fontsize"]-1)
@@ -831,6 +829,7 @@ def plot_trackers(rows, out_dir, fmt):
     style_fig(fig, ax, True)
 
     #override some style_fig
+    ax.grid(visible=False)
     ax.yaxis.label.set_fontsize(FIG_CONFIGS["ylabel_fontsize"]-1.5)
     ax.xaxis.label.set_fontsize(FIG_CONFIGS["xlabel_fontsize"]-1.5)
     ax.tick_params(axis='y', labelsize=FIG_CONFIGS["ytick_fontsize"]-1)
@@ -850,7 +849,7 @@ def plot_memory(rows, out_dir, fmt):
         os.makedirs(f"{out_dir}/{paper_dir}", exist_ok=True)
 
         dss = sorted(set(r["ds"] for r in rows))
-        paper_ds = which_paper_ds(dss, "memory")
+        paper_ds = which_paper_ds(dss)
 
         for i, ds in enumerate(dss):
             fig, ax = plt.subplots(figsize=FIG_CONFIGS["figsize"])
@@ -867,7 +866,7 @@ def plot_memory(rows, out_dir, fmt):
             for alloc in allocs:
                 throughput = {r["key_size"]: r["gmean"] for r in ds_rows if r["allocator"] == alloc}
                 memusage = {r["key_size"]: r["mem_kb"] for r in ds_rows if r["allocator"] == alloc}
-                ys = [memusage.get(s, None) / (10**6) for s in sizes] #convert to gb
+                ys = [memusage.get(s, 0) / (10**6) for s in sizes] #convert to gb
 
                 ax.plot(range(len(sizes)),
                         ys,
@@ -942,23 +941,27 @@ def main():
         nthreads = sorted(set([r["threads"] for r in rows if r["gmean"] > 0]))
         #index -1 is oversubscribed, use the previous thread count as the default
         DEFAULT_PARAMS["threads"] = nthreads[-2]
+        out_dir = f"{args.output_dir}/flock"
         do_all = "all" in args.plots
-        if "size" in args.plots or do_all: plot_size(rows, f"{args.output_dir}/flock", args.format)
-        if "update" in args.plots or do_all: plot_update(rows, f"{args.output_dir}/flock", args.format)
-        if "geomean" in args.plots or do_all: plot_geomean(rows, f"{args.output_dir}/flock", args.format)
+        if "size" in args.plots or do_all: plot_size(rows, out_dir, args.format)
+        if "update" in args.plots or do_all: plot_update(rows, out_dir, args.format)
+        if "geomean" in args.plots or do_all: plot_geomean(rows, out_dir, args.format)
+        if "threads" in args.plots or do_all: plot_threads(rows, out_dir, args.format)
+        if "memory" in args.plots or do_all: plot_memory(rows, out_dir, args.format)
 
     if args.benchmark == "all" or args.benchmark == "setbench":
         rows, crashes = parse_setbench(f"{args.input_dir}/setbench")
         nthreads = sorted(set([r["threads"] for r in rows if r["gmean"] > 0]))
         #index -1 is oversubscribed, use the previous thread count as the default
         DEFAULT_PARAMS["threads"] = nthreads[-2]
+        out_dir = f"{args.output_dir}/setbench"
         do_all = "all" in args.plots
-        if "size" in args.plots or do_all: plot_size(rows, f"{args.output_dir}/setbench", args.format)
-        if "update" in args.plots or do_all: plot_update(rows, f"{args.output_dir}/setbench", args.format)
-        if "geomean" in args.plots or do_all: plot_geomean(rows, f"{args.output_dir}/setbench", args.format)
-        if "threads" in args.plots or do_all: plot_threads(rows, f"{args.output_dir}/setbench", args.format)
-        if "trackers" in args.plots or do_all: plot_trackers(rows, f"{args.output_dir}/setbench", args.format)
-        if "memory" in args.plots or do_all: plot_memory(rows, f"{args.output_dir}/setbench", args.format)
+        if "size" in args.plots or do_all: plot_size(rows, out_dir, args.format)
+        if "update" in args.plots or do_all: plot_update(rows, out_dir, args.format)
+        if "geomean" in args.plots or do_all: plot_geomean(rows, out_dir, args.format)
+        if "threads" in args.plots or do_all: plot_threads(rows, out_dir, args.format)
+        if "trackers" in args.plots or do_all: plot_trackers(rows, out_dir, args.format)
+        if "memory" in args.plots or do_all: plot_memory(rows, out_dir, args.format)
 
 if __name__ == "__main__":
     main()
