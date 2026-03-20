@@ -67,7 +67,7 @@ set_target_properties(build_allocators PROPERTIES EXCLUDE_FROM_ALL TRUE)
 
 #umbrella target for all benchmarks and allocators
 add_custom_target(benchmarks
-  DEPENDS build_flock build_setbench build_allocators
+  DEPENDS build_flock build_setbench build_allocators deqalloc
   COMMENT "Building all benchmarks..."
 )
 
