@@ -162,6 +162,21 @@ def prepare_hugepages(enable: bool, option: str=None):
         settings = {"hugepages": option}
         write_os_config_states(settings)
 
+def start_temperature_monitor(log_file="temperature_log.csv", interval_seconds=1):
+    bash_script = f"""
+    echo "Timestamp,Temp_mC,Freq_kHz" > {log_file}
+    while true; do
+        TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
+        TEMP=$(cat /sys/class/thermal/thermal_zone0/temp 2>/dev/null || echo "N/A")
+        FREQ=$(cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq 2>/dev/null || echo "N/A")
+        echo "$TIMESTAMP,$TEMP,$FREQ" >> {log_file}
+        sleep {interval_seconds}
+    done
+    """
+    return subprocess.Popen(['bash', '-c', bash_script])
+
+def stop_temperature_monitor(process):
+    process.terminate()
 
 # ---------------------------------------------------------------------------
 # Configuration
@@ -825,6 +840,8 @@ def main():
                      (flock_runner.run,    "Flock Allocator Benchmarks")],
     }
 
+    temp_daemon = start_temperature_monitor(f"{args.output}/temperature.csv", 5)
+
     for func, label in experiments[args.experiment]:
         print(f"\n{'='*55}")
         print(f"  {label}")
@@ -833,6 +850,8 @@ def main():
         func()
         elapsed = time.time() - start
         print(f"Completed in {elapsed:.1f}s ({elapsed/60:.1f}m)")
+
+    stop_temperature_monitor(temp_daemon)
 
     os.chdir(curr_dir) #popd
 
