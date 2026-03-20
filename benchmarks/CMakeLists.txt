@@ -47,6 +47,9 @@ add_custom_target(build_allocators
   COMMAND ${CMAKE_COMMAND} -E create_symlink
     ${CMAKE_BINARY_DIR}/libdeqalloc.so
     ${ALLOCATOR_LIB_DIR}/libdeqalloc.so
+  COMMAND ${CMAKE_COMMAND} -E create_symlink
+    ${CMAKE_BINARY_DIR}/libdeqalloc_localseglist.so
+    ${ALLOCATOR_LIB_DIR}/libdeqalloc_localseglist.so
   BYPRODUCTS
     ${ALLOCATOR_LIB_DIR}/libjemalloc.so
     ${ALLOCATOR_LIB_DIR}/libmesh.so
