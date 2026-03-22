@@ -566,14 +566,14 @@ def plot_threads(input_dir, suite, experiment, out_dir, fmt):
 def plot_geomean(input_dir, suite, experiment, out_dir, fmt):
     data, crashes = load_file(input_dir, suite, experiment)
 
-    bar_width = 1
-    inter_group_gap = 1.5
-    intra_group_gap = 0.3
+    bar_width = 0.10
+    inter_group_gap = 1.0
+    intra_group_gap = 0.02
 
     dss = sorted(set(r["ds"] for r in data))
     
     szx, szy = FIG_CONFIGS["figsize"]
-    fig, ax = plt.subplots(figsize=(len(ALLOC_PALETTE)*0.6462, szy))
+    fig, ax = plt.subplots(figsize=(len(dss), szy))
     
     seen_allocs = set()
     all_values_global = {}
@@ -634,7 +634,7 @@ def plot_geomean(input_dir, suite, experiment, out_dir, fmt):
                     ha='center',
                     va='bottom',
                     fontweight='bold',
-                    fontsize=4,
+                    fontsize=4.5,
                     rotation=90,
                     zorder=ALLOC_ZORDER.get("deqalloc")+1,
                 )
@@ -646,7 +646,7 @@ def plot_geomean(input_dir, suite, experiment, out_dir, fmt):
             DS_LABELS.get(ds, ds),
             ha='center',
             va='top',
-            fontsize=FIG_CONFIGS.get("xtick_fontsize")-1,
+            fontsize=FIG_CONFIGS.get("xtick_fontsize")-3,
             transform=ax.get_xaxis_transform(),  # x in data coords, y in axes coords
         )
 
@@ -662,7 +662,7 @@ def plot_geomean(input_dir, suite, experiment, out_dir, fmt):
     margin = bar_width / 2 + bar_width * inter_group_gap
     ax.set_xlim(first_bar_center - margin, last_bar_center + margin)
 
-    ax.set_ylim(0, 1.23)
+    ax.set_ylim(0, 1.25)
     ax.set_yticks(np.arange(0, 1.1, 0.2))
 
     plt.xticks([])
@@ -688,7 +688,7 @@ def plot_geomean(input_dir, suite, experiment, out_dir, fmt):
     if suite == SUITES[0]:
         ax.set_ylabel("Geomean Throughput (Mops/s)")
         current_x, current_y = ax.yaxis.label.get_position()
-        ax.yaxis.set_label_coords(current_x-0.065, 0.36)
+        ax.yaxis.set_label_coords(current_x-0.075, 0.36)
     else:
         ax.set_yticks([])
 
@@ -696,9 +696,9 @@ def plot_geomean(input_dir, suite, experiment, out_dir, fmt):
 
     #override some style_fig
     ax.grid(visible=False)
-    ax.yaxis.label.set_fontsize(FIG_CONFIGS["ylabel_fontsize"]-2.2)
-    ax.xaxis.label.set_fontsize(FIG_CONFIGS["xlabel_fontsize"]-2.2)
-    ax.tick_params(axis='y', labelsize=FIG_CONFIGS["ytick_fontsize"]-3)
+    ax.yaxis.label.set_fontsize(FIG_CONFIGS["ylabel_fontsize"]-3.7)
+    ax.xaxis.label.set_fontsize(FIG_CONFIGS["xlabel_fontsize"]-4.5)
+    ax.tick_params(axis='y', labelsize=FIG_CONFIGS["ytick_fontsize"]-3.5)
 
     os.makedirs(f"{out_dir}/paper/", exist_ok=True)
     fig.savefig(f"{out_dir}/paper/geomean.{fmt}",
@@ -712,9 +712,9 @@ def plot_geomean(input_dir, suite, experiment, out_dir, fmt):
 def plot_trackers(input_dir, suite, experiment, out_dir, fmt):
     data, crashes = load_file(input_dir, suite, experiment)
 
-    bar_width = 0.6
-    inter_group_gap = 0.8
-    intra_group_gap = 0.1
+    bar_width = 0.05
+    inter_group_gap = 2.0
+    intra_group_gap = 0.01
 
     dss = sorted(set(r["ds"] for r in data))
     trackers = sorted(set(r["reclamation"] for r in data))
@@ -805,7 +805,8 @@ def plot_trackers(input_dir, suite, experiment, out_dir, fmt):
     margin = bar_width / 2 + bar_width * inter_group_gap
     ax.set_xlim(first_bar_center - margin, last_bar_center + margin)
 
-    ax.set_ylim(0, 1.35)
+    ax.set_ylim(0, 1.26)
+    ax.set_yticks(np.arange(0, 1.1, 0.2))
 
     plt.xticks([])
     ax.set_xlabel("Reclamation Scheme", labelpad=15)
