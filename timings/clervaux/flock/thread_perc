@@ -1,0 +1,233 @@
+Command: ./run_experiments.py all -o temp3 --runs 1 --time 1
+Date: 03-22-2026
+Experiment: flock thread_perc
+Model name:                              Intel(R) Xeon(R) CPU E5-2680 v4 @ 2.40GHz
+Git: 4d16e3b
+allocator versions:
+	jemalloc: 86b72192
+	mesh: 5d9b390
+	mimalloc: 75d69f4a
+	hoard: 1cd9101
+	scalloc: 1a11827
+	tcmalloc: 068dd9e9
+	snmalloc: 3fca4c8
+	lockfree: 915f51b
+	rpmalloc: feb43ae
+	tbbmalloc: ef6f9b5e
+	mimalloc-batchit: da52048
+---
+allocator             update% ds                   key_size   #threads  numa   thread-perc           results
+deqalloc              100     btree_lck            200000     56        False  -thread-perc "50;50"  [ 44.12 ] 44.1200, 1090788 KB
+mimalloc              100     btree_lck            200000     56        False  -thread-perc "50;50"  [ 34.51 ] 34.5100, 555368 KB
+mimalloc-batchit      100     btree_lck            200000     56        False  -thread-perc "50;50"  [ 31.18 ] 31.1800, 258816 KB
+jemalloc              100     btree_lck            200000     56        True   -thread-perc "50;50"  [ 23.07 ] 23.0700, 318884 KB
+snmalloc              100     btree_lck            200000     56        False  -thread-perc "50;50"  [ 34.51 ] 34.5100, 264100 KB
+hoard                 100     btree_lck            200000     56        True   -thread-perc "50;50"  [ 40.13 ] 40.1300, 136884 KB
+# CRASH: btree_lck alloc=hoard u=100 n=200000
+tcmalloc              100     btree_lck            200000     56        False  -thread-perc "50;50"  [ 8.08 ] 8.0800, 156388 KB
+# CRASH: btree_lck alloc=tcmalloc u=100 n=200000
+tbbmalloc             100     btree_lck            200000     56        False  -thread-perc "50;50"  [ 9.343 ] 9.3430, 212568 KB
+lockfree              100     btree_lck            200000     56        True   -thread-perc "50;50"  [ 23.72 ] 23.7200, 138048 KB
+rpmalloc              100     btree_lck            200000     56        False  -thread-perc "50;50"  [ 31.14 ] 31.1400, 338176 KB
+deqalloc              100     btree_lck            200000     56        False  -thread-perc "75;25"  [ 37.27 ] 37.2700, 947584 KB
+mimalloc              100     btree_lck            200000     56        False  -thread-perc "75;25"  [ 34.61 ] 34.6100, 372020 KB
+mimalloc-batchit      100     btree_lck            200000     56        False  -thread-perc "75;25"  [ 31.45 ] 31.4500, 248104 KB
+jemalloc              100     btree_lck            200000     56        True   -thread-perc "75;25"  [ 22.06 ] 22.0600, 416636 KB
+snmalloc              100     btree_lck            200000     56        False  -thread-perc "75;25"  [ 35.12 ] 35.1200, 224340 KB
+hoard                 100     btree_lck            200000     56        True   -thread-perc "75;25"  [ 39.81 ] 39.8100, 154944 KB
+# CRASH: btree_lck alloc=hoard u=100 n=200000
+tcmalloc              100     btree_lck            200000     56        False  -thread-perc "75;25"  [ 7.977 ] 7.9770, 155248 KB
+# CRASH: btree_lck alloc=tcmalloc u=100 n=200000
+tbbmalloc             100     btree_lck            200000     56        False  -thread-perc "75;25"  [ 7.939 ] 7.9390, 215084 KB
+lockfree              100     btree_lck            200000     56        True   -thread-perc "75;25"  [ 23.91 ] 23.9100, 136216 KB
+rpmalloc              100     btree_lck            200000     56        False  -thread-perc "75;25"  [ 32.35 ] 32.3500, 320264 KB
+deqalloc              100     btree_lck            200000     56        False  -thread-perc "100;0"  [ 44.41 ] 44.4100, 1095088 KB
+mimalloc              100     btree_lck            200000     56        False  -thread-perc "100;0"  [ 34.68 ] 34.6800, 673292 KB
+mimalloc-batchit      100     btree_lck            200000     56        False  -thread-perc "100;0"  [ 31.13 ] 31.1300, 245668 KB
+jemalloc              100     btree_lck            200000     56        True   -thread-perc "100;0"  [ 22.28 ] 22.2800, 345804 KB
+snmalloc              100     btree_lck            200000     56        False  -thread-perc "100;0"  [ 35.32 ] 35.3200, 216768 KB
+hoard                 100     btree_lck            200000     56        True   -thread-perc "100;0"  [ 40.66 ] 40.6600, 140776 KB
+# CRASH: btree_lck alloc=hoard u=100 n=200000
+tcmalloc              100     btree_lck            200000     56        False  -thread-perc "100;0"  [ 7.977 ] 7.9770, 160668 KB
+# CRASH: btree_lck alloc=tcmalloc u=100 n=200000
+tbbmalloc             100     btree_lck            200000     56        False  -thread-perc "100;0"  [ 8.698 ] 8.6980, 251064 KB
+lockfree              100     btree_lck            200000     56        True   -thread-perc "100;0"  [ 24.6 ] 24.6000, 133032 KB
+rpmalloc              100     btree_lck            200000     56        False  -thread-perc "100;0"  [ 31.87 ] 31.8700, 327456 KB
+deqalloc              100     hash_block_lck       200000     56        False  -thread-perc "50;50"  [ 96.99 ] 96.9900, 1121816 KB
+mimalloc              100     hash_block_lck       200000     56        False  -thread-perc "50;50"  [ 67.49 ] 67.4900, 190416 KB
+mimalloc-batchit      100     hash_block_lck       200000     56        False  -thread-perc "50;50"  [ 68.21 ] 68.2100, 427620 KB
+jemalloc              100     hash_block_lck       200000     56        True   -thread-perc "50;50"  [ 74.49 ] 74.4900, 349172 KB
+snmalloc              100     hash_block_lck       200000     56        False  -thread-perc "50;50"  [ 87.68 ] 87.6800, 282872 KB
+hoard                 100     hash_block_lck       200000     56        True   -thread-perc "50;50"  [ 95.26 ] 95.2600, 115228 KB
+# CRASH: hash_block_lck alloc=hoard u=100 n=200000
+tcmalloc              100     hash_block_lck       200000     56        False  -thread-perc "50;50"  [ 25.54 ] 25.5400, 163568 KB
+# CRASH: hash_block_lck alloc=tcmalloc u=100 n=200000
+tbbmalloc             100     hash_block_lck       200000     56        False  -thread-perc "50;50"  [ 60.58 ] 60.5800, 167048 KB
+lockfree              100     hash_block_lck       200000     56        True   -thread-perc "50;50"  [ 37.14 ] 37.1400, 86856 KB
+rpmalloc              100     hash_block_lck       200000     56        False  -thread-perc "50;50"  [ 65.79 ] 65.7900, 332148 KB
+deqalloc              100     hash_block_lck       200000     56        False  -thread-perc "75;25"  [ 99.35 ] 99.3500, 1187396 KB
+mimalloc              100     hash_block_lck       200000     56        False  -thread-perc "75;25"  [ 69.11 ] 69.1100, 192464 KB
+mimalloc-batchit      100     hash_block_lck       200000     56        False  -thread-perc "75;25"  [ 67.75 ] 67.7500, 167956 KB
+jemalloc              100     hash_block_lck       200000     56        True   -thread-perc "75;25"  [ 67.92 ] 67.9200, 326344 KB
+snmalloc              100     hash_block_lck       200000     56        False  -thread-perc "75;25"  [ 94.81 ] 94.8100, 277932 KB
+hoard                 100     hash_block_lck       200000     56        True   -thread-perc "75;25"  [ 84.68 ] 84.6800, 1208664 KB
+# CRASH: hash_block_lck alloc=hoard u=100 n=200000
+tcmalloc              100     hash_block_lck       200000     56        False  -thread-perc "75;25"  [ 26.52 ] 26.5200, 170772 KB
+# CRASH: hash_block_lck alloc=tcmalloc u=100 n=200000
+tbbmalloc             100     hash_block_lck       200000     56        False  -thread-perc "75;25"  [ 59.97 ] 59.9700, 115576 KB
+lockfree              100     hash_block_lck       200000     56        True   -thread-perc "75;25"  [ 37.7 ] 37.7000, 85392 KB
+rpmalloc              100     hash_block_lck       200000     56        False  -thread-perc "75;25"  [ 72.97 ] 72.9700, 321672 KB
+deqalloc              100     hash_block_lck       200000     56        False  -thread-perc "100;0"  [ 93.14 ] 93.1400, 1103468 KB
+mimalloc              100     hash_block_lck       200000     56        False  -thread-perc "100;0"  [ 69.87 ] 69.8700, 188532 KB
+mimalloc-batchit      100     hash_block_lck       200000     56        False  -thread-perc "100;0"  [ 63.95 ] 63.9500, 184388 KB
+jemalloc              100     hash_block_lck       200000     56        True   -thread-perc "100;0"  [ 58.79 ] 58.7900, 938212 KB
+snmalloc              100     hash_block_lck       200000     56        False  -thread-perc "100;0"  [ 88.02 ] 88.0200, 173144 KB
+hoard                 100     hash_block_lck       200000     56        True   -thread-perc "100;0"  [ 71.9 ] 71.9000, 2305368 KB
+# CRASH: hash_block_lck alloc=hoard u=100 n=200000
+tcmalloc              100     hash_block_lck       200000     56        False  -thread-perc "100;0"  [ 25.0 ] 25.0000, 164844 KB
+# CRASH: hash_block_lck alloc=tcmalloc u=100 n=200000
+tbbmalloc             100     hash_block_lck       200000     56        False  -thread-perc "100;0"  [ 56.59 ] 56.5900, 174308 KB
+lockfree              100     hash_block_lck       200000     56        True   -thread-perc "100;0"  [ 36.59 ] 36.5900, 101760 KB
+rpmalloc              100     hash_block_lck       200000     56        False  -thread-perc "100;0"  [ 68.2 ] 68.2000, 328192 KB
+deqalloc              100     leaftree_lck         200000     56        False  -thread-perc "50;50"  [ 37.06 ] 37.0600, 1074756 KB
+mimalloc              100     leaftree_lck         200000     56        False  -thread-perc "50;50"  [ 30.91 ] 30.9100, 180260 KB
+mimalloc-batchit      100     leaftree_lck         200000     56        False  -thread-perc "50;50"  [ 28.64 ] 28.6400, 178328 KB
+jemalloc              100     leaftree_lck         200000     56        True   -thread-perc "50;50"  [ 25.6 ] 25.6000, 284508 KB
+snmalloc              100     leaftree_lck         200000     56        False  -thread-perc "50;50"  [ 32.44 ] 32.4400, 257412 KB
+hoard                 100     leaftree_lck         200000     56        True   -thread-perc "50;50"  [ 28.54 ] 28.5400, 100820 KB
+# CRASH: leaftree_lck alloc=hoard u=100 n=200000
+tcmalloc              100     leaftree_lck         200000     56        False  -thread-perc "50;50"  [ 10.8 ] 10.8000, 135032 KB
+# CRASH: leaftree_lck alloc=tcmalloc u=100 n=200000
+tbbmalloc             100     leaftree_lck         200000     56        False  -thread-perc "50;50"  [ 20.89 ] 20.8900, 115880 KB
+lockfree              100     leaftree_lck         200000     56        True   -thread-perc "50;50"  [ 18.73 ] 18.7300, 89696 KB
+rpmalloc              100     leaftree_lck         200000     56        False  -thread-perc "50;50"  [ 30.14 ] 30.1400, 336428 KB
+deqalloc              100     leaftree_lck         200000     56        False  -thread-perc "75;25"  [ 35.04 ] 35.0400, 1121576 KB
+mimalloc              100     leaftree_lck         200000     56        False  -thread-perc "75;25"  [ 30.92 ] 30.9200, 178112 KB
+mimalloc-batchit      100     leaftree_lck         200000     56        False  -thread-perc "75;25"  [ 29.11 ] 29.1100, 233480 KB
+jemalloc              100     leaftree_lck         200000     56        True   -thread-perc "75;25"  [ 25.06 ] 25.0600, 353924 KB
+snmalloc              100     leaftree_lck         200000     56        False  -thread-perc "75;25"  [ 33.32 ] 33.3200, 164112 KB
+hoard                 100     leaftree_lck         200000     56        True   -thread-perc "75;25"  [ 25.59 ] 25.5900, 724388 KB
+# CRASH: leaftree_lck alloc=hoard u=100 n=200000
+tcmalloc              100     leaftree_lck         200000     56        False  -thread-perc "75;25"  [ 10.27 ] 10.2700, 117896 KB
+# CRASH: leaftree_lck alloc=tcmalloc u=100 n=200000
+tbbmalloc             100     leaftree_lck         200000     56        False  -thread-perc "75;25"  [ 20.91 ] 20.9100, 112676 KB
+lockfree              100     leaftree_lck         200000     56        True   -thread-perc "75;25"  [ 20.19 ] 20.1900, 88060 KB
+rpmalloc              100     leaftree_lck         200000     56        False  -thread-perc "75;25"  [ 30.26 ] 30.2600, 411304 KB
+deqalloc              100     leaftree_lck         200000     56        False  -thread-perc "100;0"  [ 33.23 ] 33.2300, 1128096 KB
+mimalloc              100     leaftree_lck         200000     56        False  -thread-perc "100;0"  [ 29.14 ] 29.1400, 274980 KB
+mimalloc-batchit      100     leaftree_lck         200000     56        False  -thread-perc "100;0"  [ 29.8 ] 29.8000, 177400 KB
+jemalloc              100     leaftree_lck         200000     56        True   -thread-perc "100;0"  [ 19.92 ] 19.9200, 268452 KB
+snmalloc              100     leaftree_lck         200000     56        False  -thread-perc "100;0"  [ 34.0 ] 34.0000, 200040 KB
+hoard                 100     leaftree_lck         200000     56        True   -thread-perc "100;0"  [ 22.56 ] 22.5600, 1425708 KB
+# CRASH: leaftree_lck alloc=hoard u=100 n=200000
+tcmalloc              100     leaftree_lck         200000     56        False  -thread-perc "100;0"  [ 11.91 ] 11.9100, 129072 KB
+# CRASH: leaftree_lck alloc=tcmalloc u=100 n=200000
+tbbmalloc             100     leaftree_lck         200000     56        False  -thread-perc "100;0"  [ 21.14 ] 21.1400, 98268 KB
+lockfree              100     leaftree_lck         200000     56        True   -thread-perc "100;0"  [ 18.63 ] 18.6300, 87760 KB
+rpmalloc              100     leaftree_lck         200000     56        False  -thread-perc "100;0"  [ 27.85 ] 27.8500, 324224 KB
+deqalloc              100     skiplist_lck         200000     56        False  -thread-perc "50;50"  [ 32.48 ] 32.4800, 1158592 KB
+mimalloc              100     skiplist_lck         200000     56        False  -thread-perc "50;50"  [ 24.4 ] 24.4000, 251932 KB
+mimalloc-batchit      100     skiplist_lck         200000     56        False  -thread-perc "50;50"  [ 24.64 ] 24.6400, 180192 KB
+jemalloc              100     skiplist_lck         200000     56        True   -thread-perc "50;50"  [ 28.83 ] 28.8300, 269468 KB
+snmalloc              100     skiplist_lck         200000     56        False  -thread-perc "50;50"  [ 30.8 ] 30.8000, 163436 KB
+hoard                 100     skiplist_lck         200000     56        True   -thread-perc "50;50"  [ 25.5 ] 25.5000, 110172 KB
+# CRASH: skiplist_lck alloc=hoard u=100 n=200000
+tcmalloc              100     skiplist_lck         200000     56        False  -thread-perc "50;50"  [ 29.52 ] 29.5200, 140112 KB
+# CRASH: skiplist_lck alloc=tcmalloc u=100 n=200000
+tbbmalloc             100     skiplist_lck         200000     56        False  -thread-perc "50;50"  [ 20.14 ] 20.1400, 123892 KB
+lockfree              100     skiplist_lck         200000     56        True   -thread-perc "50;50"  [ 19.99 ] 19.9900, 110860 KB
+rpmalloc              100     skiplist_lck         200000     56        False  -thread-perc "50;50"  [ 26.05 ] 26.0500, 448044 KB
+deqalloc              100     skiplist_lck         200000     56        False  -thread-perc "75;25"  [ 32.28 ] 32.2800, 1074456 KB
+mimalloc              100     skiplist_lck         200000     56        False  -thread-perc "75;25"  [ 25.44 ] 25.4400, 305488 KB
+mimalloc-batchit      100     skiplist_lck         200000     56        False  -thread-perc "75;25"  [ 26.93 ] 26.9300, 180156 KB
+jemalloc              100     skiplist_lck         200000     56        True   -thread-perc "75;25"  [ 28.37 ] 28.3700, 270072 KB
+snmalloc              100     skiplist_lck         200000     56        False  -thread-perc "75;25"  [ 30.88 ] 30.8800, 157608 KB
+hoard                 100     skiplist_lck         200000     56        True   -thread-perc "75;25"  [ 22.95 ] 22.9500, 1035636 KB
+# CRASH: skiplist_lck alloc=hoard u=100 n=200000
+tcmalloc              100     skiplist_lck         200000     56        False  -thread-perc "75;25"  [ 26.57 ] 26.5700, 147600 KB
+# CRASH: skiplist_lck alloc=tcmalloc u=100 n=200000
+tbbmalloc             100     skiplist_lck         200000     56        False  -thread-perc "75;25"  [ 20.33 ] 20.3300, 126876 KB
+lockfree              100     skiplist_lck         200000     56        True   -thread-perc "75;25"  [ 20.14 ] 20.1400, 97028 KB
+rpmalloc              100     skiplist_lck         200000     56        False  -thread-perc "75;25"  [ 26.24 ] 26.2400, 332256 KB
+deqalloc              100     skiplist_lck         200000     56        False  -thread-perc "100;0"  [ 31.75 ] 31.7500, 1101096 KB
+mimalloc              100     skiplist_lck         200000     56        False  -thread-perc "100;0"  [ 24.71 ] 24.7100, 205588 KB
+mimalloc-batchit      100     skiplist_lck         200000     56        False  -thread-perc "100;0"  [ 25.57 ] 25.5700, 229880 KB
+jemalloc              100     skiplist_lck         200000     56        True   -thread-perc "100;0"  [ 23.38 ] 23.3800, 275108 KB
+snmalloc              100     skiplist_lck         200000     56        False  -thread-perc "100;0"  [ 30.92 ] 30.9200, 159860 KB
+hoard                 100     skiplist_lck         200000     56        True   -thread-perc "100;0"  [ 20.87 ] 20.8700, 2524080 KB
+# CRASH: skiplist_lck alloc=hoard u=100 n=200000
+tcmalloc              100     skiplist_lck         200000     56        False  -thread-perc "100;0"  [ 21.76 ] 21.7600, 160684 KB
+# CRASH: skiplist_lck alloc=tcmalloc u=100 n=200000
+tbbmalloc             100     skiplist_lck         200000     56        False  -thread-perc "100;0"  [ 19.97 ] 19.9700, 106640 KB
+lockfree              100     skiplist_lck         200000     56        True   -thread-perc "100;0"  [ 20.75 ] 20.7500, 96956 KB
+rpmalloc              100     skiplist_lck         200000     56        False  -thread-perc "100;0"  [ 24.51 ] 24.5100, 380600 KB
+deqalloc              100     arttree_lck          200000     56        False  -thread-perc "50;50"  [ 59.58 ] 59.5800, 1041732 KB
+mimalloc              100     arttree_lck          200000     56        False  -thread-perc "50;50"  [ 41.85 ] 41.8500, 262056 KB
+mimalloc-batchit      100     arttree_lck          200000     56        False  -thread-perc "50;50"  [ 38.96 ] 38.9600, 260236 KB
+jemalloc              100     arttree_lck          200000     56        True   -thread-perc "50;50"  [ 48.37 ] 48.3700, 296980 KB
+snmalloc              100     arttree_lck          200000     56        False  -thread-perc "50;50"  [ 48.48 ] 48.4800, 248248 KB
+hoard                 100     arttree_lck          200000     56        True   -thread-perc "50;50"  [ 46.23 ] 46.2300, 191764 KB
+# CRASH: arttree_lck alloc=hoard u=100 n=200000
+tcmalloc              100     arttree_lck          200000     56        False  -thread-perc "50;50"  [ 28.13 ] 28.1300, 174260 KB
+# CRASH: arttree_lck alloc=tcmalloc u=100 n=200000
+tbbmalloc             100     arttree_lck          200000     56        False  -thread-perc "50;50"  [ 26.32 ] 26.3200, 128228 KB
+lockfree              100     arttree_lck          200000     56        True   -thread-perc "50;50"  [ 32.0 ] 32.0000, 130208 KB
+rpmalloc              100     arttree_lck          200000     56        False  -thread-perc "50;50"  [ 45.98 ] 45.9800, 315792 KB
+deqalloc              100     arttree_lck          200000     56        False  -thread-perc "75;25"  [ 59.42 ] 59.4200, 1109348 KB
+mimalloc              100     arttree_lck          200000     56        False  -thread-perc "75;25"  [ 41.04 ] 41.0400, 256212 KB
+mimalloc-batchit      100     arttree_lck          200000     56        False  -thread-perc "75;25"  [ 38.62 ] 38.6200, 260076 KB
+jemalloc              100     arttree_lck          200000     56        True   -thread-perc "75;25"  [ 47.69 ] 47.6900, 376576 KB
+snmalloc              100     arttree_lck          200000     56        False  -thread-perc "75;25"  [ 48.87 ] 48.8700, 247900 KB
+hoard                 100     arttree_lck          200000     56        True   -thread-perc "75;25"  [ 42.54 ] 42.5400, 2806236 KB
+# CRASH: arttree_lck alloc=hoard u=100 n=200000
+tcmalloc              100     arttree_lck          200000     56        False  -thread-perc "75;25"  [ 28.3 ] 28.3000, 163856 KB
+# CRASH: arttree_lck alloc=tcmalloc u=100 n=200000
+tbbmalloc             100     arttree_lck          200000     56        False  -thread-perc "75;25"  [ 24.99 ] 24.9900, 156308 KB
+lockfree              100     arttree_lck          200000     56        True   -thread-perc "75;25"  [ 33.14 ] 33.1400, 139048 KB
+rpmalloc              100     arttree_lck          200000     56        False  -thread-perc "75;25"  [ 44.45 ] 44.4500, 375116 KB
+deqalloc              100     arttree_lck          200000     56        False  -thread-perc "100;0"  [ 60.21 ] 60.2100, 1182980 KB
+mimalloc              100     arttree_lck          200000     56        False  -thread-perc "100;0"  [ 40.18 ] 40.1800, 264164 KB
+mimalloc-batchit      100     arttree_lck          200000     56        False  -thread-perc "100;0"  [ 38.5 ] 38.5000, 257948 KB
+jemalloc              100     arttree_lck          200000     56        True   -thread-perc "100;0"  [ 46.62 ] 46.6200, 309816 KB
+snmalloc              100     arttree_lck          200000     56        False  -thread-perc "100;0"  [ 49.18 ] 49.1800, 236012 KB
+hoard                 100     arttree_lck          200000     56        True   -thread-perc "100;0"  [ 21.46 ] 21.4600, 3592528 KB
+# CRASH: arttree_lck alloc=hoard u=100 n=200000
+tcmalloc              100     arttree_lck          200000     56        False  -thread-perc "100;0"  [ 30.84 ] 30.8400, 163332 KB
+# CRASH: arttree_lck alloc=tcmalloc u=100 n=200000
+tbbmalloc             100     arttree_lck          200000     56        False  -thread-perc "100;0"  [ 23.0 ] 23.0000, 135596 KB
+lockfree              100     arttree_lck          200000     56        True   -thread-perc "100;0"  [ 34.82 ] 34.8200, 143460 KB
+rpmalloc              100     arttree_lck          200000     56        False  -thread-perc "100;0"  [ 45.91 ] 45.9100, 315856 KB
+deqalloc              100     list_lck             2000       56        False  -thread-perc "50;50"  [ 8.35 ] 8.3500, 468488 KB
+mimalloc              100     list_lck             2000       56        False  -thread-perc "50;50"  [ 6.114 ] 6.1140, 127076 KB
+mimalloc-batchit      100     list_lck             2000       56        False  -thread-perc "50;50"  [ 6.083 ] 6.0830, 124908 KB
+jemalloc              100     list_lck             2000       56        True   -thread-perc "50;50"  [ 5.059 ] 5.0590, 242256 KB
+snmalloc              100     list_lck             2000       56        False  -thread-perc "50;50"  [ 8.036 ] 8.0360, 27920 KB
+hoard                 100     list_lck             2000       56        True   -thread-perc "50;50"  [ 5.494 ] 5.4940, 16324 KB
+# CRASH: list_lck alloc=hoard u=100 n=2000
+tcmalloc              100     list_lck             2000       56        False  -thread-perc "50;50"  [ 6.435 ] 6.4350, 38260 KB
+tbbmalloc             100     list_lck             2000       56        False  -thread-perc "50;50"  [ 4.267 ] 4.2670, 24884 KB
+lockfree              100     list_lck             2000       56        True   -thread-perc "50;50"  [ 5.386 ] 5.3860, 16872 KB
+rpmalloc              100     list_lck             2000       56        False  -thread-perc "50;50"  [ 6.047 ] 6.0470, 153484 KB
+deqalloc              100     list_lck             2000       56        False  -thread-perc "75;25"  [ 8.345 ] 8.3450, 466508 KB
+mimalloc              100     list_lck             2000       56        False  -thread-perc "75;25"  [ 6.102 ] 6.1020, 126796 KB
+mimalloc-batchit      100     list_lck             2000       56        False  -thread-perc "75;25"  [ 6.059 ] 6.0590, 124960 KB
+jemalloc              100     list_lck             2000       56        True   -thread-perc "75;25"  [ 5.787 ] 5.7870, 239724 KB
+snmalloc              100     list_lck             2000       56        False  -thread-perc "75;25"  [ 7.649 ] 7.6490, 39772 KB
+hoard                 100     list_lck             2000       56        True   -thread-perc "75;25"  [ 5.795 ] 5.7950, 78524 KB
+# CRASH: list_lck alloc=hoard u=100 n=2000
+tcmalloc              100     list_lck             2000       56        False  -thread-perc "75;25"  [ 5.298 ] 5.2980, 34164 KB
+# CRASH: list_lck alloc=tcmalloc u=100 n=2000
+tbbmalloc             100     list_lck             2000       56        False  -thread-perc "75;25"  [ 3.79 ] 3.7900, 15188 KB
+lockfree              100     list_lck             2000       56        True   -thread-perc "75;25"  [ 5.84 ] 5.8400, 15076 KB
+rpmalloc              100     list_lck             2000       56        False  -thread-perc "75;25"  [ 6.098 ] 6.0980, 147868 KB
+deqalloc              100     list_lck             2000       56        False  -thread-perc "100;0"  [ 8.19 ] 8.1900, 489032 KB
+mimalloc              100     list_lck             2000       56        False  -thread-perc "100;0"  [ 6.12 ] 6.1200, 126944 KB
+mimalloc-batchit      100     list_lck             2000       56        False  -thread-perc "100;0"  [ 6.098 ] 6.0980, 131296 KB
+jemalloc              100     list_lck             2000       56        True   -thread-perc "100;0"  [ 5.028 ] 5.0280, 241136 KB
+snmalloc              100     list_lck             2000       56        False  -thread-perc "100;0"  [ 7.714 ] 7.7140, 20860 KB
+hoard                 100     list_lck             2000       56        True   -thread-perc "100;0"  [ 5.345 ] 5.3450, 119908 KB
+# CRASH: list_lck alloc=hoard u=100 n=2000
+tcmalloc              100     list_lck             2000       56        False  -thread-perc "100;0"  [ 4.882 ] 4.8820, 30252 KB
+tbbmalloc             100     list_lck             2000       56        False  -thread-perc "100;0"  [ 4.603 ] 4.6030, 13904 KB
+lockfree              100     list_lck             2000       56        True   -thread-perc "100;0"  [ 5.77 ] 5.7700, 14276 KB
+rpmalloc              100     list_lck             2000       56        False  -thread-perc "100;0"  [ 6.059 ] 6.0590, 149828 KB
