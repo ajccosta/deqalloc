@@ -190,7 +190,7 @@ class FlockConfig:
     allocators_raw: List[str] = field(default_factory=lambda: [
         "deqalloc",
         "mimalloc",
-        "mimalloc-batchit",
+        #"mimalloc-batchit",
         "jemalloc:numa:df",
         "snmalloc",
         "hoard:numa",
@@ -198,7 +198,7 @@ class FlockConfig:
         "tbbmalloc::df",
         "lockfree:numa:df",
         "rpmalloc::df",
-        "scalloc", #TODO check whether to use df or numa
+        #"scalloc", #TODO check whether to use df or numa
     ])
 
     rideables: List[str] = field(default_factory=lambda: [
@@ -283,7 +283,7 @@ class SetbenchConfig:
     allocators_raw: List[str] = field(default_factory=lambda: [
         "deqalloc",
         "mimalloc",
-        "mimalloc-batchit",
+        #"mimalloc-batchit",
         "jemalloc:numa:df",
         "snmalloc",
         "hoard:numa",
@@ -291,7 +291,7 @@ class SetbenchConfig:
         "tbbmalloc::df",
         "lockfree:numa:df",
         "rpmalloc::df",
-        "scalloc", #TODO check whether to use df or numa
+        #"scalloc", #TODO check whether to use df or numa
     ])
 
     rideables: List[str] = field(default_factory=lambda: [
@@ -341,8 +341,8 @@ class SetbenchConfig:
         # large
         ("guerraoui_ext_bst_ticket",   200_000_000),
         ("brown_ext_abtree_lf",        200_000_000),
-        ("hm_hashtable",               200_000_000),
-        ("hmlist",                          10_000),
+        ("hm_hashtable",               100_000_000),
+        ("hmlist",                          20_000),
     ])
 
     thread_counts: List[int] = field(default_factory=lambda:
@@ -360,7 +360,8 @@ class SetbenchConfig:
     def __post_init__(self):
         self.runs = self.args.runs
         self.ttrial_time_secrial_time_sec = self.args.time * 1000
-        self.hugepages = self.args.hugepages
+        if self.args.hugepages:
+            self.hugepages = self.args.hugepages
         if self.args.tracker:
             #run only this tracker for tracker benchmarks
             self.trackers = [self.args.tracker]
@@ -400,6 +401,7 @@ class ResultsFile:
     def __init__(self, path: str, alloc_dir: str, experiment: str):
         today = datetime.now().strftime("%m-%d-%Y")
         self.f = open(path, "a")
+        self.f.write(f"Command: {' '.join(sys.argv)}\n")
         self.f.write(f"Date: {today}\n")
         self.f.write(f"Experiment: {experiment}\n")
         try:
@@ -451,10 +453,9 @@ class FlockRunner:
         self.alloc_dir = alloc_dir
         self.output_dir = output_dir
 
-        self.fmt = "{:<17} {:<7} {:<20} {:<10} {:<9} {:<6} {:<21} {}"
+        self.fmt = "{:<21} {:<7} {:<20} {:<10} {:<9} {:<6} {:<21} {}"
         self.header = self.fmt.format("allocator", "update%", "ds", "key_size", "#threads", "numa", "thread-perc", "results")
         self.path = self._output_path("flock")
-        self.rf = ResultsFile(self.path, self.alloc_dir, "flock")
 
     def _output_path(self, name: str) -> str:
         today   = datetime.now().strftime("%m-%d-%Y")
@@ -541,59 +542,90 @@ class FlockRunner:
             if status != "ok":
                 self.rf.write(f"# {status.upper()}: {rideable} alloc={alloc} u={update_perc} n={size}\n")
 
+    def new_results_file(self, name: str):
+        print(f"Starting {name} experiment")
+        self.rf = ResultsFile(f"{self.output_dir}/{name}", self.alloc_dir, f"flock {name}")
+        self.rf.write(self.header + "\n")
+
     #vary update%
     def run_updates(self):
+        self.new_results_file("updates")
         for rideable in self.config.rideables:
             for update_perc in self.config.update_percs:
                 self.run_all_allocs(
                     rideable=rideable,
                     update_perc=update_perc,
                 )
+        self.rf.close()
 
     #vary number if threads
     def run_threads(self):
+        self.new_results_file("threads")
         for rideable in self.config.rideables:
             for nthreads in self.config.thread_counts:
                 self.run_all_allocs(
                     rideable=rideable,
                     nthreads=nthreads
                 )
+        self.rf.close()
 
     #vary data structure size
-    def run_sizes(self):
+    def run_sizes(self, experiment="sizes"):
+        self.new_results_file(experiment)
         for rideable, size in self.config.rideables_sizes:
             self.run_all_allocs(
                 rideable=rideable,
                 size=size,
             )
+        self.rf.close()
 
     #vary update skewness (some threads might do more deletes, others more inserts)
     def run_thread_perc(self):
+        self.new_results_file("thread_perc")
         for rideable in self.config.rideables:
             for thread_perc in self.config.thread_percs:
                 self.run_all_allocs(
                     rideable=rideable,
                     add_args=f"-thread-perc \"{thread_perc}\"",
                 )
+        self.rf.close()
 
     #do upserts instead of regular insters
     def run_upserts(self):
+        self.new_results_file("upserts")
         for rideable in self.config.rideables:
             self.run_all_allocs(
                 rideable=rideable,
                 add_args=f"-upsert",
             )
+        self.rf.close()
+
+    #run with hugepages=never
+    def run_hugepages(self):
+        prev_hp_setting = self.config.hugepages
+        self.config.hugepages = "never"
+        self.run_sizes("hugepages")
+        self.config.hugepages = prev_hp_setting
+        self.rf.close()
+
+    def run_ablation_localseglist(self):
+        prev_allocs = self.config.allocators_raw
+        self.config.allocators_raw = ["deqalloc", "deqalloc_localseglist"]
+        self.run_sizes("ablation_localseglist")
+        self.config.allocators_raw = prev_allocs
+        self.rf.close()
 
     def run(self):
-        self.rf.write(self.header + "\n")
         b = self.config.args.benchmark
         run_all = "all" in b
-        if run_all or "thread-perc" in b: self.run_thread_perc()
-        if run_all or "upserts"     in b: self.run_upserts()
         if run_all or "updates"     in b: self.run_updates()
         if run_all or "threads"     in b: self.run_threads()
         if run_all or "sizes"       in b: self.run_sizes()
-        self.rf.close()
+        if not self.config.args.nohugepages:
+            if run_all or "hugepages"   in b: self.run_hugepages()
+        if run_all or "ablation"    in b: self.run_ablation_localseglist()
+        if run_all or "thread-perc" in b: self.run_thread_perc()
+        if run_all or "upserts"     in b: self.run_upserts()
 
 
 # ---------------------------------------------------------------------------
@@ -609,10 +641,9 @@ class SetbenchRunner:
         self.alloc_dir = alloc_dir
         self.output_dir = output_dir
 
-        self.fmt = "{:<17} {:<10} {:<10} {:<25} {:<10} {:<9} {:<6} {}"
+        self.fmt = "{:<21} {:<10} {:<10} {:<25} {:<10} {:<9} {:<6} {}"
         self.header = self.fmt.format("allocator", "update%", "scheme", "ds", "key_size", "#threads", "numa", "results")
         self.path = self._output_path("setbench")
-        self.rf = ResultsFile(self.path, self.alloc_dir, "setbench")
 
     def _output_path(self, name: str) -> str:
         today   = datetime.now().strftime("%m-%d-%Y")
@@ -714,50 +745,79 @@ class SetbenchRunner:
                     f"tracker={scheme_label} alloc={alloc} u={update_perc} k={size}\n"
                 )
 
+    def new_results_file(self, name: str):
+        print(f"Starting {name} experiment")
+        self.rf = ResultsFile(f"{self.output_dir}/{name}", self.alloc_dir, f"setbench {name}")
+        self.rf.write(self.header + "\n")
+
     #vary update%
     def run_updates(self):
+        self.new_results_file("updates")
         for rideable in self.config.rideables:
             for update_perc in self.config.update_percs:
                 self.run_all_allocs(
                     rideable=rideable,
                     update_perc=update_perc,
                 )
+        self.rf.close()
 
     #vary number if threads
     def run_threads(self):
+        self.new_results_file("threads")
         for rideable in self.config.rideables:
             for nthreads in self.config.thread_counts:
                 self.run_all_allocs(
                     rideable=rideable,
                     nthreads=nthreads
                 )
+        self.rf.close()
 
     #vary data structure size
-    def run_sizes(self):
+    def run_sizes(self, experiment="sizes"):
+        self.new_results_file(experiment)
         for rideable, size in self.config.rideables_sizes:
             self.run_all_allocs(
                 rideable=rideable,
                 size=size,
             )
+        self.rf.close()
 
     #vary reclamation scheme
     def run_trackers(self):
+        self.new_results_file("trackers")
         for rideable in self.config.rideables:
             for tracker in self.config.trackers:
                 self.run_all_allocs(
                     rideable=rideable,
                     tracker=tracker,
                 )
+        self.rf.close()
+
+    #run with hugepages=never
+    def run_hugepages(self):
+        prev_hp_setting = self.config.hugepages
+        self.config.hugepages = "never"
+        self.run_sizes("hugepages")
+        self.config.hugepages = prev_hp_setting
+        self.rf.close()
+
+    def run_ablation_localseglist(self):
+        prev_allocs = self.config.allocators_raw
+        self.config.allocators_raw = ["deqalloc", "deqalloc_localseglist"]
+        self.run_sizes("ablation_localseglist")
+        self.config.allocators_raw = prev_allocs
+        self.rf.close()
 
     def run(self):
-        self.rf.write(self.header + "\n")
         b = self.config.args.benchmark
         run_all = "all" in b
-        if run_all or "trackers" in b: self.run_trackers()
-        if run_all or "updates"  in b: self.run_updates()
-        if run_all or "threads"  in b: self.run_threads()
-        if run_all or "sizes"    in b: self.run_sizes()
-        self.rf.close()
+        if run_all or "trackers"  in b: self.run_trackers()
+        if run_all or "updates"   in b: self.run_updates()
+        if run_all or "threads"   in b: self.run_threads()
+        if run_all or "sizes"     in b: self.run_sizes()
+        if not self.config.args.nohugepages:
+            if run_all or "hugepages" in b: self.run_hugepages()
+        if run_all or "ablation"  in b: self.run_ablation_localseglist()
 
 # ---------------------------------------------------------------------------
 # Main
@@ -792,7 +852,7 @@ def main():
                         default=os.path.join(script_dir, "../build/allocators"),
                         help="Path to allocator .so files for flock")
     parser.add_argument("--runs",        type=int, default=5,       help="Number of runs (default: 5)")
-    parser.add_argument("--allocator",   default=None,              help="Run only this allocator")
+    parser.add_argument("--allocator",  default=["all"], nargs="+", help="Run only specific allocator(s)")
     parser.add_argument("--ds",          default=None,              help="Run only this data structure")
     parser.add_argument("--default-tracker", default="debra",       help="Run benchmarks with this tracker/memory reclamation scheme.")
     parser.add_argument("--tracker",     default=None,              help="Run only this tracker/memory reclamation scheme for tracker benchmarks.")
@@ -801,18 +861,20 @@ def main():
                             nargs="+", choices=["updates", "sizes", "threads", "trackers", "thread-perc", "upserts", "all"])
     parser.add_argument("--hugepages",   default=None,              help="Set hugepages setting",
                         choices=["never", "always", "madvise"])
+    parser.add_argument("--nohugepages", action='store_true',       help="Do not run hugepages benchmark")
 
     args = parser.parse_args()
 
-    if args.hugepages and not is_sudo():
-        print("disabling/enabling hugepages requires sudo\n")
+    if not args.nohugepages and not is_sudo():
+        print("disabling/enabling hugepages requires sudo")
+        print("either run with sudo or add --nohugepages\n")
         exit(-1)
 
     # -- flock config --
     flock_cfg = FlockConfig(args=args)
     if args.allocator:
         flock_cfg.allocators_raw = [a for a in flock_cfg.allocators_raw
-                                    if a.split(":")[0] == args.allocator]
+                                    if a.split(":")[0] in args.allocator or args.allocator == ["all"]]
     if args.ds:
         flock_cfg.rideables_sizes = [(r, s) for r, s in flock_cfg.rideables_sizes if r == args.ds]
 
@@ -820,7 +882,7 @@ def main():
     sb_cfg = SetbenchConfig(args=args)
     if args.allocator:
         sb_cfg.allocators_raw = [a for a in sb_cfg.allocators_raw
-                                 if a.split(":")[0] == args.allocator]
+                                 if a.split(":")[0] in args.allocator or args.allocator == ["all"]]
     if args.ds:
         sb_cfg.rideables_sizes = [(r, s) for r, s in sb_cfg.rideables_sizes if r == args.ds]
 
@@ -830,8 +892,8 @@ def main():
         print("scalloc requires sudo\n")
         exit(-1)
 
-    flock_runner    = FlockRunner(flock_cfg,  args.flock_dir,    args.alloc_dir, args.output)
-    setbench_runner = SetbenchRunner(sb_cfg,  args.setbench_dir, args.alloc_dir, args.output)
+    flock_runner    = FlockRunner(flock_cfg,  args.flock_dir,    args.alloc_dir, f"{args.output}/flock")
+    setbench_runner = SetbenchRunner(sb_cfg,  args.setbench_dir, args.alloc_dir, f"{args.output}/setbench")
 
     experiments = {
         "flock":    [(flock_runner.run,    "Flock Allocator Benchmarks")],
