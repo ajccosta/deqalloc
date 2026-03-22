@@ -311,7 +311,7 @@ class SetbenchConfig:
 
     trackers: List[str] = field(default_factory=lambda: [
         "2geibr", "debra", "he", "ibr_hp", "ibr_rcu",
-        "nbr", "nbrplus", "qsbr", "wfe", "token4",
+        "nbrplus", "qsbr", "wfe", "token4",
     ])
 
     default_update_perc: int = 100
