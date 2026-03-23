@@ -223,7 +223,7 @@ class FlockConfig:
     default_update_perc: int = 100
 
     #for varying updates experiment
-    update_percs: List[int] = field(default_factory=lambda: [1, 5, 50, 90, 100])
+    update_percs: List[int] = field(default_factory=lambda: [0, 1, 5, 50, 90, 100])
 
     thread_percs: List[int] = field(default_factory=lambda: ["50;50", "75;25", "100;0"])
 
@@ -319,7 +319,7 @@ class SetbenchConfig:
     default_tracker: str = "debra"
  
     #for varying updates experiment
-    update_percs: List[int] = field(default_factory=lambda: [1, 5, 50, 90, 100])
+    update_percs: List[int] = field(default_factory=lambda: [0, 1, 5, 50, 90, 100])
 
     #for varying size experiment
     rideables_sizes: List[Tuple[str, int]] = field(default_factory=lambda: [
@@ -858,7 +858,7 @@ def main():
     parser.add_argument("--tracker",     default=None,              help="Run only this tracker/memory reclamation scheme for tracker benchmarks.")
     parser.add_argument("--time",        type=int, default=5,       help="Amount of time each run takes (default: 5)")
     parser.add_argument("--benchmark",   type=str, default=["all"], help="Run specific benchmark(s) (default: all)",
-                            nargs="+", choices=["updates", "sizes", "threads", "trackers", "thread-perc", "upserts", "all"])
+                            nargs="+", choices=["updates", "sizes", "threads", "trackers", "thread-perc", "upserts", "ablation", "all"])
     parser.add_argument("--hugepages",   default=None,              help="Set hugepages setting",
                         choices=["never", "always", "madvise"])
     parser.add_argument("--nohugepages", action='store_true',       help="Do not run hugepages benchmark")

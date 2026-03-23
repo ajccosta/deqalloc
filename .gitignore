@@ -2,7 +2,7 @@
 /bazel-*
 .vscode/
 *.swp
-build/
+build*
 build/_deps/heaplayers-src
 .DS_Store
 *.pdf

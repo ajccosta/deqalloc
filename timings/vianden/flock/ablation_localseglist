@@ -1,0 +1,45 @@
+Command: ./run_experiments.py all -o ../timings/vianden --runs 3 --time 3
+Date: 03-23-2026
+Experiment: flock ablation_localseglist
+Model name:                              Intel(R) Xeon(R) Platinum 8470
+Git: 3ed47c2
+allocator versions:
+	jemalloc: 86b72192
+	mesh: 5d9b390
+	mimalloc: 75d69f4a
+	hoard: 1cd9101
+	scalloc: 1a11827
+	tcmalloc: 068dd9e9
+	snmalloc: 3fca4c8
+	lockfree: 915f51b
+	rpmalloc: feb43ae
+	tbbmalloc: ef6f9b5e
+	mimalloc-batchit: da52048
+---
+allocator             update% ds                   key_size   #threads  numa   thread-perc           results
+deqalloc              100     btree_lck            5000       208       False                        [  ] 0.0000, 601044 KB
+# CRASH: btree_lck alloc=deqalloc u=100 n=5000
+deqalloc              100     hash_block_lck       5000       208       False                        [ 487.3 493.7 486.4 ] 489.1333, 1259624 KB
+deqalloc              100     leaftree_lck         5000       208       False                        [ 234.7 233.1 227.4 ] 231.7333, 786300 KB
+deqalloc              100     skiplist_lck         5000       208       False                        [ 113.6 112.2 111.7 ] 112.5000, 6814972 KB
+deqalloc              100     arttree_lck          5000       208       False                        [ 0.8232 ] 0.8232, 769420 KB
+# CRASH: arttree_lck alloc=deqalloc u=100 n=5000
+deqalloc              100     list_lck             500        208       False                        [ 36.35 36.34 36.63 ] 36.4400, 596700 KB
+deqalloc              100     btree_lck            200000     208       False                        [ 97.34 142.3 84.01 ] 107.8833, 2655132 KB
+deqalloc              100     hash_block_lck       200000     208       False                        [ 506.2 513.8 515.0 ] 511.6667, 3072600 KB
+deqalloc              100     leaftree_lck         200000     208       False                        [ 225.0 227.6 226.0 ] 226.2000, 2429844 KB
+deqalloc              100     skiplist_lck         200000     208       False                        [ 158.0 159.1 158.1 ] 158.4000, 2605384 KB
+deqalloc              100     arttree_lck          200000     208       False                        [ 93.2 151.1 138.8 ] 127.7000, 2799572 KB
+deqalloc              100     list_lck             2000       208       False                        [ 29.61 29.88 29.91 ] 29.8000, 604776 KB
+deqalloc              100     btree_lck            20000000   208       False                        [ 151.0 167.4 167.5 ] 161.9667, 6472112 KB
+deqalloc              100     hash_block_lck       20000000   208       False                        [ 458.7 476.8 475.2 ] 470.2333, 6257416 KB
+deqalloc              100     leaftree_lck         20000000   208       False                        [ 113.5 112.7 110.6 ] 112.2667, 5440024 KB
+deqalloc              100     skiplist_lck         20000000   208       False                        [ 91.74 94.76 93.35 ] 93.2833, 4995076 KB
+deqalloc              100     arttree_lck          20000000   208       False                        [ 346.9 348.1 351.0 ] 348.6667, 6107320 KB
+deqalloc              100     list_lck             10000      208       False                        [ 10.82 10.74 10.72 ] 10.7600, 940952 KB
+deqalloc              100     btree_lck            200000000  208       False                        [ 114.9 121.3 119.3 ] 118.5000, 24618576 KB
+deqalloc              100     hash_block_lck       200000000  208       False                        [ 408.9 441.4 448.6 ] 432.9667, 29410560 KB
+deqalloc              100     leaftree_lck         200000000  208       False                        [ 70.62 68.98 67.01 ] 68.8700, 25873408 KB
+deqalloc              100     skiplist_lck         200000000  208       False                        [ 53.16 53.24 53.17 ] 53.1900, 27945944 KB
+deqalloc              100     arttree_lck          200000000  208       False                        [ 254.5 256.6 251.3 ] 254.1333, 31854484 KB
+deqalloc              100     list_lck             10000      208       False                        [ 10.58 10.62 10.65 ] 10.6167, 1004592 KB
