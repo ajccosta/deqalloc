@@ -9,6 +9,18 @@
 
 #include "../threadmanager.h"
 
+struct Allocator {
+  static constexpr size_t BLOCK_SIZE_LOG = 12;
+  using Base = FreelistHeap<BumpAlloc<BLOCK_SIZE_LOG, SizedMmapHeap>>;
+  static inline Base allocator;
+  static void *malloc(size_t sz) {
+    return allocator.malloc(sz);
+  }
+  static void free(void *ptr) {
+    allocator.free(ptr);
+  }
+};
+
 template<size_t N>
 struct Pad { char data[N]; };
 
@@ -72,9 +84,8 @@ public:
   FCDeque() : threadRequests(max_threads) {}
 
   void combine() {
-    std::vector<Request*> popBacks;
-    std::vector<Request*> popFronts;
-    for (unsigned i = 0; i < num_threads(); i++) {
+    size_t threadCount = num_threads();
+    for (size_t i = 0; i < threadCount; i++) {
       auto &request = threadRequests[i];
       switch (request.getStatus()) {
         case Request::PushFront: {
@@ -88,32 +99,26 @@ public:
           break;
         }
         case Request::PopFront: {
-          popFronts.push_back(&request);
+          if (backing.empty()) {
+            request.reset();
+          } else {
+            request.complete(backing.front());
+            backing.pop_front();
+          }
           break;
         }
         case Request::PopBack: {
-          popBacks.push_back(&request);
+          if (backing.empty()) {
+            request.reset();
+          } else { 
+            request.complete(backing.back());
+            backing.pop_back();
+          }
           break;
         }
         case Request::Complete:
           // do nothing
           break;
-      }
-    }
-    for (auto *request : popFronts) {
-      if (backing.empty()) {
-        request->reset();
-      } else {
-        request->complete(backing.front());
-        backing.pop_front();
-      }
-    }
-    for (auto *request : popBacks) {
-      if (backing.empty()) {
-        request->reset();
-      } else { 
-        request->complete(backing.back());
-        backing.pop_back();
       }
     }
   }
@@ -161,12 +166,17 @@ public:
     return pop_back();
   }
 
-  auto push_bottom(T val) {
+  void push_bottom(T val) {
     push_back(val);
   }
 
-  std::deque<T> backing;
+  static constexpr size_t BLOCK_SIZE_LOG = 12;
+
+  template<typename V>
+  using STLAllocator = HL::STLAllocator<V, Allocator>;
+
+  std::deque<T, STLAllocator<T>> backing;
   std::mutex mutex;
-  std::vector<Request> threadRequests;
+  std::vector<Request, STLAllocator<Request>> threadRequests;
 
 };

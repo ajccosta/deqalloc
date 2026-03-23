@@ -17,4 +17,56 @@ allocator versions:
 	mimalloc-batchit: da52048
 ---
 allocator             update% ds                   key_size   #threads  numa   thread-perc           results
-deqalloc              100     btree_lck            5000       40        False                        [ 
+deqalloc              100     btree_lck            5000       40        False                        [ Command: ./run_experiments.py flock --benchmark ablation --output ../timings --nohugepages
+Date: 03-23-2026
+Experiment: flock ablation_localseglist
+Model name:                           Intel(R) Xeon(R) CPU E7-8867 v4 @ 2.40GHz
+Git: 1eeb921
+allocator versions:
+	jemalloc: 86b72192
+	mesh: 5d9b390
+	mimalloc: 75d69f4a
+	hoard: 1cd9101
+	scalloc: 1a11827
+	tcmalloc: 068dd9e9
+	snmalloc: 3fca4c8
+	lockfree: 915f51b
+	rpmalloc: feb43ae
+	tbbmalloc: 1911b283
+	mimalloc-batchit: da52048
+---
+allocator             update% ds                   key_size   #threads  numa   thread-perc           results
+deqalloc              100     btree_lck            5000       144       False                        [ Command: ./run_experiments.py flock --benchmark ablation --output ../timings
+Date: 03-23-2026
+Experiment: flock ablation_localseglist
+Model name:                           Intel(R) Xeon(R) CPU E7-8867 v4 @ 2.40GHz
+Git: 1eeb921
+allocator versions:
+	jemalloc: 86b72192
+	mesh: 5d9b390
+	mimalloc: 75d69f4a
+	hoard: 1cd9101
+	scalloc: 1a11827
+	tcmalloc: 068dd9e9
+	snmalloc: 3fca4c8
+	lockfree: 915f51b
+	rpmalloc: feb43ae
+	tbbmalloc: 1911b283
+	mimalloc-batchit: da52048
+---
+allocator             update% ds                   key_size   #threads  numa   thread-perc           results
+deqalloc              100     btree_lck            5000       144       False                        [ 6.938 6.768 7.017 6.827 6.578 ] 6.8256, 402716 KB
+deqalloc_localseglist 100     btree_lck            5000       144       False                        [ 6.912 7.054 6.732 7.133 6.887 ] 6.9436, 414928 KB
+deqalloc              100     hash_block_lck       5000       144       False                        [ 288.2 288.1 285.8 285.8 287.0 ] 286.9800, 419508 KB
+deqalloc_localseglist 100     hash_block_lck       5000       144       False                        [ 294.4 285.6 285.6 285.8 285.4 ] 287.3600, 485380 KB
+deqalloc              100     leaftree_lck         5000       144       False                        [ 141.9 143.7 143.5 137.4 143.7 ] 142.0400, 355768 KB
+deqalloc_localseglist 100     leaftree_lck         5000       144       False                        [ 132.3 140.1 140.3 140.0 140.1 ] 138.5600, 404592 KB
+deqalloc              100     skiplist_lck         5000       144       False                        [ 100.1 101.9 102.0 98.85 101.4 ] 100.8500, 9418408 KB
+deqalloc_localseglist 100     skiplist_lck         5000       144       False                        [ 97.76 90.12 77.11 96.21 81.8 ] 88.6000, 9306876 KB
+deqalloc              100     arttree_lck          5000       144       False                        [  ] 0.0000, 237476 KB
+# CRASH: arttree_lck alloc=deqalloc u=100 n=5000
+deqalloc_localseglist 100     arttree_lck          5000       144       False                        [  ] 0.0000, 351724 KB
+# CRASH: arttree_lck alloc=deqalloc_localseglist u=100 n=5000
+deqalloc              100     list_lck             500        144       False                        [ 32.43 32.72 32.68 32.72 32.78 ] 32.6660, 244604 KB
+deqalloc_localseglist 100     list_lck             500        144       False                        [ 29.36 24.84 28.26 28.04 31.11 ] 28.3220, 263532 KB
+deqalloc              100     btree_lck            200000     144       False                        [ 
