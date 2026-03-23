@@ -1,0 +1,745 @@
+Command: ./run_experiments.py all -o ../timings/vianden --runs 3 --time 3
+Date: 03-23-2026
+Experiment: flock threads
+Model name:                              Intel(R) Xeon(R) Platinum 8470
+Git: 3ed47c2
+allocator versions:
+	jemalloc: 86b72192
+	mesh: 5d9b390
+	mimalloc: 75d69f4a
+	hoard: 1cd9101
+	scalloc: 1a11827
+	tcmalloc: 068dd9e9
+	snmalloc: 3fca4c8
+	lockfree: 915f51b
+	rpmalloc: feb43ae
+	tbbmalloc: ef6f9b5e
+	mimalloc-batchit: da52048
+---
+allocator             update% ds                   key_size   #threads  numa   thread-perc           results
+deqalloc              100     btree_lck            200000     1         False                        [ 5.23 5.137 5.077 ] 5.1480, 2242144 KB
+mimalloc              100     btree_lck            200000     1         False                        [ 5.464 5.575 5.509 ] 5.5160, 664916 KB
+jemalloc              100     btree_lck            200000     1         True                         [ 4.377 4.481 4.546 ] 4.4680, 921900 KB
+snmalloc              100     btree_lck            200000     1         False                        [ 5.853 5.852 5.871 ] 5.8587, 478964 KB
+hoard                 100     btree_lck            200000     1         True                         [  ] 0.0000, 4248 KB
+# CRASH: btree_lck alloc=hoard u=100 n=200000
+tcmalloc              100     btree_lck            200000     1         False                        [  ] 0.0000, 16476 KB
+# CRASH: btree_lck alloc=tcmalloc u=100 n=200000
+tbbmalloc             100     btree_lck            200000     1         False                        [ 4.093 4.247 4.291 ] 4.2103, 414656 KB
+lockfree              100     btree_lck            200000     1         True                         [ 5.065 4.874 4.894 ] 4.9443, 398544 KB
+rpmalloc              100     btree_lck            200000     1         False                        [ 5.568 5.568 5.56 ] 5.5653, 1034184 KB
+deqalloc              100     btree_lck            200000     2         False                        [ 8.324 8.347 8.308 ] 8.3263, 2368760 KB
+mimalloc              100     btree_lck            200000     2         False                        [ 4.235 4.257 4.653 ] 4.3817, 784168 KB
+jemalloc              100     btree_lck            200000     2         True                         [ 6.07 3.613 3.61 ] 4.4310, 927464 KB
+snmalloc              100     btree_lck            200000     2         False                        [ 4.46 4.528 7.718 ] 5.5687, 520040 KB
+hoard                 100     btree_lck            200000     2         True                         [  ] 0.0000, 4016 KB
+# CRASH: btree_lck alloc=hoard u=100 n=200000
+tcmalloc              100     btree_lck            200000     2         False                        [  ] 0.0000, 16472 KB
+# CRASH: btree_lck alloc=tcmalloc u=100 n=200000
+tbbmalloc             100     btree_lck            200000     2         False                        [ 2.508 3.863 2.053 ] 2.8080, 385256 KB
+lockfree              100     btree_lck            200000     2         True                         [ 5.182 4.105 6.819 ] 5.3687, 381124 KB
+rpmalloc              100     btree_lck            200000     2         False                        [ 7.928 7.911 7.828 ] 7.8890, 1040608 KB
+deqalloc              100     btree_lck            200000     4         False                        [ 9.583 10.04 9.471 ] 9.6980, 2194580 KB
+mimalloc              100     btree_lck            200000     4         False                        [ 7.826 8.28 7.698 ] 7.9347, 706372 KB
+jemalloc              100     btree_lck            200000     4         True                         [ 5.755 6.192 6.046 ] 5.9977, 920592 KB
+snmalloc              100     btree_lck            200000     4         False                        [ 8.087 8.737 8.69 ] 8.5047, 498512 KB
+hoard                 100     btree_lck            200000     4         True                         [  ] 0.0000, 4032 KB
+# CRASH: btree_lck alloc=hoard u=100 n=200000
+tcmalloc              100     btree_lck            200000     4         False                        [  ] 0.0000, 16504 KB
+# CRASH: btree_lck alloc=tcmalloc u=100 n=200000
+tbbmalloc             100     btree_lck            200000     4         False                        [ 2.926 2.887 3.177 ] 2.9967, 394408 KB
+lockfree              100     btree_lck            200000     4         True                         [ 6.023 8.307 7.062 ] 7.1307, 392116 KB
+rpmalloc              100     btree_lck            200000     4         False                        [ 8.239 8.379 8.718 ] 8.4453, 1081776 KB
+deqalloc              100     btree_lck            200000     8         False                        [ 17.85 18.04 20.09 ] 18.6600, 2149380 KB
+mimalloc              100     btree_lck            200000     8         False                        [ 14.47 13.76 13.85 ] 14.0267, 682688 KB
+jemalloc              100     btree_lck            200000     8         True                         [ 9.899 9.83 9.873 ] 9.8673, 929392 KB
+snmalloc              100     btree_lck            200000     8         False                        [ 15.04 15.36 17.34 ] 15.9133, 507736 KB
+hoard                 100     btree_lck            200000     8         True                         [  ] 0.0000, 4028 KB
+# CRASH: btree_lck alloc=hoard u=100 n=200000
+tcmalloc              100     btree_lck            200000     8         False                        [  ] 0.0000, 17624 KB
+# CRASH: btree_lck alloc=tcmalloc u=100 n=200000
+tbbmalloc             100     btree_lck            200000     8         False                        [ 4.913 4.962 5.452 ] 5.1090, 401964 KB
+lockfree              100     btree_lck            200000     8         True                         [ 12.85 12.44 12.33 ] 12.5400, 331444 KB
+rpmalloc              100     btree_lck            200000     8         False                        [ 17.24 14.52 22.51 ] 18.0900, 1039308 KB
+deqalloc              100     btree_lck            200000     16        False                        [ 34.88 42.97 33.38 ] 37.0767, 2176532 KB
+mimalloc              100     btree_lck            200000     16        False                        [ 24.86 24.53 26.58 ] 25.3233, 635600 KB
+jemalloc              100     btree_lck            200000     16        True                         [ 16.39 19.12 16.48 ] 17.3300, 919856 KB
+snmalloc              100     btree_lck            200000     16        False                        [ 26.22 25.19 26.75 ] 26.0533, 547100 KB
+hoard                 100     btree_lck            200000     16        True                         [  ] 0.0000, 4204 KB
+# CRASH: btree_lck alloc=hoard u=100 n=200000
+tcmalloc              100     btree_lck            200000     16        False                        [  ] 0.0000, 16484 KB
+# CRASH: btree_lck alloc=tcmalloc u=100 n=200000
+tbbmalloc             100     btree_lck            200000     16        False                        [ 7.445 7.835 7.627 ] 7.6357, 410416 KB
+lockfree              100     btree_lck            200000     16        True                         [ 20.86 22.61 20.2 ] 21.2233, 318444 KB
+rpmalloc              100     btree_lck            200000     16        False                        [ 25.29 32.67 24.58 ] 27.5133, 1104932 KB
+deqalloc              100     btree_lck            200000     32        False                        [ 60.74 62.61 61.95 ] 61.7667, 2159736 KB
+mimalloc              100     btree_lck            200000     32        False                        [ 44.95 44.58 44.91 ] 44.8133, 546372 KB
+jemalloc              100     btree_lck            200000     32        True                         [ 28.27 28.64 27.74 ] 28.2167, 898264 KB
+snmalloc              100     btree_lck            200000     32        False                        [ 46.29 45.63 46.07 ] 45.9967, 520644 KB
+hoard                 100     btree_lck            200000     32        True                         [  ] 0.0000, 4204 KB
+# CRASH: btree_lck alloc=hoard u=100 n=200000
+tcmalloc              100     btree_lck            200000     32        False                        [  ] 0.0000, 16472 KB
+# CRASH: btree_lck alloc=tcmalloc u=100 n=200000
+tbbmalloc             100     btree_lck            200000     32        False                        [ 11.25 10.57 11.4 ] 11.0733, 496548 KB
+lockfree              100     btree_lck            200000     32        True                         [ 34.18 33.22 34.88 ] 34.0933, 301952 KB
+rpmalloc              100     btree_lck            200000     32        False                        [ 41.04 41.19 42.26 ] 41.4967, 1019260 KB
+deqalloc              100     btree_lck            200000     64        False                        [ 107.6 111.6 112.0 ] 110.4000, 2131604 KB
+mimalloc              100     btree_lck            200000     64        False                        [ 69.28 68.48 70.79 ] 69.5167, 593932 KB
+jemalloc              100     btree_lck            200000     64        True                         [ 44.15 44.43 44.55 ] 44.3767, 893964 KB
+snmalloc              100     btree_lck            200000     64        False                        [ 74.31 72.28 75.7 ] 74.0967, 546032 KB
+hoard                 100     btree_lck            200000     64        True                         [  ] 0.0000, 4036 KB
+# CRASH: btree_lck alloc=hoard u=100 n=200000
+tcmalloc              100     btree_lck            200000     64        False                        [  ] 0.0000, 16572 KB
+# CRASH: btree_lck alloc=tcmalloc u=100 n=200000
+tbbmalloc             100     btree_lck            200000     64        False                        [ 12.5 11.51 11.84 ] 11.9500, 798920 KB
+lockfree              100     btree_lck            200000     64        True                         [ 46.64 43.43 47.47 ] 45.8467, 311748 KB
+rpmalloc              100     btree_lck            200000     64        False                        [ 68.06 68.49 69.21 ] 68.5867, 1047580 KB
+deqalloc              100     btree_lck            200000     104       False                        [ 152.1 154.2 152.3 ] 152.8667, 2335848 KB
+mimalloc              100     btree_lck            200000     104       False                        [ 79.67 87.7 79.0 ] 82.1233, 736740 KB
+jemalloc              100     btree_lck            200000     104       True                         [ 40.54 36.6 34.63 ] 37.2567, 1213360 KB
+snmalloc              100     btree_lck            200000     104       False                        [ 99.59 98.79 100.9 ] 99.7600, 646312 KB
+hoard                 100     btree_lck            200000     104       True                         [  ] 0.0000, 4128 KB
+# CRASH: btree_lck alloc=hoard u=100 n=200000
+tcmalloc              100     btree_lck            200000     104       False                        [  ] 0.0000, 16476 KB
+# CRASH: btree_lck alloc=tcmalloc u=100 n=200000
+tbbmalloc             100     btree_lck            200000     104       False                        [ 10.56 10.76 11.54 ] 10.9533, 1161972 KB
+lockfree              100     btree_lck            200000     104       True                         [ 48.59 51.95 51.95 ] 50.8300, 448876 KB
+rpmalloc              100     btree_lck            200000     104       False                        [ 90.81 93.89 94.84 ] 93.1800, 1037444 KB
+deqalloc              100     btree_lck            200000     128       False                        [ 165.4 164.9 166.2 ] 165.5000, 2104380 KB
+mimalloc              100     btree_lck            200000     128       False                        [ 83.18 81.6 84.24 ] 83.0067, 728588 KB
+jemalloc              100     btree_lck            200000     128       True                         [ 25.47 24.48 25.12 ] 25.0233, 1585068 KB
+snmalloc              100     btree_lck            200000     128       False                        [ 69.15 107.5 94.18 ] 90.2767, 956660 KB
+hoard                 100     btree_lck            200000     128       True                         [  ] 0.0000, 4204 KB
+# CRASH: btree_lck alloc=hoard u=100 n=200000
+tcmalloc              100     btree_lck            200000     128       False                        [  ] 0.0000, 16464 KB
+# CRASH: btree_lck alloc=tcmalloc u=100 n=200000
+tbbmalloc             100     btree_lck            200000     128       False                        [ 9.817 9.692 10.59 ] 10.0330, 1344796 KB
+lockfree              100     btree_lck            200000     128       True                         [ 34.9 36.74 35.1 ] 35.5800, 598584 KB
+rpmalloc              100     btree_lck            200000     128       False                        [ 99.3 102.6 102.4 ] 101.4333, 940884 KB
+deqalloc              100     btree_lck            200000     208       False                        [ 145.8 193.1 52.3 ] 130.4000, 3076872 KB
+mimalloc              100     btree_lck            200000     208       False                        [ 51.8 47.03 46.88 ] 48.5700, 1246848 KB
+jemalloc              100     btree_lck            200000     208       True                         [ 18.29 15.68 14.67 ] 16.2133, 1866356 KB
+snmalloc              100     btree_lck            200000     208       False                        [ 34.58 36.09 32.71 ] 34.4600, 1593232 KB
+hoard                 100     btree_lck            200000     208       True                         [  ] 0.0000, 4248 KB
+# CRASH: btree_lck alloc=hoard u=100 n=200000
+tcmalloc              100     btree_lck            200000     208       False                        [  ] 0.0000, 16468 KB
+# CRASH: btree_lck alloc=tcmalloc u=100 n=200000
+tbbmalloc             100     btree_lck            200000     208       False                        [ 4.097 5.137 6.086 ] 5.1067, 1066160 KB
+lockfree              100     btree_lck            200000     208       True                         [ 23.45 23.01 27.31 ] 24.5900, 821360 KB
+rpmalloc              100     btree_lck            200000     208       False                        [ 58.86 54.15 57.68 ] 56.8967, 1853248 KB
+deqalloc              100     btree_lck            200000     416       False                        [ 92.85 76.87 109.9 ] 93.2067, 2969984 KB
+mimalloc              100     btree_lck            200000     416       False                        [ 52.71 51.57 47.81 ] 50.6967, 1014260 KB
+jemalloc              100     btree_lck            200000     416       True                         [ 16.85 15.56 15.46 ] 15.9567, 2123664 KB
+snmalloc              100     btree_lck            200000     416       False                        [ 43.28 35.43 35.29 ] 38.0000, 1769584 KB
+hoard                 100     btree_lck            200000     416       True                         [  ] 0.0000, 4128 KB
+# CRASH: btree_lck alloc=hoard u=100 n=200000
+tcmalloc              100     btree_lck            200000     416       False                        [  ] 0.0000, 16508 KB
+# CRASH: btree_lck alloc=tcmalloc u=100 n=200000
+tbbmalloc             100     btree_lck            200000     416       False                        [ 4.618 4.404 3.45 ] 4.1573, 1209140 KB
+lockfree              100     btree_lck            200000     416       True                         [ 26.73 27.19 25.57 ] 26.4967, 844288 KB
+rpmalloc              100     btree_lck            200000     416       False                        [ 56.26 55.05 50.55 ] 53.9533, 1450260 KB
+deqalloc              100     hash_block_lck       200000     1         False                        [ 12.56 12.73 12.49 ] 12.5933, 2057184 KB
+mimalloc              100     hash_block_lck       200000     1         False                        [ 14.05 13.95 13.9 ] 13.9667, 501960 KB
+jemalloc              100     hash_block_lck       200000     1         True                         [ 11.25 11.23 10.92 ] 11.1333, 899224 KB
+snmalloc              100     hash_block_lck       200000     1         False                        [ 14.09 14.1 13.99 ] 14.0600, 329168 KB
+hoard                 100     hash_block_lck       200000     1         True                         [  ] 0.0000, 4200 KB
+# CRASH: hash_block_lck alloc=hoard u=100 n=200000
+tcmalloc              100     hash_block_lck       200000     1         False                        [  ] 0.0000, 18396 KB
+# CRASH: hash_block_lck alloc=tcmalloc u=100 n=200000
+tbbmalloc             100     hash_block_lck       200000     1         False                        [ 10.82 10.64 10.52 ] 10.6600, 199216 KB
+lockfree              100     hash_block_lck       200000     1         True                         [ 11.91 11.71 11.62 ] 11.7467, 184800 KB
+rpmalloc              100     hash_block_lck       200000     1         False                        [ 13.69 13.76 13.58 ] 13.6767, 1025360 KB
+deqalloc              100     hash_block_lck       200000     2         False                        [ 9.983 9.99 22.84 ] 14.2710, 2120544 KB
+mimalloc              100     hash_block_lck       200000     2         False                        [ 9.034 20.59 19.7 ] 16.4413, 492344 KB
+jemalloc              100     hash_block_lck       200000     2         True                         [ 9.042 18.75 18.81 ] 15.5340, 899244 KB
+snmalloc              100     hash_block_lck       200000     2         False                        [ 9.95 9.902 9.898 ] 9.9167, 323424 KB
+hoard                 100     hash_block_lck       200000     2         True                         [  ] 0.0000, 4108 KB
+# CRASH: hash_block_lck alloc=hoard u=100 n=200000
+tcmalloc              100     hash_block_lck       200000     2         False                        [  ] 0.0000, 16476 KB
+# CRASH: hash_block_lck alloc=tcmalloc u=100 n=200000
+tbbmalloc             100     hash_block_lck       200000     2         False                        [ 7.109 15.29 7.055 ] 9.8180, 207492 KB
+lockfree              100     hash_block_lck       200000     2         True                         [ 7.868 16.65 16.73 ] 13.7493, 192372 KB
+rpmalloc              100     hash_block_lck       200000     2         False                        [ 9.699 9.692 21.21 ] 13.5337, 1114364 KB
+deqalloc              100     hash_block_lck       200000     4         False                        [ 20.36 19.49 22.4 ] 20.7500, 2253816 KB
+mimalloc              100     hash_block_lck       200000     4         False                        [ 15.68 17.46 17.18 ] 16.7733, 501204 KB
+jemalloc              100     hash_block_lck       200000     4         True                         [ 16.33 21.25 17.4 ] 18.3267, 899372 KB
+snmalloc              100     hash_block_lck       200000     4         False                        [ 24.14 22.53 26.5 ] 24.3900, 314924 KB
+hoard                 100     hash_block_lck       200000     4         True                         [  ] 0.0000, 4236 KB
+# CRASH: hash_block_lck alloc=hoard u=100 n=200000
+tcmalloc              100     hash_block_lck       200000     4         False                        [  ] 0.0000, 18272 KB
+# CRASH: hash_block_lck alloc=tcmalloc u=100 n=200000
+tbbmalloc             100     hash_block_lck       200000     4         False                        [ 11.18 11.84 13.94 ] 12.3200, 216180 KB
+lockfree              100     hash_block_lck       200000     4         True                         [ 17.84 15.39 17.1 ] 16.7767, 195604 KB
+rpmalloc              100     hash_block_lck       200000     4         False                        [ 17.32 18.13 23.24 ] 19.5633, 1030368 KB
+deqalloc              100     hash_block_lck       200000     8         False                        [ 36.47 36.65 37.77 ] 36.9633, 2009968 KB
+mimalloc              100     hash_block_lck       200000     8         False                        [ 28.68 34.07 41.7 ] 34.8167, 499968 KB
+jemalloc              100     hash_block_lck       200000     8         True                         [ 28.54 29.13 28.47 ] 28.7133, 897356 KB
+snmalloc              100     hash_block_lck       200000     8         False                        [ 33.08 33.22 38.33 ] 34.8767, 349496 KB
+hoard                 100     hash_block_lck       200000     8         True                         [  ] 0.0000, 4096 KB
+# CRASH: hash_block_lck alloc=hoard u=100 n=200000
+tcmalloc              100     hash_block_lck       200000     8         False                        [  ] 0.0000, 18400 KB
+# CRASH: hash_block_lck alloc=tcmalloc u=100 n=200000
+tbbmalloc             100     hash_block_lck       200000     8         False                        [ 19.31 19.72 19.49 ] 19.5067, 209268 KB
+lockfree              100     hash_block_lck       200000     8         True                         [ 22.71 20.73 23.75 ] 22.3967, 196080 KB
+rpmalloc              100     hash_block_lck       200000     8         False                        [ 34.49 31.27 38.8 ] 34.8533, 1032452 KB
+deqalloc              100     hash_block_lck       200000     16        False                        [ 78.34 75.57 71.55 ] 75.1533, 2149140 KB
+mimalloc              100     hash_block_lck       200000     16        False                        [ 48.18 49.65 49.51 ] 49.1133, 486952 KB
+jemalloc              100     hash_block_lck       200000     16        True                         [ 49.75 52.47 51.51 ] 51.2433, 896680 KB
+snmalloc              100     hash_block_lck       200000     16        False                        [ 65.12 64.68 66.46 ] 65.4200, 343200 KB
+hoard                 100     hash_block_lck       200000     16        True                         [  ] 0.0000, 3972 KB
+# CRASH: hash_block_lck alloc=hoard u=100 n=200000
+tcmalloc              100     hash_block_lck       200000     16        False                        [  ] 0.0000, 17636 KB
+# CRASH: hash_block_lck alloc=tcmalloc u=100 n=200000
+tbbmalloc             100     hash_block_lck       200000     16        False                        [ 36.45 37.18 36.25 ] 36.6267, 204176 KB
+lockfree              100     hash_block_lck       200000     16        True                         [ 37.62 39.19 37.41 ] 38.0733, 182940 KB
+rpmalloc              100     hash_block_lck       200000     16        False                        [ 53.65 55.36 52.58 ] 53.8633, 1048344 KB
+deqalloc              100     hash_block_lck       200000     32        False                        [ 140.7 136.3 137.1 ] 138.0333, 2012048 KB
+mimalloc              100     hash_block_lck       200000     32        False                        [ 85.43 88.88 84.21 ] 86.1733, 491028 KB
+jemalloc              100     hash_block_lck       200000     32        True                         [ 90.54 95.86 89.66 ] 92.0200, 898336 KB
+snmalloc              100     hash_block_lck       200000     32        False                        [ 122.0 143.4 123.0 ] 129.4667, 321452 KB
+hoard                 100     hash_block_lck       200000     32        True                         [  ] 0.0000, 4104 KB
+# CRASH: hash_block_lck alloc=hoard u=100 n=200000
+tcmalloc              100     hash_block_lck       200000     32        False                        [  ] 0.0000, 16476 KB
+# CRASH: hash_block_lck alloc=tcmalloc u=100 n=200000
+tbbmalloc             100     hash_block_lck       200000     32        False                        [ 69.2 69.28 70.77 ] 69.7500, 207732 KB
+lockfree              100     hash_block_lck       200000     32        True                         [ 51.25 60.3 59.34 ] 56.9633, 186064 KB
+rpmalloc              100     hash_block_lck       200000     32        False                        [ 86.93 87.4 87.48 ] 87.2700, 1016276 KB
+deqalloc              100     hash_block_lck       200000     64        False                        [ 254.2 256.8 263.4 ] 258.1333, 1831860 KB
+mimalloc              100     hash_block_lck       200000     64        False                        [ 121.1 123.9 122.6 ] 122.5333, 492952 KB
+jemalloc              100     hash_block_lck       200000     64        True                         [ 149.3 121.0 137.7 ] 136.0000, 3331428 KB
+snmalloc              100     hash_block_lck       200000     64        False                        [ 219.5 221.3 224.7 ] 221.8333, 335332 KB
+hoard                 100     hash_block_lck       200000     64        True                         [  ] 0.0000, 4124 KB
+# CRASH: hash_block_lck alloc=hoard u=100 n=200000
+tcmalloc              100     hash_block_lck       200000     64        False                        [  ] 0.0000, 16504 KB
+# CRASH: hash_block_lck alloc=tcmalloc u=100 n=200000
+tbbmalloc             100     hash_block_lck       200000     64        False                        [ 126.9 127.8 128.1 ] 127.6000, 280312 KB
+lockfree              100     hash_block_lck       200000     64        True                         [ 74.84 74.88 76.89 ] 75.5367, 185548 KB
+rpmalloc              100     hash_block_lck       200000     64        False                        [ 134.1 131.1 134.4 ] 133.2000, 1052688 KB
+deqalloc              100     hash_block_lck       200000     104       False                        [ 371.9 376.6 373.8 ] 374.1000, 2171816 KB
+mimalloc              100     hash_block_lck       200000     104       False                        [ 151.3 164.4 152.0 ] 155.9000, 490808 KB
+jemalloc              100     hash_block_lck       200000     104       True                         [ 207.0 218.3 212.7 ] 212.6667, 16728432 KB
+snmalloc              100     hash_block_lck       200000     104       False                        [ 321.9 322.0 322.7 ] 322.2000, 323464 KB
+hoard                 100     hash_block_lck       200000     104       True                         [  ] 0.0000, 4128 KB
+# CRASH: hash_block_lck alloc=hoard u=100 n=200000
+tcmalloc              100     hash_block_lck       200000     104       False                        [  ] 0.0000, 16468 KB
+# CRASH: hash_block_lck alloc=tcmalloc u=100 n=200000
+tbbmalloc             100     hash_block_lck       200000     104       False                        [ 184.2 183.0 184.7 ] 183.9667, 228116 KB
+lockfree              100     hash_block_lck       200000     104       True                         [ 76.7 77.65 84.28 ] 79.5433, 194872 KB
+rpmalloc              100     hash_block_lck       200000     104       False                        [ 174.2 174.3 175.5 ] 174.6667, 979316 KB
+deqalloc              100     hash_block_lck       200000     128       False                        [ 414.0 414.6 412.9 ] 413.8333, 2399056 KB
+mimalloc              100     hash_block_lck       200000     128       False                        [ 177.9 178.7 181.7 ] 179.4333, 488584 KB
+jemalloc              100     hash_block_lck       200000     128       True                         [ 223.4 220.8 177.7 ] 207.3000, 19501968 KB
+snmalloc              100     hash_block_lck       200000     128       False                        [ 361.3 362.7 362.3 ] 362.1000, 392720 KB
+hoard                 100     hash_block_lck       200000     128       True                         [  ] 0.0000, 4248 KB
+# CRASH: hash_block_lck alloc=hoard u=100 n=200000
+tcmalloc              100     hash_block_lck       200000     128       False                        [  ] 0.0000, 16476 KB
+# CRASH: hash_block_lck alloc=tcmalloc u=100 n=200000
+tbbmalloc             100     hash_block_lck       200000     128       False                        [ 226.0 224.5 216.4 ] 222.3000, 242772 KB
+lockfree              100     hash_block_lck       200000     128       True                         [ 79.69 79.89 78.3 ] 79.2933, 194972 KB
+rpmalloc              100     hash_block_lck       200000     128       False                        [ 204.4 203.0 226.4 ] 211.2667, 1018380 KB
+deqalloc              100     hash_block_lck       200000     208       False                        [ 504.9 502.9 505.7 ] 504.5000, 3085068 KB
+mimalloc              100     hash_block_lck       200000     208       False                        [ 278.3 282.1 295.5 ] 285.3000, 896040 KB
+jemalloc              100     hash_block_lck       200000     208       True                         [ 201.6 236.0 287.5 ] 241.7000, 31310084 KB
+snmalloc              100     hash_block_lck       200000     208       False                        [ 453.8 445.6 448.0 ] 449.1333, 316628 KB
+hoard                 100     hash_block_lck       200000     208       True                         [  ] 0.0000, 4100 KB
+# CRASH: hash_block_lck alloc=hoard u=100 n=200000
+tcmalloc              100     hash_block_lck       200000     208       False                        [  ] 0.0000, 18276 KB
+# CRASH: hash_block_lck alloc=tcmalloc u=100 n=200000
+tbbmalloc             100     hash_block_lck       200000     208       False                        [ 332.7 329.1 338.2 ] 333.3333, 366012 KB
+lockfree              100     hash_block_lck       200000     208       True                         [ 68.52 70.73 71.13 ] 70.1267, 224276 KB
+rpmalloc              100     hash_block_lck       200000     208       False                        [ 306.4 352.0 357.0 ] 338.4667, 1129284 KB
+deqalloc              100     hash_block_lck       200000     416       False                        [ 508.6 509.1 514.3 ] 510.6667, 2898800 KB
+mimalloc              100     hash_block_lck       200000     416       False                        [ 295.9 321.9 296.1 ] 304.6333, 822436 KB
+jemalloc              100     hash_block_lck       200000     416       True                         [ 169.8 269.0 281.9 ] 240.2333, 18556256 KB
+snmalloc              100     hash_block_lck       200000     416       False                        [ 452.5 459.5 456.1 ] 456.0333, 939196 KB
+hoard                 100     hash_block_lck       200000     416       True                         [  ] 0.0000, 4028 KB
+# CRASH: hash_block_lck alloc=hoard u=100 n=200000
+tcmalloc              100     hash_block_lck       200000     416       False                        [  ] 0.0000, 17836 KB
+# CRASH: hash_block_lck alloc=tcmalloc u=100 n=200000
+tbbmalloc             100     hash_block_lck       200000     416       False                        [ 344.6 305.2 317.1 ] 322.3000, 348268 KB
+lockfree              100     hash_block_lck       200000     416       True                         [ 71.45 71.02 70.57 ] 71.0133, 221336 KB
+rpmalloc              100     hash_block_lck       200000     416       False                        [ 319.4 319.2 318.5 ] 319.0333, 1030176 KB
+deqalloc              100     leaftree_lck         200000     1         False                        [ 2.92 2.903 2.839 ] 2.8873, 2307996 KB
+mimalloc              100     leaftree_lck         200000     1         False                        [ 1.957 2.026 2.119 ] 2.0340, 493952 KB
+jemalloc              100     leaftree_lck         200000     1         True                         [ 2.032 2.191 2.34 ] 2.1877, 902016 KB
+snmalloc              100     leaftree_lck         200000     1         False                        [ 2.62 2.63 2.66 ] 2.6367, 327092 KB
+hoard                 100     leaftree_lck         200000     1         True                         [  ] 0.0000, 4076 KB
+# CRASH: leaftree_lck alloc=hoard u=100 n=200000
+tcmalloc              100     leaftree_lck         200000     1         False                        [  ] 0.0000, 16468 KB
+# CRASH: leaftree_lck alloc=tcmalloc u=100 n=200000
+tbbmalloc             100     leaftree_lck         200000     1         False                        [ 1.645 1.671 1.63 ] 1.6487, 218192 KB
+lockfree              100     leaftree_lck         200000     1         True                         [ 2.492 2.454 2.456 ] 2.4673, 208748 KB
+rpmalloc              100     leaftree_lck         200000     1         False                        [ 1.683 1.755 1.802 ] 1.7467, 1031224 KB
+deqalloc              100     leaftree_lck         200000     2         False                        [ 3.382 5.215 5.268 ] 4.6217, 2200760 KB
+mimalloc              100     leaftree_lck         200000     2         False                        [ 2.633 2.646 3.822 ] 3.0337, 508144 KB
+jemalloc              100     leaftree_lck         200000     2         True                         [ 3.775 3.809 4.435 ] 4.0063, 898548 KB
+snmalloc              100     leaftree_lck         200000     2         False                        [ 3.25 4.164 4.095 ] 3.8363, 357656 KB
+hoard                 100     leaftree_lck         200000     2         True                         [  ] 0.0000, 4220 KB
+# CRASH: leaftree_lck alloc=hoard u=100 n=200000
+tcmalloc              100     leaftree_lck         200000     2         False                        [  ] 0.0000, 18476 KB
+# CRASH: leaftree_lck alloc=tcmalloc u=100 n=200000
+tbbmalloc             100     leaftree_lck         200000     2         False                        [ 3.005 2.738 2.971 ] 2.9047, 234328 KB
+lockfree              100     leaftree_lck         200000     2         True                         [ 2.85 4.257 4.314 ] 3.8070, 211500 KB
+rpmalloc              100     leaftree_lck         200000     2         False                        [ 2.35 3.081 3.171 ] 2.8673, 1022852 KB
+deqalloc              100     leaftree_lck         200000     4         False                        [ 6.75 7.58 7.154 ] 7.1613, 2381196 KB
+mimalloc              100     leaftree_lck         200000     4         False                        [ 5.279 5.121 5.459 ] 5.2863, 485084 KB
+jemalloc              100     leaftree_lck         200000     4         True                         [ 6.764 5.832 7.132 ] 6.5760, 895656 KB
+snmalloc              100     leaftree_lck         200000     4         False                        [ 6.169 6.081 6.129 ] 6.1263, 359952 KB
+hoard                 100     leaftree_lck         200000     4         True                         [  ] 0.0000, 4244 KB
+# CRASH: leaftree_lck alloc=hoard u=100 n=200000
+tcmalloc              100     leaftree_lck         200000     4         False                        [  ] 0.0000, 16484 KB
+# CRASH: leaftree_lck alloc=tcmalloc u=100 n=200000
+tbbmalloc             100     leaftree_lck         200000     4         False                        [ 4.119 5.045 3.87 ] 4.3447, 238640 KB
+lockfree              100     leaftree_lck         200000     4         True                         [ 5.195 5.079 5.631 ] 5.3017, 205064 KB
+rpmalloc              100     leaftree_lck         200000     4         False                        [ 5.121 5.101 4.716 ] 4.9793, 1127544 KB
+deqalloc              100     leaftree_lck         200000     8         False                        [ 12.45 12.53 13.52 ] 12.8333, 2131488 KB
+mimalloc              100     leaftree_lck         200000     8         False                        [ 9.247 9.364 9.134 ] 9.2483, 503900 KB
+jemalloc              100     leaftree_lck         200000     8         True                         [ 10.82 10.48 11.17 ] 10.8233, 889840 KB
+snmalloc              100     leaftree_lck         200000     8         False                        [ 11.91 11.77 11.84 ] 11.8400, 343980 KB
+hoard                 100     leaftree_lck         200000     8         True                         [  ] 0.0000, 6056 KB
+# CRASH: leaftree_lck alloc=hoard u=100 n=200000
+tcmalloc              100     leaftree_lck         200000     8         False                        [  ] 0.0000, 16472 KB
+# CRASH: leaftree_lck alloc=tcmalloc u=100 n=200000
+tbbmalloc             100     leaftree_lck         200000     8         False                        [ 7.566 7.526 6.831 ] 7.3077, 237864 KB
+lockfree              100     leaftree_lck         200000     8         True                         [ 8.708 8.78 8.933 ] 8.8070, 205812 KB
+rpmalloc              100     leaftree_lck         200000     8         False                        [ 9.238 8.821 8.635 ] 8.8980, 1127240 KB
+deqalloc              100     leaftree_lck         200000     16        False                        [ 24.16 29.07 25.1 ] 26.1100, 2178284 KB
+mimalloc              100     leaftree_lck         200000     16        False                        [ 16.77 16.67 16.54 ] 16.6600, 484564 KB
+jemalloc              100     leaftree_lck         200000     16        True                         [ 18.68 20.19 20.13 ] 19.6667, 888508 KB
+snmalloc              100     leaftree_lck         200000     16        False                        [ 21.88 22.48 22.02 ] 22.1267, 358176 KB
+hoard                 100     leaftree_lck         200000     16        True                         [  ] 0.0000, 4204 KB
+# CRASH: leaftree_lck alloc=hoard u=100 n=200000
+tcmalloc              100     leaftree_lck         200000     16        False                        [  ] 0.0000, 16484 KB
+# CRASH: leaftree_lck alloc=tcmalloc u=100 n=200000
+tbbmalloc             100     leaftree_lck         200000     16        False                        [ 13.5 14.82 13.55 ] 13.9567, 226132 KB
+lockfree              100     leaftree_lck         200000     16        True                         [ 16.49 18.88 16.02 ] 17.1300, 201240 KB
+rpmalloc              100     leaftree_lck         200000     16        False                        [ 16.27 16.38 18.86 ] 17.1700, 1029116 KB
+deqalloc              100     leaftree_lck         200000     32        False                        [ 55.08 48.39 48.67 ] 50.7133, 2239536 KB
+mimalloc              100     leaftree_lck         200000     32        False                        [ 32.3 31.72 32.26 ] 32.0933, 463404 KB
+jemalloc              100     leaftree_lck         200000     32        True                         [ 33.78 34.85 37.15 ] 35.2600, 890148 KB
+snmalloc              100     leaftree_lck         200000     32        False                        [ 42.09 44.83 42.34 ] 43.0867, 390700 KB
+hoard                 100     leaftree_lck         200000     32        True                         [  ] 0.0000, 4164 KB
+# CRASH: leaftree_lck alloc=hoard u=100 n=200000
+tcmalloc              100     leaftree_lck         200000     32        False                        [  ] 0.0000, 17796 KB
+# CRASH: leaftree_lck alloc=tcmalloc u=100 n=200000
+tbbmalloc             100     leaftree_lck         200000     32        False                        [ 26.59 26.44 26.99 ] 26.6733, 208192 KB
+lockfree              100     leaftree_lck         200000     32        True                         [ 28.77 26.41 29.34 ] 28.1733, 204956 KB
+rpmalloc              100     leaftree_lck         200000     32        False                        [ 31.45 31.84 30.53 ] 31.2733, 998640 KB
+deqalloc              100     leaftree_lck         200000     64        False                        [ 90.15 89.42 90.26 ] 89.9433, 2307612 KB
+mimalloc              100     leaftree_lck         200000     64        False                        [ 53.69 54.95 54.41 ] 54.3500, 474808 KB
+jemalloc              100     leaftree_lck         200000     64        True                         [ 62.27 60.92 62.07 ] 61.7533, 890728 KB
+snmalloc              100     leaftree_lck         200000     64        False                        [ 77.77 77.01 76.29 ] 77.0233, 356120 KB
+hoard                 100     leaftree_lck         200000     64        True                         [  ] 0.0000, 5912 KB
+# CRASH: leaftree_lck alloc=hoard u=100 n=200000
+tcmalloc              100     leaftree_lck         200000     64        False                        [  ] 0.0000, 16460 KB
+# CRASH: leaftree_lck alloc=tcmalloc u=100 n=200000
+tbbmalloc             100     leaftree_lck         200000     64        False                        [ 48.92 48.52 49.55 ] 48.9967, 217224 KB
+lockfree              100     leaftree_lck         200000     64        True                         [ 43.14 45.47 44.4 ] 44.3367, 190372 KB
+rpmalloc              100     leaftree_lck         200000     64        False                        [ 52.28 50.46 52.23 ] 51.6567, 1065344 KB
+deqalloc              100     leaftree_lck         200000     104       False                        [ 133.1 135.9 135.2 ] 134.7333, 2266624 KB
+mimalloc              100     leaftree_lck         200000     104       False                        [ 71.97 73.84 75.08 ] 73.6300, 480864 KB
+jemalloc              100     leaftree_lck         200000     104       True                         [ 79.37 82.24 83.42 ] 81.6767, 890844 KB
+snmalloc              100     leaftree_lck         200000     104       False                        [ 108.7 110.2 109.7 ] 109.5333, 359760 KB
+hoard                 100     leaftree_lck         200000     104       True                         [  ] 0.0000, 6156 KB
+# CRASH: leaftree_lck alloc=hoard u=100 n=200000
+tcmalloc              100     leaftree_lck         200000     104       False                        [  ] 0.0000, 14408 KB
+# CRASH: leaftree_lck alloc=tcmalloc u=100 n=200000
+tbbmalloc             100     leaftree_lck         200000     104       False                        [ 70.31 69.84 69.2 ] 69.7833, 239792 KB
+lockfree              100     leaftree_lck         200000     104       True                         [ 51.11 50.0 49.69 ] 50.2667, 194408 KB
+rpmalloc              100     leaftree_lck         200000     104       False                        [ 74.25 71.52 73.03 ] 72.9333, 1001956 KB
+deqalloc              100     leaftree_lck         200000     128       False                        [ 158.6 159.8 157.6 ] 158.6667, 2343176 KB
+mimalloc              100     leaftree_lck         200000     128       False                        [ 83.5 82.43 82.03 ] 82.6533, 476360 KB
+jemalloc              100     leaftree_lck         200000     128       True                         [ 98.24 84.41 78.52 ] 87.0567, 892948 KB
+snmalloc              100     leaftree_lck         200000     128       False                        [ 128.0 128.0 130.1 ] 128.7000, 394440 KB
+hoard                 100     leaftree_lck         200000     128       True                         [  ] 0.0000, 4244 KB
+# CRASH: leaftree_lck alloc=hoard u=100 n=200000
+tcmalloc              100     leaftree_lck         200000     128       False                        [  ] 0.0000, 15584 KB
+# CRASH: leaftree_lck alloc=tcmalloc u=100 n=200000
+tbbmalloc             100     leaftree_lck         200000     128       False                        [ 85.37 82.46 83.42 ] 83.7500, 245064 KB
+lockfree              100     leaftree_lck         200000     128       True                         [ 51.56 49.99 51.8 ] 51.1167, 206420 KB
+rpmalloc              100     leaftree_lck         200000     128       False                        [ 85.49 83.88 83.21 ] 84.1933, 1030992 KB
+deqalloc              100     leaftree_lck         200000     208       False                        [ 225.8 226.9 227.7 ] 226.8000, 2753240 KB
+mimalloc              100     leaftree_lck         200000     208       False                        [ 131.6 125.2 119.3 ] 125.3667, 779708 KB
+jemalloc              100     leaftree_lck         200000     208       True                         [ 45.43 47.69 45.9 ] 46.3400, 947348 KB
+snmalloc              100     leaftree_lck         200000     208       False                        [ 175.8 177.6 182.9 ] 178.7667, 710464 KB
+hoard                 100     leaftree_lck         200000     208       True                         [  ] 0.0000, 5980 KB
+# CRASH: leaftree_lck alloc=hoard u=100 n=200000
+tcmalloc              100     leaftree_lck         200000     208       False                        [  ] 0.0000, 16508 KB
+# CRASH: leaftree_lck alloc=tcmalloc u=100 n=200000
+tbbmalloc             100     leaftree_lck         200000     208       False                        [ 131.8 131.4 132.2 ] 131.8000, 275424 KB
+lockfree              100     leaftree_lck         200000     208       True                         [ 50.27 50.43 50.26 ] 50.3200, 211104 KB
+rpmalloc              100     leaftree_lck         200000     208       False                        [ 120.5 121.5 121.4 ] 121.1333, 994072 KB
+deqalloc              100     leaftree_lck         200000     416       False                        [ 219.7 226.0 226.9 ] 224.2000, 2468920 KB
+mimalloc              100     leaftree_lck         200000     416       False                        [ 124.6 127.6 125.6 ] 125.9333, 484480 KB
+jemalloc              100     leaftree_lck         200000     416       True                         [ 49.42 47.59 51.08 ] 49.3633, 953208 KB
+snmalloc              100     leaftree_lck         200000     416       False                        [ 180.9 177.2 177.2 ] 178.4333, 414060 KB
+hoard                 100     leaftree_lck         200000     416       True                         [  ] 0.0000, 4168 KB
+# CRASH: leaftree_lck alloc=hoard u=100 n=200000
+tcmalloc              100     leaftree_lck         200000     416       False                        [  ] 0.0000, 17680 KB
+# CRASH: leaftree_lck alloc=tcmalloc u=100 n=200000
+tbbmalloc             100     leaftree_lck         200000     416       False                        [ 134.5 130.4 133.4 ] 132.7667, 300728 KB
+lockfree              100     leaftree_lck         200000     416       True                         [ 50.87 51.49 51.5 ] 51.2867, 217556 KB
+rpmalloc              100     leaftree_lck         200000     416       False                        [ 120.4 123.3 126.4 ] 123.3667, 988356 KB
+deqalloc              100     skiplist_lck         200000     1         False                        [ 2.612 2.608 2.593 ] 2.6043, 2064840 KB
+mimalloc              100     skiplist_lck         200000     1         False                        [ 2.344 2.347 2.288 ] 2.3263, 484880 KB
+jemalloc              100     skiplist_lck         200000     1         True                         [ 2.342 2.378 2.344 ] 2.3547, 906860 KB
+snmalloc              100     skiplist_lck         200000     1         False                        [ 2.649 2.661 2.635 ] 2.6483, 339624 KB
+hoard                 100     skiplist_lck         200000     1         True                         [  ] 0.0000, 4040 KB
+# CRASH: skiplist_lck alloc=hoard u=100 n=200000
+tcmalloc              100     skiplist_lck         200000     1         False                        [  ] 0.0000, 17644 KB
+# CRASH: skiplist_lck alloc=tcmalloc u=100 n=200000
+tbbmalloc             100     skiplist_lck         200000     1         False                        [ 1.879 1.864 1.785 ] 1.8427, 251596 KB
+lockfree              100     skiplist_lck         200000     1         True                         [ 2.278 2.256 2.217 ] 2.2503, 207936 KB
+rpmalloc              100     skiplist_lck         200000     1         False                        [ 2.494 2.506 2.473 ] 2.4910, 1004836 KB
+deqalloc              100     skiplist_lck         200000     2         False                        [ 4.481 2.974 4.451 ] 3.9687, 2362888 KB
+mimalloc              100     skiplist_lck         200000     2         False                        [ 2.734 3.213 2.707 ] 2.8847, 506112 KB
+jemalloc              100     skiplist_lck         200000     2         True                         [ 4.218 4.22 3.128 ] 3.8553, 907556 KB
+snmalloc              100     skiplist_lck         200000     2         False                        [ 4.483 4.546 4.596 ] 4.5417, 339080 KB
+hoard                 100     skiplist_lck         200000     2         True                         [  ] 0.0000, 4128 KB
+# CRASH: skiplist_lck alloc=hoard u=100 n=200000
+tcmalloc              100     skiplist_lck         200000     2         False                        [  ] 0.0000, 18316 KB
+# CRASH: skiplist_lck alloc=tcmalloc u=100 n=200000
+tbbmalloc             100     skiplist_lck         200000     2         False                        [ 2.231 2.478 2.113 ] 2.2740, 258880 KB
+lockfree              100     skiplist_lck         200000     2         True                         [ 3.883 2.676 3.925 ] 3.4947, 221172 KB
+rpmalloc              100     skiplist_lck         200000     2         False                        [ 4.512 4.482 4.43 ] 4.4747, 1010340 KB
+deqalloc              100     skiplist_lck         200000     4         False                        [ 7.604 7.554 5.78 ] 6.9793, 2235980 KB
+mimalloc              100     skiplist_lck         200000     4         False                        [ 6.977 6.012 5.058 ] 6.0157, 508540 KB
+jemalloc              100     skiplist_lck         200000     4         True                         [ 6.38 6.644 5.354 ] 6.1260, 902668 KB
+snmalloc              100     skiplist_lck         200000     4         False                        [ 5.534 5.528 5.749 ] 5.6037, 373416 KB
+hoard                 100     skiplist_lck         200000     4         True                         [  ] 0.0000, 4008 KB
+# CRASH: skiplist_lck alloc=hoard u=100 n=200000
+tcmalloc              100     skiplist_lck         200000     4         False                        [  ] 0.0000, 16476 KB
+# CRASH: skiplist_lck alloc=tcmalloc u=100 n=200000
+tbbmalloc             100     skiplist_lck         200000     4         False                        [ 3.758 3.715 3.619 ] 3.6973, 256368 KB
+lockfree              100     skiplist_lck         200000     4         True                         [ 4.426 5.571 4.511 ] 4.8360, 220040 KB
+rpmalloc              100     skiplist_lck         200000     4         False                        [ 5.427 5.234 5.863 ] 5.5080, 1044716 KB
+deqalloc              100     skiplist_lck         200000     8         False                        [ 11.5 11.88 10.93 ] 11.4367, 1832340 KB
+mimalloc              100     skiplist_lck         200000     8         False                        [ 10.56 9.417 9.352 ] 9.7763, 509668 KB
+jemalloc              100     skiplist_lck         200000     8         True                         [ 11.36 10.14 10.21 ] 10.5700, 895488 KB
+snmalloc              100     skiplist_lck         200000     8         False                        [ 10.59 11.08 10.39 ] 10.6867, 382380 KB
+hoard                 100     skiplist_lck         200000     8         True                         [  ] 0.0000, 5820 KB
+# CRASH: skiplist_lck alloc=hoard u=100 n=200000
+tcmalloc              100     skiplist_lck         200000     8         False                        [  ] 0.0000, 16468 KB
+# CRASH: skiplist_lck alloc=tcmalloc u=100 n=200000
+tbbmalloc             100     skiplist_lck         200000     8         False                        [ 8.8 6.665 6.964 ] 7.4763, 257148 KB
+lockfree              100     skiplist_lck         200000     8         True                         [ 9.67 9.171 8.728 ] 9.1897, 218056 KB
+rpmalloc              100     skiplist_lck         200000     8         False                        [ 9.99 10.16 9.152 ] 9.7673, 1066384 KB
+deqalloc              100     skiplist_lck         200000     16        False                        [ 21.53 20.99 20.91 ] 21.1433, 2004592 KB
+mimalloc              100     skiplist_lck         200000     16        False                        [ 16.35 16.72 17.01 ] 16.6933, 482156 KB
+jemalloc              100     skiplist_lck         200000     16        True                         [ 19.6 19.73 19.07 ] 19.4667, 888504 KB
+snmalloc              100     skiplist_lck         200000     16        False                        [ 20.69 19.83 20.08 ] 20.2000, 348400 KB
+hoard                 100     skiplist_lck         200000     16        True                         [  ] 0.0000, 4112 KB
+# CRASH: skiplist_lck alloc=hoard u=100 n=200000
+tcmalloc              100     skiplist_lck         200000     16        False                        [  ] 0.0000, 18012 KB
+# CRASH: skiplist_lck alloc=tcmalloc u=100 n=200000
+tbbmalloc             100     skiplist_lck         200000     16        False                        [ 12.8 12.58 12.27 ] 12.5500, 248012 KB
+lockfree              100     skiplist_lck         200000     16        True                         [ 14.8 16.76 16.06 ] 15.8733, 215364 KB
+rpmalloc              100     skiplist_lck         200000     16        False                        [ 15.33 15.02 14.89 ] 15.0800, 972748 KB
+deqalloc              100     skiplist_lck         200000     32        False                        [ 39.6 39.5 39.78 ] 39.6267, 2168112 KB
+mimalloc              100     skiplist_lck         200000     32        False                        [ 31.63 31.87 30.82 ] 31.4400, 477444 KB
+jemalloc              100     skiplist_lck         200000     32        True                         [ 38.27 38.57 37.07 ] 37.9700, 887820 KB
+snmalloc              100     skiplist_lck         200000     32        False                        [ 37.87 37.73 37.53 ] 37.7100, 364936 KB
+hoard                 100     skiplist_lck         200000     32        True                         [  ] 0.0000, 4116 KB
+# CRASH: skiplist_lck alloc=hoard u=100 n=200000
+tcmalloc              100     skiplist_lck         200000     32        False                        [  ] 0.0000, 16484 KB
+# CRASH: skiplist_lck alloc=tcmalloc u=100 n=200000
+tbbmalloc             100     skiplist_lck         200000     32        False                        [ 23.64 24.53 23.88 ] 24.0167, 249016 KB
+lockfree              100     skiplist_lck         200000     32        True                         [ 26.49 28.14 28.82 ] 27.8167, 208396 KB
+rpmalloc              100     skiplist_lck         200000     32        False                        [ 25.47 25.13 24.48 ] 25.0267, 1051060 KB
+deqalloc              100     skiplist_lck         200000     64        False                        [ 73.25 72.14 71.62 ] 72.3367, 2163876 KB
+mimalloc              100     skiplist_lck         200000     64        False                        [ 55.7 55.58 55.23 ] 55.5033, 492616 KB
+jemalloc              100     skiplist_lck         200000     64        True                         [ 72.09 68.84 69.32 ] 70.0833, 892612 KB
+snmalloc              100     skiplist_lck         200000     64        False                        [ 66.34 65.77 66.02 ] 66.0433, 404160 KB
+hoard                 100     skiplist_lck         200000     64        True                         [  ] 0.0000, 4236 KB
+# CRASH: skiplist_lck alloc=hoard u=100 n=200000
+tcmalloc              100     skiplist_lck         200000     64        False                        [  ] 0.0000, 18156 KB
+# CRASH: skiplist_lck alloc=tcmalloc u=100 n=200000
+tbbmalloc             100     skiplist_lck         200000     64        False                        [ 42.4 42.27 42.24 ] 42.3033, 261560 KB
+lockfree              100     skiplist_lck         200000     64        True                         [ 42.93 44.19 42.63 ] 43.2500, 206040 KB
+rpmalloc              100     skiplist_lck         200000     64        False                        [ 42.12 42.72 41.96 ] 42.2667, 1052568 KB
+deqalloc              100     skiplist_lck         200000     104       False                        [ 101.9 101.0 102.0 ] 101.6333, 2033316 KB
+mimalloc              100     skiplist_lck         200000     104       False                        [ 80.17 83.06 81.85 ] 81.6933, 690364 KB
+jemalloc              100     skiplist_lck         200000     104       True                         [ 97.45 97.05 95.64 ] 96.7133, 893980 KB
+snmalloc              100     skiplist_lck         200000     104       False                        [ 93.66 93.52 94.65 ] 93.9433, 426292 KB
+hoard                 100     skiplist_lck         200000     104       True                         [  ] 0.0000, 6228 KB
+# CRASH: skiplist_lck alloc=hoard u=100 n=200000
+tcmalloc              100     skiplist_lck         200000     104       False                        [  ] 0.0000, 16504 KB
+# CRASH: skiplist_lck alloc=tcmalloc u=100 n=200000
+tbbmalloc             100     skiplist_lck         200000     104       False                        [ 60.3 61.1 63.04 ] 61.4800, 468988 KB
+lockfree              100     skiplist_lck         200000     104       True                         [ 55.16 55.85 55.2 ] 55.4033, 222096 KB
+rpmalloc              100     skiplist_lck         200000     104       False                        [ 57.68 57.99 57.14 ] 57.6033, 1053388 KB
+deqalloc              100     skiplist_lck         200000     128       False                        [ 116.9 116.8 115.9 ] 116.5333, 1903892 KB
+mimalloc              100     skiplist_lck         200000     128       False                        [ 94.38 94.86 94.59 ] 94.6100, 492752 KB
+jemalloc              100     skiplist_lck         200000     128       True                         [ 111.0 111.8 108.6 ] 110.4667, 896924 KB
+snmalloc              100     skiplist_lck         200000     128       False                        [ 107.6 107.8 106.8 ] 107.4000, 440768 KB
+hoard                 100     skiplist_lck         200000     128       True                         [  ] 0.0000, 4040 KB
+# CRASH: skiplist_lck alloc=hoard u=100 n=200000
+tcmalloc              100     skiplist_lck         200000     128       False                        [  ] 0.0000, 16460 KB
+# CRASH: skiplist_lck alloc=tcmalloc u=100 n=200000
+tbbmalloc             100     skiplist_lck         200000     128       False                        [ 72.6 73.33 71.69 ] 72.5400, 331208 KB
+lockfree              100     skiplist_lck         200000     128       True                         [ 60.45 61.31 59.46 ] 60.4067, 234572 KB
+rpmalloc              100     skiplist_lck         200000     128       False                        [ 69.07 69.1 70.44 ] 69.5367, 1038984 KB
+deqalloc              100     skiplist_lck         200000     208       False                        [ 158.1 161.9 159.9 ] 159.9667, 2659936 KB
+mimalloc              100     skiplist_lck         200000     208       False                        [ 130.7 132.0 130.2 ] 130.9667, 623328 KB
+jemalloc              100     skiplist_lck         200000     208       True                         [ 148.5 148.5 150.7 ] 149.2333, 964512 KB
+snmalloc              100     skiplist_lck         200000     208       False                        [ 149.3 150.9 148.9 ] 149.7000, 864384 KB
+hoard                 100     skiplist_lck         200000     208       True                         [  ] 0.0000, 4200 KB
+# CRASH: skiplist_lck alloc=hoard u=100 n=200000
+tcmalloc              100     skiplist_lck         200000     208       False                        [  ] 0.0000, 16352 KB
+# CRASH: skiplist_lck alloc=tcmalloc u=100 n=200000
+tbbmalloc             100     skiplist_lck         200000     208       False                        [ 106.7 94.46 97.71 ] 99.6233, 797188 KB
+lockfree              100     skiplist_lck         200000     208       True                         [ 70.25 68.3 69.32 ] 69.2900, 280140 KB
+rpmalloc              100     skiplist_lck         200000     208       False                        [ 113.6 120.7 126.0 ] 120.1000, 1016472 KB
+deqalloc              100     skiplist_lck         200000     416       False                        [ 159.0 161.3 161.9 ] 160.7333, 2661836 KB
+mimalloc              100     skiplist_lck         200000     416       False                        [ 133.3 129.2 131.5 ] 131.3333, 652160 KB
+jemalloc              100     skiplist_lck         200000     416       True                         [ 148.7 144.1 139.5 ] 144.1000, 1144812 KB
+snmalloc              100     skiplist_lck         200000     416       False                        [ 149.4 149.4 151.3 ] 150.0333, 895784 KB
+hoard                 100     skiplist_lck         200000     416       True                         [  ] 0.0000, 4240 KB
+# CRASH: skiplist_lck alloc=hoard u=100 n=200000
+tcmalloc              100     skiplist_lck         200000     416       False                        [  ] 0.0000, 18464 KB
+# CRASH: skiplist_lck alloc=tcmalloc u=100 n=200000
+tbbmalloc             100     skiplist_lck         200000     416       False                        [ 104.5 101.9 105.1 ] 103.8333, 775044 KB
+lockfree              100     skiplist_lck         200000     416       True                         [ 68.93 68.43 68.25 ] 68.5367, 280468 KB
+rpmalloc              100     skiplist_lck         200000     416       False                        [ 115.3 120.6 123.7 ] 119.8667, 1032780 KB
+deqalloc              100     arttree_lck          200000     1         False                        [ 9.596 9.397 9.375 ] 9.4560, 2924064 KB
+mimalloc              100     arttree_lck          200000     1         False                        [ 9.315 9.279 7.597 ] 8.7303, 580580 KB
+jemalloc              100     arttree_lck          200000     1         True                         [ 7.25 7.25 7.314 ] 7.2713, 935812 KB
+snmalloc              100     arttree_lck          200000     1         False                        [ 10.13 10.25 10.32 ] 10.2333, 472916 KB
+hoard                 100     arttree_lck          200000     1         True                         [  ] 0.0000, 4220 KB
+# CRASH: arttree_lck alloc=hoard u=100 n=200000
+tcmalloc              100     arttree_lck          200000     1         False                        [  ] 0.0000, 16508 KB
+# CRASH: arttree_lck alloc=tcmalloc u=100 n=200000
+tbbmalloc             100     arttree_lck          200000     1         False                        [ 5.427 6.527 6.785 ] 6.2463, 325444 KB
+lockfree              100     arttree_lck          200000     1         True                         [ 8.879 8.892 8.722 ] 8.8310, 322108 KB
+rpmalloc              100     arttree_lck          200000     1         False                        [ 8.038 8.408 6.821 ] 7.7557, 1064436 KB
+deqalloc              100     arttree_lck          200000     2         False                        [ 7.78 14.26 8.463 ] 10.1677, 2601632 KB
+mimalloc              100     arttree_lck          200000     2         False                        [ 5.836 7.469 11.29 ] 8.1983, 575252 KB
+jemalloc              100     arttree_lck          200000     2         True                         [ 11.2 11.28 11.16 ] 11.2133, 950708 KB
+snmalloc              100     arttree_lck          200000     2         False                        [ 13.04 13.06 7.385 ] 11.1617, 482932 KB
+hoard                 100     arttree_lck          200000     2         True                         [  ] 0.0000, 4020 KB
+# CRASH: arttree_lck alloc=hoard u=100 n=200000
+tcmalloc              100     arttree_lck          200000     2         False                        [  ] 0.0000, 16468 KB
+# CRASH: arttree_lck alloc=tcmalloc u=100 n=200000
+tbbmalloc             100     arttree_lck          200000     2         False                        [ 7.612 5.137 7.749 ] 6.8327, 323220 KB
+lockfree              100     arttree_lck          200000     2         True                         [ 11.92 6.625 11.74 ] 10.0950, 329640 KB
+rpmalloc              100     arttree_lck          200000     2         False                        [ 12.2 6.783 7.612 ] 8.8650, 1024828 KB
+deqalloc              100     arttree_lck          200000     4         False                        [ 19.13 15.34 14.74 ] 16.4033, 2407568 KB
+mimalloc              100     arttree_lck          200000     4         False                        [ 10.43 12.91 11.22 ] 11.5200, 552668 KB
+jemalloc              100     arttree_lck          200000     4         True                         [ 13.04 10.6 10.62 ] 11.4200, 937504 KB
+snmalloc              100     arttree_lck          200000     4         False                        [ 17.28 13.03 13.0 ] 14.4367, 498916 KB
+hoard                 100     arttree_lck          200000     4         True                         [  ] 0.0000, 4224 KB
+# CRASH: arttree_lck alloc=hoard u=100 n=200000
+tcmalloc              100     arttree_lck          200000     4         False                        [  ] 0.0000, 18292 KB
+# CRASH: arttree_lck alloc=tcmalloc u=100 n=200000
+tbbmalloc             100     arttree_lck          200000     4         False                        [ 6.027 5.734 5.72 ] 5.8270, 329876 KB
+lockfree              100     arttree_lck          200000     4         True                         [ 11.07 11.53 12.6 ] 11.7333, 319412 KB
+rpmalloc              100     arttree_lck          200000     4         False                        [ 12.49 12.61 15.67 ] 13.5900, 1068824 KB
+deqalloc              100     arttree_lck          200000     8         False                        [ 26.98 27.4 26.84 ] 27.0733, 2846304 KB
+mimalloc              100     arttree_lck          200000     8         False                        [ 17.07 17.62 16.67 ] 17.1200, 557256 KB
+jemalloc              100     arttree_lck          200000     8         True                         [ 18.77 18.13 18.83 ] 18.5767, 943716 KB
+snmalloc              100     arttree_lck          200000     8         False                        [ 21.76 22.91 24.22 ] 22.9633, 514700 KB
+hoard                 100     arttree_lck          200000     8         True                         [  ] 0.0000, 4100 KB
+# CRASH: arttree_lck alloc=hoard u=100 n=200000
+tcmalloc              100     arttree_lck          200000     8         False                        [  ] 0.0000, 18452 KB
+# CRASH: arttree_lck alloc=tcmalloc u=100 n=200000
+tbbmalloc             100     arttree_lck          200000     8         False                        [ 9.729 9.732 9.26 ] 9.5737, 346240 KB
+lockfree              100     arttree_lck          200000     8         True                         [ 14.85 26.02 17.8 ] 19.5567, 310192 KB
+rpmalloc              100     arttree_lck          200000     8         False                        [ 20.09 19.29 19.9 ] 19.7600, 1095960 KB
+deqalloc              100     arttree_lck          200000     16        False                        [ 55.07 49.88 52.62 ] 52.5233, 2198700 KB
+mimalloc              100     arttree_lck          200000     16        False                        [ 30.61 29.64 28.3 ] 29.5167, 593000 KB
+jemalloc              100     arttree_lck          200000     16        True                         [ 32.43 32.02 33.52 ] 32.6567, 921108 KB
+snmalloc              100     arttree_lck          200000     16        False                        [ 39.76 47.36 40.9 ] 42.6733, 535304 KB
+hoard                 100     arttree_lck          200000     16        True                         [  ] 0.0000, 4028 KB
+# CRASH: arttree_lck alloc=hoard u=100 n=200000
+tcmalloc              100     arttree_lck          200000     16        False                        [  ] 0.0000, 14424 KB
+# CRASH: arttree_lck alloc=tcmalloc u=100 n=200000
+tbbmalloc             100     arttree_lck          200000     16        False                        [ 16.69 17.17 16.47 ] 16.7767, 331860 KB
+lockfree              100     arttree_lck          200000     16        True                         [ 38.26 32.88 32.46 ] 34.5333, 290244 KB
+rpmalloc              100     arttree_lck          200000     16        False                        [ 34.72 33.64 33.86 ] 34.0733, 1071472 KB
+deqalloc              100     arttree_lck          200000     32        False                        [ 95.63 96.96 99.15 ] 97.2467, 2370984 KB
+mimalloc              100     arttree_lck          200000     32        False                        [ 51.05 49.77 49.09 ] 49.9700, 585156 KB
+jemalloc              100     arttree_lck          200000     32        True                         [ 61.32 61.45 63.37 ] 62.0467, 915884 KB
+snmalloc              100     arttree_lck          200000     32        False                        [ 68.18 67.38 67.59 ] 67.7167, 519272 KB
+hoard                 100     arttree_lck          200000     32        True                         [  ] 0.0000, 5888 KB
+# CRASH: arttree_lck alloc=hoard u=100 n=200000
+tcmalloc              100     arttree_lck          200000     32        False                        [  ] 0.0000, 17716 KB
+# CRASH: arttree_lck alloc=tcmalloc u=100 n=200000
+tbbmalloc             100     arttree_lck          200000     32        False                        [ 28.9 28.35 28.57 ] 28.6067, 343816 KB
+lockfree              100     arttree_lck          200000     32        True                         [ 43.01 48.47 50.26 ] 47.2467, 292716 KB
+rpmalloc              100     arttree_lck          200000     32        False                        [ 61.94 58.69 66.06 ] 62.2300, 1015776 KB
+deqalloc              100     arttree_lck          200000     64        False                        [ 162.8 159.5 160.4 ] 160.9000, 2338148 KB
+mimalloc              100     arttree_lck          200000     64        False                        [ 75.16 71.9 75.14 ] 74.0667, 601140 KB
+jemalloc              100     arttree_lck          200000     64        True                         [ 115.2 113.3 113.8 ] 114.1000, 913364 KB
+snmalloc              100     arttree_lck          200000     64        False                        [ 108.1 102.9 103.9 ] 104.9667, 459624 KB
+hoard                 100     arttree_lck          200000     64        True                         [  ] 0.0000, 4096 KB
+# CRASH: arttree_lck alloc=hoard u=100 n=200000
+tcmalloc              100     arttree_lck          200000     64        False                        [  ] 0.0000, 17804 KB
+# CRASH: arttree_lck alloc=tcmalloc u=100 n=200000
+tbbmalloc             100     arttree_lck          200000     64        False                        [ 45.2 45.59 46.42 ] 45.7367, 360000 KB
+lockfree              100     arttree_lck          200000     64        True                         [ 69.76 68.91 69.2 ] 69.2900, 293020 KB
+rpmalloc              100     arttree_lck          200000     64        False                        [ 94.92 95.45 91.19 ] 93.8533, 1107936 KB
+deqalloc              100     arttree_lck          200000     104       False                        [ 207.1 210.0 207.6 ] 208.2333, 2801256 KB
+mimalloc              100     arttree_lck          200000     104       False                        [ 87.12 92.91 92.05 ] 90.6933, 656844 KB
+jemalloc              100     arttree_lck          200000     104       True                         [ 165.0 164.4 162.1 ] 163.8333, 922972 KB
+snmalloc              100     arttree_lck          200000     104       False                        [ 130.5 131.4 129.4 ] 130.4333, 519320 KB
+hoard                 100     arttree_lck          200000     104       True                         [  ] 0.0000, 4240 KB
+# CRASH: arttree_lck alloc=hoard u=100 n=200000
+tcmalloc              100     arttree_lck          200000     104       False                        [  ] 0.0000, 17988 KB
+# CRASH: arttree_lck alloc=tcmalloc u=100 n=200000
+tbbmalloc             100     arttree_lck          200000     104       False                        [ 47.66 47.41 49.87 ] 48.3133, 423840 KB
+lockfree              100     arttree_lck          200000     104       True                         [ 70.58 73.43 70.0 ] 71.3367, 324644 KB
+rpmalloc              100     arttree_lck          200000     104       False                        [ 131.1 132.5 132.9 ] 132.1667, 1089744 KB
+deqalloc              100     arttree_lck          200000     128       False                        [ 218.3 220.5 219.9 ] 219.5667, 2709596 KB
+mimalloc              100     arttree_lck          200000     128       False                        [ 94.88 97.46 98.14 ] 96.8267, 674040 KB
+jemalloc              100     arttree_lck          200000     128       True                         [ 184.6 182.3 181.4 ] 182.7667, 920616 KB
+snmalloc              100     arttree_lck          200000     128       False                        [ 111.5 139.5 139.5 ] 130.1667, 616036 KB
+hoard                 100     arttree_lck          200000     128       True                         [  ] 0.0000, 4020 KB
+# CRASH: arttree_lck alloc=hoard u=100 n=200000
+tcmalloc              100     arttree_lck          200000     128       False                        [  ] 0.0000, 17640 KB
+# CRASH: arttree_lck alloc=tcmalloc u=100 n=200000
+tbbmalloc             100     arttree_lck          200000     128       False                        [ 42.27 43.97 45.74 ] 43.9933, 483268 KB
+lockfree              100     arttree_lck          200000     128       True                         [ 72.79 68.25 70.55 ] 70.5300, 340096 KB
+rpmalloc              100     arttree_lck          200000     128       False                        [ 149.4 149.1 150.2 ] 149.5667, 1010124 KB
+deqalloc              100     arttree_lck          200000     208       False                        [ 72.3 186.0 80.96 ] 113.0867, 3107404 KB
+mimalloc              100     arttree_lck          200000     208       False                        [ 87.09 88.02 83.35 ] 86.1533, 852840 KB
+jemalloc              100     arttree_lck          200000     208       True                         [ 43.47 45.73 44.89 ] 44.6967, 1319288 KB
+snmalloc              100     arttree_lck          200000     208       False                        [ 73.2 73.25 62.38 ] 69.6100, 863904 KB
+hoard                 100     arttree_lck          200000     208       True                         [  ] 0.0000, 4128 KB
+# CRASH: arttree_lck alloc=hoard u=100 n=200000
+tcmalloc              100     arttree_lck          200000     208       False                        [  ] 0.0000, 18148 KB
+# CRASH: arttree_lck alloc=tcmalloc u=100 n=200000
+tbbmalloc             100     arttree_lck          200000     208       False                        [ 22.17 13.09 21.17 ] 18.8100, 550096 KB
+lockfree              100     arttree_lck          200000     208       True                         [ 47.67 48.85 34.81 ] 43.7767, 408888 KB
+rpmalloc              100     arttree_lck          200000     208       False                        [ 138.3 72.55 142.7 ] 117.8500, 1317052 KB
+deqalloc              100     arttree_lck          200000     416       False                        [ 116.0 111.1 83.4 ] 103.5000, 2954728 KB
+mimalloc              100     arttree_lck          200000     416       False                        [ 93.28 91.9 89.68 ] 91.6200, 843080 KB
+jemalloc              100     arttree_lck          200000     416       True                         [ 41.93 42.88 47.04 ] 43.9500, 1306480 KB
+snmalloc              100     arttree_lck          200000     416       False                        [ 80.52 92.69 88.7 ] 87.3033, 911276 KB
+hoard                 100     arttree_lck          200000     416       True                         [  ] 0.0000, 3980 KB
+# CRASH: arttree_lck alloc=hoard u=100 n=200000
+tcmalloc              100     arttree_lck          200000     416       False                        [  ] 0.0000, 18340 KB
+# CRASH: arttree_lck alloc=tcmalloc u=100 n=200000
+tbbmalloc             100     arttree_lck          200000     416       False                        [ 20.4 24.07 13.63 ] 19.3667, 576236 KB
+lockfree              100     arttree_lck          200000     416       True                         [ 44.01 48.69 48.1 ] 46.9333, 423148 KB
+rpmalloc              100     arttree_lck          200000     416       False                        [ 135.0 139.2 151.2 ] 141.8000, 1391312 KB
+deqalloc              100     list_lck             2000       1         False                        [ 0.6911 0.6829 0.6723 ] 0.6821, 502428 KB
+mimalloc              100     list_lck             2000       1         False                        [ 0.7601 0.7339 0.7363 ] 0.7434, 444168 KB
+jemalloc              100     list_lck             2000       1         True                         [ 0.7344 0.7285 0.7262 ] 0.7297, 871852 KB
+snmalloc              100     list_lck             2000       1         False                        [ 0.7683 0.7647 0.752 ] 0.7617, 32664 KB
+hoard                 100     list_lck             2000       1         True                         [  ] 0.0000, 4076 KB
+# CRASH: list_lck alloc=hoard u=100 n=2000
+tcmalloc              100     list_lck             2000       1         False                        [  ] 0.0000, 16508 KB
+# CRASH: list_lck alloc=tcmalloc u=100 n=2000
+tbbmalloc             100     list_lck             2000       1         False                        [ 0.405 0.4022 0.3983 ] 0.4018, 16312 KB
+lockfree              100     list_lck             2000       1         True                         [ 0.6941 0.6731 0.6638 ] 0.6770, 13588 KB
+rpmalloc              100     list_lck             2000       1         False                        [ 0.7255 0.7188 0.7127 ] 0.7190, 462668 KB
+deqalloc              100     list_lck             2000       2         False                        [ 1.194 1.202 1.009 ] 1.1350, 563896 KB
+mimalloc              100     list_lck             2000       2         False                        [ 0.957 0.9601 0.9884 ] 0.9685, 444444 KB
+jemalloc              100     list_lck             2000       2         True                         [ 0.9781 1.234 1.225 ] 1.1457, 871452 KB
+snmalloc              100     list_lck             2000       2         False                        [ 1.002 1.219 1.227 ] 1.1493, 34192 KB
+hoard                 100     list_lck             2000       2         True                         [  ] 0.0000, 3976 KB
+# CRASH: list_lck alloc=hoard u=100 n=2000
+tcmalloc              100     list_lck             2000       2         False                        [  ] 0.0000, 17952 KB
+# CRASH: list_lck alloc=tcmalloc u=100 n=2000
+tbbmalloc             100     list_lck             2000       2         False                        [ 0.656 0.737 0.6356 ] 0.6762, 14740 KB
+lockfree              100     list_lck             2000       2         True                         [ 1.138 1.098 1.116 ] 1.1173, 14508 KB
+rpmalloc              100     list_lck             2000       2         False                        [ 0.97 1.194 1.181 ] 1.1150, 467160 KB
+deqalloc              100     list_lck             2000       4         False                        [ 1.864 2.005 2.011 ] 1.9600, 506620 KB
+mimalloc              100     list_lck             2000       4         False                        [ 1.735 1.712 1.862 ] 1.7697, 440216 KB
+jemalloc              100     list_lck             2000       4         True                         [ 1.842 1.791 1.936 ] 1.8563, 867668 KB
+snmalloc              100     list_lck             2000       4         False                        [ 1.856 1.838 1.843 ] 1.8457, 36660 KB
+hoard                 100     list_lck             2000       4         True                         [  ] 0.0000, 5788 KB
+# CRASH: list_lck alloc=hoard u=100 n=2000
+tcmalloc              100     list_lck             2000       4         False                        [  ] 0.0000, 16508 KB
+# CRASH: list_lck alloc=tcmalloc u=100 n=2000
+tbbmalloc             100     list_lck             2000       4         False                        [ 1.212 1.216 1.262 ] 1.2300, 19544 KB
+lockfree              100     list_lck             2000       4         True                         [ 1.577 1.61 1.618 ] 1.6017, 21428 KB
+rpmalloc              100     list_lck             2000       4         False                        [ 2.048 1.795 1.783 ] 1.8753, 483312 KB
+deqalloc              100     list_lck             2000       8         False                        [ 3.677 3.758 4.207 ] 3.8807, 547476 KB
+mimalloc              100     list_lck             2000       8         False                        [ 2.853 2.808 2.936 ] 2.8657, 431316 KB
+jemalloc              100     list_lck             2000       8         True                         [ 3.279 3.212 3.32 ] 3.2703, 868908 KB
+snmalloc              100     list_lck             2000       8         False                        [ 3.464 3.212 3.659 ] 3.4450, 38688 KB
+hoard                 100     list_lck             2000       8         True                         [  ] 0.0000, 4080 KB
+# CRASH: list_lck alloc=hoard u=100 n=2000
+tcmalloc              100     list_lck             2000       8         False                        [  ] 0.0000, 16508 KB
+# CRASH: list_lck alloc=tcmalloc u=100 n=2000
+tbbmalloc             100     list_lck             2000       8         False                        [ 2.253 2.377 2.273 ] 2.3010, 16796 KB
+lockfree              100     list_lck             2000       8         True                         [ 2.77 2.699 3.057 ] 2.8420, 16176 KB
+rpmalloc              100     list_lck             2000       8         False                        [ 2.352 2.349 2.336 ] 2.3457, 465000 KB
+deqalloc              100     list_lck             2000       16        False                        [ 6.66 6.705 6.726 ] 6.6970, 555720 KB
+mimalloc              100     list_lck             2000       16        False                        [ 4.655 4.901 4.719 ] 4.7583, 421748 KB
+jemalloc              100     list_lck             2000       16        True                         [ 5.232 4.969 4.851 ] 5.0173, 870124 KB
+snmalloc              100     list_lck             2000       16        False                        [ 5.44 5.404 5.49 ] 5.4447, 42556 KB
+hoard                 100     list_lck             2000       16        True                         [  ] 0.0000, 6100 KB
+# CRASH: list_lck alloc=hoard u=100 n=2000
+tcmalloc              100     list_lck             2000       16        False                        [  ] 0.0000, 16480 KB
+# CRASH: list_lck alloc=tcmalloc u=100 n=2000
+tbbmalloc             100     list_lck             2000       16        False                        [ 4.145 4.175 4.087 ] 4.1357, 24156 KB
+lockfree              100     list_lck             2000       16        True                         [ 4.703 4.708 4.732 ] 4.7143, 18656 KB
+rpmalloc              100     list_lck             2000       16        False                        [ 3.232 3.233 3.199 ] 3.2213, 463008 KB
+deqalloc              100     list_lck             2000       32        False                        [ 10.85 10.98 11.03 ] 10.9533, 513044 KB
+mimalloc              100     list_lck             2000       32        False                        [ 7.141 7.588 7.437 ] 7.3887, 439460 KB
+jemalloc              100     list_lck             2000       32        True                         [ 7.501 8.023 7.596 ] 7.7067, 872500 KB
+snmalloc              100     list_lck             2000       32        False                        [ 10.12 9.951 10.19 ] 10.0870, 53000 KB
+hoard                 100     list_lck             2000       32        True                         [  ] 0.0000, 4080 KB
+# CRASH: list_lck alloc=hoard u=100 n=2000
+tcmalloc              100     list_lck             2000       32        False                        [  ] 0.0000, 18004 KB
+# CRASH: list_lck alloc=tcmalloc u=100 n=2000
+tbbmalloc             100     list_lck             2000       32        False                        [ 5.814 5.813 5.844 ] 5.8237, 22376 KB
+lockfree              100     list_lck             2000       32        True                         [ 7.889 7.912 7.947 ] 7.9160, 25796 KB
+rpmalloc              100     list_lck             2000       32        False                        [ 4.929 4.93 4.97 ] 4.9430, 467068 KB
+deqalloc              100     list_lck             2000       64        False                        [ 16.3 16.11 16.2 ] 16.2033, 523020 KB
+mimalloc              100     list_lck             2000       64        False                        [ 11.29 11.3 11.22 ] 11.2700, 444024 KB
+jemalloc              100     list_lck             2000       64        True                         [ 12.45 12.71 12.61 ] 12.5900, 869768 KB
+snmalloc              100     list_lck             2000       64        False                        [ 15.24 15.91 15.9 ] 15.6833, 46612 KB
+hoard                 100     list_lck             2000       64        True                         [  ] 0.0000, 4204 KB
+# CRASH: list_lck alloc=hoard u=100 n=2000
+tcmalloc              100     list_lck             2000       64        False                        [  ] 0.0000, 17816 KB
+# CRASH: list_lck alloc=tcmalloc u=100 n=2000
+tbbmalloc             100     list_lck             2000       64        False                        [ 8.035 8.111 8.195 ] 8.1137, 28572 KB
+lockfree              100     list_lck             2000       64        True                         [ 12.14 12.08 11.92 ] 12.0467, 21996 KB
+rpmalloc              100     list_lck             2000       64        False                        [ 7.514 7.294 7.381 ] 7.3963, 460812 KB
+deqalloc              100     list_lck             2000       104       False                        [ 20.16 20.58 20.58 ] 20.4400, 563620 KB
+mimalloc              100     list_lck             2000       104       False                        [ 13.13 13.25 13.19 ] 13.1900, 440856 KB
+jemalloc              100     list_lck             2000       104       True                         [ 16.54 16.38 16.5 ] 16.4733, 865476 KB
+snmalloc              100     list_lck             2000       104       False                        [ 19.95 19.76 20.01 ] 19.9067, 52188 KB
+hoard                 100     list_lck             2000       104       True                         [  ] 0.0000, 4164 KB
+# CRASH: list_lck alloc=hoard u=100 n=2000
+tcmalloc              100     list_lck             2000       104       False                        [  ] 0.0000, 18532 KB
+# CRASH: list_lck alloc=tcmalloc u=100 n=2000
+tbbmalloc             100     list_lck             2000       104       False                        [ 10.6 10.43 10.24 ] 10.4233, 36136 KB
+lockfree              100     list_lck             2000       104       True                         [ 15.37 15.45 15.44 ] 15.4200, 24852 KB
+rpmalloc              100     list_lck             2000       104       False                        [ 9.569 9.595 9.627 ] 9.5970, 461060 KB
+deqalloc              100     list_lck             2000       128       False                        [ 23.2 22.99 23.07 ] 23.0867, 561628 KB
+mimalloc              100     list_lck             2000       128       False                        [ 14.53 14.27 14.13 ] 14.3100, 445848 KB
+jemalloc              100     list_lck             2000       128       True                         [ 18.94 18.73 18.64 ] 18.7700, 862856 KB
+snmalloc              100     list_lck             2000       128       False                        [ 21.99 21.65 22.19 ] 21.9433, 57816 KB
+hoard                 100     list_lck             2000       128       True                         [  ] 0.0000, 5724 KB
+# CRASH: list_lck alloc=hoard u=100 n=2000
+tcmalloc              100     list_lck             2000       128       False                        [  ] 0.0000, 18464 KB
+# CRASH: list_lck alloc=tcmalloc u=100 n=2000
+tbbmalloc             100     list_lck             2000       128       False                        [ 12.37 12.28 12.04 ] 12.2300, 36448 KB
+lockfree              100     list_lck             2000       128       True                         [ 17.52 17.63 17.61 ] 17.5867, 26424 KB
+rpmalloc              100     list_lck             2000       128       False                        [ 11.46 11.4 11.42 ] 11.4267, 472984 KB
+deqalloc              100     list_lck             2000       208       False                        [ 30.12 29.97 29.62 ] 29.9033, 606932 KB
+mimalloc              100     list_lck             2000       208       False                        [ 19.95 19.84 19.9 ] 19.8967, 443036 KB
+jemalloc              100     list_lck             2000       208       True                         [ 24.92 24.98 24.97 ] 24.9567, 873856 KB
+snmalloc              100     list_lck             2000       208       False                        [ 28.26 28.42 28.44 ] 28.3733, 72064 KB
+hoard                 100     list_lck             2000       208       True                         [  ] 0.0000, 4124 KB
+# CRASH: list_lck alloc=hoard u=100 n=2000
+tcmalloc              100     list_lck             2000       208       False                        [  ] 0.0000, 16456 KB
+# CRASH: list_lck alloc=tcmalloc u=100 n=2000
+tbbmalloc             100     list_lck             2000       208       False                        [ 18.28 17.98 18.33 ] 18.1967, 44200 KB
+lockfree              100     list_lck             2000       208       True                         [ 23.5 23.46 23.52 ] 23.4933, 34308 KB
+rpmalloc              100     list_lck             2000       208       False                        [ 16.91 16.86 16.9 ] 16.8900, 474968 KB
+deqalloc              100     list_lck             2000       416       False                        [ 30.23 29.99 29.88 ] 30.0333, 651960 KB
+mimalloc              100     list_lck             2000       416       False                        [ 19.58 19.54 19.48 ] 19.5333, 447036 KB
+jemalloc              100     list_lck             2000       416       True                         [ 24.18 24.46 24.51 ] 24.3833, 874952 KB
+snmalloc              100     list_lck             2000       416       False                        [ 28.0 27.9 28.04 ] 27.9800, 75476 KB
+hoard                 100     list_lck             2000       416       True                         [  ] 0.0000, 4240 KB
+# CRASH: list_lck alloc=hoard u=100 n=2000
+tcmalloc              100     list_lck             2000       416       False                        [  ] 0.0000, 17820 KB
+# CRASH: list_lck alloc=tcmalloc u=100 n=2000
+tbbmalloc             100     list_lck             2000       416       False                        [ 18.33 18.5 18.22 ] 18.3500, 53032 KB
+lockfree              100     list_lck             2000       416       True                         [ 23.75 23.66 23.74 ] 23.7167, 34596 KB
+rpmalloc              100     list_lck             2000       416       False                        [ 16.9 16.95 16.94 ] 16.9300, 473600 KB
