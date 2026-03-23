@@ -16,8 +16,6 @@
 #include "deqalloc/utility/types.h"
 #include "threads/cpuinfo.h"
 
-#define BLOCK_SIZE_LOG 17
-
 template<typename T>
 class alignas(64) continuous_array
 {
@@ -26,6 +24,8 @@ class alignas(64) continuous_array
 //TODO: At the moment, blocks are only reused (never free'd). Add heuristic to free some blocks
 
   private:
+
+    static constexpr size_t BLOCK_SIZE_LOG = 17;
     
     //number of T elements in each block
     static inline constexpr size_t block_size = (1 << BLOCK_SIZE_LOG); 

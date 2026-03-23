@@ -1,0 +1,69 @@
+Command: ./run_experiments.py flock --benchmark ablation --output ../timings
+Date: 03-23-2026
+Experiment: flock ablation_deque
+Model name:                           Intel(R) Xeon(R) CPU E7-8867 v4 @ 2.40GHz
+Git: ba07159
+allocator versions:
+	jemalloc: 86b72192
+	mesh: 5d9b390
+	mimalloc: 75d69f4a
+	hoard: 1cd9101
+	scalloc: 1a11827
+	tcmalloc: 068dd9e9
+	snmalloc: 3fca4c8
+	lockfree: 915f51b
+	rpmalloc: feb43ae
+	tbbmalloc: 1911b283
+	mimalloc-batchit: da52048
+---
+allocator             update% ds                   key_size   #threads  numa   thread-perc           results
+deqalloc              100     btree_lck            5000       144       False                        [ 6.6 7.131 7.095 6.734 7.007 ] 6.9134, 409500 KB
+deqalloc_fcdeque      100     btree_lck            5000       144       False                        [ 6.787 6.62 6.394 6.474 6.211 ] 6.4972, 3143552 KB
+deqalloc              100     hash_block_lck       5000       144       False                        [ 295.3 294.7 295.3 295.9 294.5 ] 295.1400, 376328 KB
+deqalloc_fcdeque      100     hash_block_lck       5000       144       False                        [ 270.2 286.4 299.5 291.0 281.6 ] 285.7400, 3201112 KB
+deqalloc              100     leaftree_lck         5000       144       False                        [ 142.8 146.1 146.7 145.2 146.3 ] 145.4200, 303992 KB
+deqalloc_fcdeque      100     leaftree_lck         5000       144       False                        [ 142.0 143.2 137.9 94.05 114.9 ] 126.4100, 3143852 KB
+deqalloc              100     skiplist_lck         5000       144       False                        [ 101.2 102.0 102.1 102.3 100.1 ] 101.5400, 9370004 KB
+deqalloc_fcdeque      100     skiplist_lck         5000       144       False                        [ 90.84 94.24 92.59 92.82 85.62 ] 91.2220, 11233748 KB
+deqalloc              100     arttree_lck          5000       144       False                        [  ] 0.0000, 352916 KB
+# CRASH: arttree_lck alloc=deqalloc u=100 n=5000
+deqalloc_fcdeque      100     arttree_lck          5000       144       False                        [ 1.079 1.051 1.047 1.08 ] 1.0642, 3099452 KB
+# CRASH: arttree_lck alloc=deqalloc_fcdeque u=100 n=5000
+deqalloc              100     list_lck             500        144       False                        [ 32.75 32.95 32.95 32.78 32.98 ] 32.8820, 239832 KB
+deqalloc_fcdeque      100     list_lck             500        144       False                        [ 31.58 32.19 32.69 32.64 31.32 ] 32.0840, 2990084 KB
+deqalloc              100     btree_lck            200000     144       False                        [ 91.43 76.45 81.68 113.0 79.53 ] 88.4180, 791116 KB
+deqalloc_fcdeque      100     btree_lck            200000     144       False                        [ 72.0 43.8 52.36 52.31 46.46 ] 53.3860, 3537584 KB
+deqalloc              100     hash_block_lck       200000     144       False                        [ 317.2 308.3 307.5 303.0 305.1 ] 308.2200, 574528 KB
+deqalloc_fcdeque      100     hash_block_lck       200000     144       False                        [ 303.2 299.5 330.2 299.3 289.4 ] 304.3200, 3321752 KB
+deqalloc              100     leaftree_lck         200000     144       False                        [ 104.8 105.9 104.0 104.6 104.5 ] 104.7600, 499544 KB
+deqalloc_fcdeque      100     leaftree_lck         200000     144       False                        [ 113.3 94.37 103.3 103.5 103.5 ] 103.5940, 3258892 KB
+deqalloc              100     skiplist_lck         200000     144       False                        [ 100.6 98.83 99.0 99.84 100.6 ] 99.7740, 640608 KB
+deqalloc_fcdeque      100     skiplist_lck         200000     144       False                        [ 102.2 98.83 99.82 101.1 99.23 ] 100.2360, 3378628 KB
+deqalloc              100     arttree_lck          200000     144       False                        [ 146.2 168.9 81.99 164.8 136.7 ] 139.7180, 666868 KB
+deqalloc_fcdeque      100     arttree_lck          200000     144       False                        [ 169.5 169.6 124.9 169.4 149.6 ] 156.6000, 3405732 KB
+deqalloc              100     list_lck             2000       144       False                        [ 20.07 20.13 20.14 20.13 20.15 ] 20.1240, 233484 KB
+deqalloc_fcdeque      100     list_lck             2000       144       False                        [ 20.28 20.28 20.27 19.65 19.75 ] 20.0460, 2980264 KB
+deqalloc              100     btree_lck            20000000   144       False                        [ 122.2 124.9 125.7 126.2 125.5 ] 124.9000, 3115964 KB
+deqalloc_fcdeque      100     btree_lck            20000000   144       False                        [ 120.1 121.7 112.0 121.8 126.4 ] 120.4000, 6036812 KB
+deqalloc              100     hash_block_lck       20000000   144       False                        [ 235.4 235.0 234.9 235.1 234.9 ] 235.0600, 3142556 KB
+deqalloc_fcdeque      100     hash_block_lck       20000000   144       False                        [ 232.9 220.7 227.5 237.3 229.4 ] 229.5600, 6034368 KB
+deqalloc              100     leaftree_lck         20000000   144       False                        [ 47.78 45.05 45.02 44.53 44.61 ] 45.3980, 2688304 KB
+deqalloc_fcdeque      100     leaftree_lck         20000000   144       False                        [ 47.51 44.98 44.42 44.07 43.51 ] 44.8980, 5437548 KB
+deqalloc              100     skiplist_lck         20000000   144       False                        [ 43.31 42.67 43.24 43.32 43.31 ] 43.1700, 2807592 KB
+deqalloc_fcdeque      100     skiplist_lck         20000000   144       False                        [ 43.67 44.01 43.35 43.46 43.02 ] 43.5020, 5592024 KB
+deqalloc              100     arttree_lck          20000000   144       False                        [ 180.7 186.6 186.0 185.9 184.9 ] 184.8200, 3510048 KB
+deqalloc_fcdeque      100     arttree_lck          20000000   144       False                        [ 181.7 166.0 179.5 179.9 170.1 ] 175.4400, 6475016 KB
+deqalloc              100     list_lck             10000      144       False                        [ 2.224 2.198 2.186 2.176 2.179 ] 2.1926, 261800 KB
+deqalloc_fcdeque      100     list_lck             10000      144       False                        [ 2.284 2.189 2.22 2.203 2.191 ] 2.2174, 3003624 KB
+deqalloc              100     btree_lck            200000000  144       False                        [ 83.65 84.59 82.12 77.99 81.27 ] 81.9240, 20575352 KB
+deqalloc_fcdeque      100     btree_lck            200000000  144       False                        [ 77.95 80.73 82.48 82.42 82.97 ] 81.3100, 23292252 KB
+deqalloc              100     hash_block_lck       200000000  144       False                        [ 200.5 196.0 201.5 201.2 201.0 ] 200.0400, 25833300 KB
+deqalloc_fcdeque      100     hash_block_lck       200000000  144       False                        [ 198.0 179.8 180.9 192.6 196.1 ] 189.4800, 28719824 KB
+deqalloc              100     leaftree_lck         200000000  144       False                        [ 28.16 27.24 26.58 26.38 26.15 ] 26.9020, 22862664 KB
+deqalloc_fcdeque      100     leaftree_lck         200000000  144       False                        [ 28.5 27.04 27.12 27.0 26.81 ] 27.2940, 25651120 KB
+deqalloc              100     skiplist_lck         200000000  144       False                        [ 22.76 22.77 17.88 22.6 22.69 ] 21.7400, 24064288 KB
+deqalloc_fcdeque      100     skiplist_lck         200000000  144       False                        [ 22.74 21.11 20.85 23.12 22.99 ] 22.1620, 27000584 KB
+deqalloc              100     arttree_lck          200000000  144       False                        [ 119.5 119.0 118.7 118.3 117.5 ] 118.6000, 26566604 KB
+deqalloc_fcdeque      100     arttree_lck          200000000  144       False                        [ 106.9 98.36 112.3 98.74 72.01 ] 97.6620, 29958548 KB
+deqalloc              100     list_lck             10000      144       False                        [ 2.18 2.173 2.147 2.123 2.081 ] 2.1408, 263464 KB
+deqalloc_fcdeque      100     list_lck             10000      144       False                        [ 2.17 2.084 2.072 2.028 2.068 ] 2.0844, 3003432 KB

@@ -189,6 +189,7 @@ class FlockConfig:
     # Format: "name", "name:numa", "name::df", "name:numa:df"
     allocators_raw: List[str] = field(default_factory=lambda: [
         "deqalloc",
+        "deqalloc_genericdeque",
         "mimalloc",
         #"mimalloc-batchit",
         "jemalloc:numa:df",
@@ -282,6 +283,7 @@ class SetbenchConfig:
     """Configuration for setbench ubench allocator+tracker benchmarks."""
     allocators_raw: List[str] = field(default_factory=lambda: [
         "deqalloc",
+        "deqalloc_genericdeque",
         "mimalloc",
         #"mimalloc-batchit",
         "jemalloc:numa:df",
@@ -615,6 +617,13 @@ class FlockRunner:
         self.config.allocators_raw = prev_allocs
         self.rf.close()
 
+    def run_ablation_deque(self):
+        prev_allocs = self.config.allocators_raw
+        self.config.allocators_raw = ["deqalloc", "deqalloc_genericdeque"]
+        self.run_sizes("ablation_deque")
+        self.config.allocators_raw = prev_allocs
+        self.rf.close()
+
     def run(self):
         b = self.config.args.benchmark
         run_all = "all" in b
@@ -623,7 +632,9 @@ class FlockRunner:
         if run_all or "sizes"       in b: self.run_sizes()
         if not self.config.args.nohugepages:
             if run_all or "hugepages"   in b: self.run_hugepages()
-        if run_all or "ablation"    in b: self.run_ablation_localseglist()
+        if run_all or "ablation"    in b:
+            self.run_ablation_localseglist()
+            self.run_ablation_deque()
         if run_all or "thread-perc" in b: self.run_thread_perc()
         if run_all or "upserts"     in b: self.run_upserts()
 
@@ -808,6 +819,13 @@ class SetbenchRunner:
         self.config.allocators_raw = prev_allocs
         self.rf.close()
 
+    def run_ablation_deque(self):
+        prev_allocs = self.config.allocators_raw
+        self.config.allocators_raw = ["deqalloc", "deqalloc_genericdeque"]
+        self.run_sizes("ablation_deque")
+        self.config.allocators_raw = prev_allocs
+        self.rf.close()
+
     def run(self):
         b = self.config.args.benchmark
         run_all = "all" in b
@@ -817,7 +835,9 @@ class SetbenchRunner:
         if run_all or "sizes"     in b: self.run_sizes()
         if not self.config.args.nohugepages:
             if run_all or "hugepages" in b: self.run_hugepages()
-        if run_all or "ablation"  in b: self.run_ablation_localseglist()
+        if run_all or "ablation"  in b:
+            self.run_ablation_localseglist()
+            self.run_ablation_deque()
 
 # ---------------------------------------------------------------------------
 # Main

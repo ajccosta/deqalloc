@@ -43,6 +43,10 @@ add_custom_target(build_setbench
 #build other allocators
 set(ALLOCATOR_LIB_DIR ${CMAKE_BINARY_DIR}/allocators)
 add_custom_target(build_allocators
+  DEPENDS
+    deqalloc
+    deqalloc_localseglist
+    deqalloc_genericdeque
   COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/build_allocators.sh
   COMMAND ${CMAKE_COMMAND} -E create_symlink
     ${CMAKE_BINARY_DIR}/libdeqalloc.so

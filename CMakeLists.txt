@@ -71,17 +71,23 @@ add_library(deqalloc_localseglist SHARED ${ALL_SOURCES})
 target_compile_definitions(deqalloc_localseglist PUBLIC -DNDEBUG -D_REENTRANT=1 -DLOCAL_SEGLIST ${DEFINES})
 
 add_library(deqalloc_genericdeque SHARED ${ALL_SOURCES})
-target_compile_definitions(deqalloc_genericdeque PUBLIC -DNDEBUG -D_REENTRANT=1 -DFLAT_COMBINING ${DEFINES})
+target_compile_definitions(deqalloc_genericdeque PUBLIC -DNDEBUG -D_REENTRANT=1 -DFC_DEQUE ${DEFINES})
 
 # Let CMake handle platform-specific library settings
 set_target_properties(deqalloc PROPERTIES 
     VERSION 1.0.0
     SOVERSION 1)
 
+set_target_properties(deqalloc_genericdeque PROPERTIES
+  VERSION 1.0.0
+  SOVERSION 1)
+
 # Add threading support if needed
 find_package(Threads)
 if(Threads_FOUND)
     target_link_libraries(deqalloc Threads::Threads)
+  target_link_libraries(deqalloc_genericdeque Threads::Threads)
+  target_link_libraries(deqalloc_localseglist Threads::Threads)
 endif()
 
 #NOTE: Uncomment the following line in case you need to link statically
