@@ -189,7 +189,7 @@ class FlockConfig:
     # Format: "name", "name:numa", "name::df", "name:numa:df"
     allocators_raw: List[str] = field(default_factory=lambda: [
         "deqalloc",
-        "deqalloc_fcdeque",
+        "deqalloc_genericdeque",
         "mimalloc",
         #"mimalloc-batchit",
         "jemalloc:numa:df",
@@ -283,7 +283,7 @@ class SetbenchConfig:
     """Configuration for setbench ubench allocator+tracker benchmarks."""
     allocators_raw: List[str] = field(default_factory=lambda: [
         "deqalloc",
-        "deqalloc_fcdeque",
+        "deqalloc_genericdeque",
         "mimalloc",
         #"mimalloc-batchit",
         "jemalloc:numa:df",
@@ -619,7 +619,7 @@ class FlockRunner:
 
     def run_ablation_deque(self):
         prev_allocs = self.config.allocators_raw
-        self.config.allocators_raw = ["deqalloc", "deqalloc_fcdeque"]
+        self.config.allocators_raw = ["deqalloc", "deqalloc_genericdeque"]
         self.run_sizes("ablation_deque")
         self.config.allocators_raw = prev_allocs
         self.rf.close()
@@ -821,7 +821,7 @@ class SetbenchRunner:
 
     def run_ablation_deque(self):
         prev_allocs = self.config.allocators_raw
-        self.config.allocators_raw = ["deqalloc", "deqalloc_fcdeque"]
+        self.config.allocators_raw = ["deqalloc", "deqalloc_genericdeque"]
         self.run_sizes("ablation_deque")
         self.config.allocators_raw = prev_allocs
         self.rf.close()
