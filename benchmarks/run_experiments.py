@@ -189,6 +189,7 @@ class FlockConfig:
     # Format: "name", "name:numa", "name::df", "name:numa:df"
     allocators_raw: List[str] = field(default_factory=lambda: [
         "deqalloc",
+        "deqalloc_fcdeque",
         "mimalloc",
         #"mimalloc-batchit",
         "jemalloc:numa:df",
@@ -282,6 +283,7 @@ class SetbenchConfig:
     """Configuration for setbench ubench allocator+tracker benchmarks."""
     allocators_raw: List[str] = field(default_factory=lambda: [
         "deqalloc",
+        "deqalloc_fcdeque",
         "mimalloc",
         #"mimalloc-batchit",
         "jemalloc:numa:df",
@@ -615,6 +617,13 @@ class FlockRunner:
         self.config.allocators_raw = prev_allocs
         self.rf.close()
 
+    def run_ablation_deque(self):
+        prev_allocs = self.config.allocators_raw
+        self.config.allocators_raw = ["deqalloc", "deqalloc_fcdeque"]
+        self.run_sizes("ablation_deque")
+        self.config.allocators_raw = prev_allocs
+        self.rf.close()
+
     def run(self):
         b = self.config.args.benchmark
         run_all = "all" in b
@@ -623,7 +632,9 @@ class FlockRunner:
         if run_all or "sizes"       in b: self.run_sizes()
         if not self.config.args.nohugepages:
             if run_all or "hugepages"   in b: self.run_hugepages()
-        if run_all or "ablation"    in b: self.run_ablation_localseglist()
+        if run_all or "ablation"    in b:
+            self.run_ablation_localseglist()
+            self.run_ablation_deque()
         if run_all or "thread-perc" in b: self.run_thread_perc()
         if run_all or "upserts"     in b: self.run_upserts()
 
@@ -808,6 +819,13 @@ class SetbenchRunner:
         self.config.allocators_raw = prev_allocs
         self.rf.close()
 
+    def run_ablation_deque(self):
+        prev_allocs = self.config.allocators_raw
+        self.config.allocators_raw = ["deqalloc", "deqalloc_fcdeque"]
+        self.run_sizes("ablation_deque")
+        self.config.allocators_raw = prev_allocs
+        self.rf.close()
+
     def run(self):
         b = self.config.args.benchmark
         run_all = "all" in b
@@ -817,7 +835,9 @@ class SetbenchRunner:
         if run_all or "sizes"     in b: self.run_sizes()
         if not self.config.args.nohugepages:
             if run_all or "hugepages" in b: self.run_hugepages()
-        if run_all or "ablation"  in b: self.run_ablation_localseglist()
+        if run_all or "ablation"  in b:
+            self.run_ablation_localseglist()
+            self.run_ablation_deque()
 
 # ---------------------------------------------------------------------------
 # Main
@@ -858,7 +878,25 @@ def main():
     parser.add_argument("--tracker",     default=None,              help="Run only this tracker/memory reclamation scheme for tracker benchmarks.")
     parser.add_argument("--time",        type=int, default=5,       help="Amount of time each run takes (default: 5)")
     parser.add_argument("--benchmark",   type=str, default=["all"], help="Run specific benchmark(s) (default: all)",
-                            nargs="+", choices=["updates", "sizes", "threads", "trackers", "thread-perc", "upserts", "all"])
+                            cd /home/zkent/deqalloc/benchmarks
+                            
+                            # Verify a flock binary exists
+                            ls ../build/benchmarks/flock | head
+                            
+                            # Run one short flock workload, single allocator, single rideable
+                            LD_PRELOAD=../build/allocators/libdeqalloc.so \
+                              /usr/bin/time -f "%M KB" \
+                              ../build/benchmarks/flock/btree_lck \
+                              -p 8 -u 100 -n 100000 -t 3 -r 1                            cd /home/zkent/deqalloc/benchmarks
+                            
+                            # Verify a flock binary exists
+                            ls ../build/benchmarks/flock | head
+                            
+                            # Run one short flock workload, single allocator, single rideable
+                            LD_PRELOAD=../build/allocators/libdeqalloc.so \
+                              /usr/bin/time -f "%M KB" \
+                              ../build/benchmarks/flock/btree_lck \
+                              -p 8 -u 100 -n 100000 -t 3 -r 1                            nargs="+", choices=["updates", "sizes", "threads", "trackers", "thread-perc", "upserts", "ablation", "all"])
     parser.add_argument("--hugepages",   default=None,              help="Set hugepages setting",
                         choices=["never", "always", "madvise"])
     parser.add_argument("--nohugepages", action='store_true',       help="Do not run hugepages benchmark")

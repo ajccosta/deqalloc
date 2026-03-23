@@ -1,0 +1,20 @@
+Command: run_experiments.py flock --benchmark ablation --nohugepages --output ../timings
+Date: 03-23-2026
+Experiment: flock ablation_localseglist
+Model name:                           Intel(R) Xeon(R) CPU E5-2630 v4 @ 2.20GHz
+Git: 174c003
+allocator versions:
+	jemalloc: 86b72192
+	mesh: 5d9b390
+	mimalloc: 75d69f4a
+	hoard: 1cd9101
+	scalloc: 1a11827
+	tcmalloc: 068dd9e9
+	snmalloc: 3fca4c8
+	lockfree: 915f51b
+	rpmalloc: feb43ae
+	tbbmalloc: e327de0d
+	mimalloc-batchit: da52048
+---
+allocator             update% ds                   key_size   #threads  numa   thread-perc           results
+deqalloc              100     btree_lck            5000       40        False                        [ 

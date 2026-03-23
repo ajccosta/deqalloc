@@ -20,7 +20,7 @@ class DequeHeap : public Super {
 
   private:
 
-#ifndef FLAT_COMBINING
+#ifndef FC_DEQUE
     using deque_t = MemoryStealingDeque<std::tuple<node_t*, node_t*>, 2, 1>;
 #else
     using deque_t = FCDeque<std::tuple<node_t*, node_t*>>;

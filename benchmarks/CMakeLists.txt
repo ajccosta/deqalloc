@@ -43,6 +43,11 @@ add_custom_target(build_setbench
 #build other allocators
 set(ALLOCATOR_LIB_DIR ${CMAKE_BINARY_DIR}/allocators)
 add_custom_target(build_allocators
+  DEPENDS
+    deqalloc
+    deqalloc_localseglist
+    deqalloc_fcdeque
+    deqalloc_localseglist_fcdeque
   COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/build_allocators.sh
   COMMAND ${CMAKE_COMMAND} -E create_symlink
     ${CMAKE_BINARY_DIR}/libdeqalloc.so
@@ -50,6 +55,12 @@ add_custom_target(build_allocators
   COMMAND ${CMAKE_COMMAND} -E create_symlink
     ${CMAKE_BINARY_DIR}/libdeqalloc_localseglist.so
     ${ALLOCATOR_LIB_DIR}/libdeqalloc_localseglist.so
+  COMMAND ${CMAKE_COMMAND} -E create_symlink
+    ${CMAKE_BINARY_DIR}/libdeqalloc_fcdeque.so
+    ${ALLOCATOR_LIB_DIR}/libdeqalloc_fcdeque.so
+  COMMAND ${CMAKE_COMMAND} -E create_symlink
+    ${CMAKE_BINARY_DIR}/libdeqalloc_localseglist_fcdeque.so
+    ${ALLOCATOR_LIB_DIR}/libdeqalloc_localseglist_fcdeque.so
   BYPRODUCTS
     ${ALLOCATOR_LIB_DIR}/libjemalloc.so
     ${ALLOCATOR_LIB_DIR}/libmesh.so

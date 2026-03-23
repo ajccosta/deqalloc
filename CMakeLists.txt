@@ -70,15 +70,29 @@ target_compile_definitions(deqalloc PUBLIC -DNDEBUG -D_REENTRANT=1 ${DEFINES})
 add_library(deqalloc_localseglist SHARED ${ALL_SOURCES})
 target_compile_definitions(deqalloc_localseglist PUBLIC -DNDEBUG -D_REENTRANT=1 -DLOCAL_SEGLIST ${DEFINES})
 
+# FCDeque variants for benchmarking the flat-combining deque against the default work-stealing deque
+add_library(deqalloc_fcdeque SHARED ${ALL_SOURCES})
+target_compile_definitions(deqalloc_fcdeque PUBLIC -DNDEBUG -D_REENTRANT=1 -DFC_DEQUE ${DEFINES})
+
+add_library(deqalloc_localseglist_fcdeque SHARED ${ALL_SOURCES})
+target_compile_definitions(deqalloc_localseglist_fcdeque PUBLIC -DNDEBUG -D_REENTRANT=1 -DLOCAL_SEGLIST -DFC_DEQUE ${DEFINES})
+
 # Let CMake handle platform-specific library settings
 set_target_properties(deqalloc PROPERTIES 
     VERSION 1.0.0
     SOVERSION 1)
 
+set_target_properties(deqalloc_fcdeque PROPERTIES 
+  VERSION 1.0.0
+  SOVERSION 1)
+
 # Add threading support if needed
 find_package(Threads)
 if(Threads_FOUND)
     target_link_libraries(deqalloc Threads::Threads)
+  target_link_libraries(deqalloc_fcdeque Threads::Threads)
+  target_link_libraries(deqalloc_localseglist Threads::Threads)
+  target_link_libraries(deqalloc_localseglist_fcdeque Threads::Threads)
 endif()
 
 #NOTE: Uncomment the following line in case you need to link statically
