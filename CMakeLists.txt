@@ -70,6 +70,9 @@ target_compile_definitions(deqalloc PUBLIC -DNDEBUG -D_REENTRANT=1 ${DEFINES})
 add_library(deqalloc_localseglist SHARED ${ALL_SOURCES})
 target_compile_definitions(deqalloc_localseglist PUBLIC -DNDEBUG -D_REENTRANT=1 -DLOCAL_SEGLIST ${DEFINES})
 
+add_library(deqalloc_genericdeque SHARED ${ALL_SOURCES})
+target_compile_definitions(deqalloc_genericdeque PUBLIC -DNDEBUG -D_REENTRANT=1 -DFLAT_COMBINING ${DEFINES})
+
 # Let CMake handle platform-specific library settings
 set_target_properties(deqalloc PROPERTIES 
     VERSION 1.0.0
