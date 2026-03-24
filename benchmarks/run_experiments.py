@@ -890,7 +890,7 @@ def main():
                         help="Path to setbench benchmark binaries")
     parser.add_argument("--alloc-dir", metavar="DIR",
                         default=os.path.join(script_dir, "../build/allocators"),
-                        help="Path to allocator .so files for flock")
+                        help="Path to allocator .so files")
     parser.add_argument("--runs",        type=int, default=5,       help="Number of runs (default: 5)")
     parser.add_argument("--allocator",  default=["all"], nargs="+", help="Run only specific allocator(s)")
     parser.add_argument("--ds",          default=None,              help="Run only this data structure")
