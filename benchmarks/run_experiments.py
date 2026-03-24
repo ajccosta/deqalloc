@@ -497,9 +497,13 @@ class FlockRunner:
                 print(f"  WARNING: binary not found: {binary}", file=sys.stderr)
                 continue
 
+            current_ld_path = os.environ.get("LD_LIBRARY_PATH", "")
+
             # flock binary accepts -r for multiple runs internally
             half_n = size // 2
             cmd = (
+                f"env "
+                f"LD_LIBRARY_PATH={current_ld_path} "
                 f"PARLAY_NUM_THREADS={cfg.nproc} "
                 f"LD_PRELOAD={lib} "
                 f'/usr/bin/time -f "%M KiloBytes" '
@@ -910,6 +914,15 @@ def main():
        ("scalloc" in flock_cfg.allocators_raw or \
        "scalloc" in sb_cfg.allocators_raw):
         print("scalloc requires sudo\n")
+        exit(-1)
+
+    current_ld_path = os.environ.get("LD_LIBRARY_PATH", "").strip()
+
+    if is_sudo() and not current_ld_path and \
+       ("hoard:numa" in flock_cfg.allocators_raw or \
+       "tcmalloc" in flock_cfg.allocators_raw):
+        print("hoard and tcmalloc require setting the LD lib path. Please run with:")
+        print("\tsudo LD_LIBRARY_PATH=$LD_LIBRARY_PATH ./run_experiments.py ...")
         exit(-1)
 
     flock_runner    = FlockRunner(flock_cfg,  args.flock_dir,    args.alloc_dir, f"{args.output}/flock")

@@ -25,9 +25,8 @@ deqalloc              100     leaftree_lck         5000       192       False   
 deqalloc_localseglist 100     leaftree_lck         5000       192       False                        [ 242.6 243.7 214.0 ] 233.4333, 2072716 KB
 deqalloc              100     skiplist_lck         5000       192       False                        [ 120.3 120.4 120.6 ] 120.4333, 6845632 KB
 deqalloc_localseglist 100     skiplist_lck         5000       192       False                        [ 118.3 118.9 118.0 ] 118.4000, 8707684 KB
-deqalloc              100     arttree_lck          5000       192       False                        [  ] 0.0000, 725764 KB
-# CRASH: arttree_lck alloc=deqalloc u=100 n=5000
-deqalloc_localseglist 100     arttree_lck          5000       192       False                        [  ] 0.0000, 2628768 KB
+deqalloc              100     arttree_lck          5000       192       False                        [ 1.125 1.331 1.36 ] 1.2720, 692636 KB
+deqalloc_localseglist 100     arttree_lck          5000       192       False                        [ 1.107 ] 1.1070, 2754412 KB
 # CRASH: arttree_lck alloc=deqalloc_localseglist u=100 n=5000
 deqalloc              100     list_lck             500        192       False                        [ 38.62 38.62 38.53 ] 38.5900, 631604 KB
 deqalloc_localseglist 100     list_lck             500        192       False                        [ 36.45 37.32 37.34 ] 37.0367, 1930160 KB
