@@ -172,7 +172,7 @@ PAPER_DS_FLOCK = ["skiplist_lck", "leaftree_lck", "hash_block_lck"]
 PAPER_DS_LOCALSEGLIST_FLOCK = ["skiplist_lck", "leaftree_lck", "list_lck"]
 
 #PAPER_DS_SETBENCH = ["guerraoui_ext_bst_ticket", "brown_ext_abtree_lf", "hm_hashtable", "hmlist"]
-PAPER_DS_SETBENCH = ["guerraoui_ext_bst_ticket", "brown_ext_abtree_lf", "hm_hashtable"]
+PAPER_DS_SETBENCH = ["guerraoui_ext_bst_ticket", "brown_ext_abtree_lf", "hmlist"]
 PAPER_TRACKERS_SETBENCH = ["ibr", "debra", "he", "hp", "ebr", "nbr+", "qsbr", "wfe"]
 PAPER_DS_LOCALSEGLIST_SETBENCH = ["guerraoui_ext_bst_ticket", "brown_ext_abtree_lf", "hmlist"]
 
@@ -611,7 +611,10 @@ def plot_geomean(input_dir, suite, experiment, out_dir, fmt):
                 if alloc not in all_values_global:
                     all_values_global[alloc] = []
                 all_values_global[alloc].extend(r["values"])
-            y = stat.geometric_mean(all_values)
+            if len(all_values) > 0:
+                y = stat.geometric_mean(all_values)
+            else:
+                y = 0
             per_struct[alloc] = y
     
         best_performing = max([per_struct[alloc] for alloc in allocs])
@@ -965,7 +968,7 @@ def plot_hugepages(input_dir, suite, experiment, out_dir, fmt):
                     else:
                         relative_ys = []
                         for a, b in zip(ys_nohp, ys_hp):
-                            if b != 0:
+                            if b != 0 and b != None:
                                 relative_ys.append(a / b)
                             else:
                                 relative_ys.append(0)
@@ -1059,7 +1062,9 @@ def plot_ablation(input_dir, suite, experiment, out_dir, fmt):
             style_fig(fig, ax, paper_print)
 
             #override style_fig
-            min_y = ax.dataLim.ymin
+            min_y = min(ax.dataLim.ymin, 1)
+            if math.isnan(min_y) or math.isinf(min_y):
+                min_y = 0
             ax.set_ylim(bottom=min_y * 0.99)
 
             fig.savefig(f"{out_dir}/{write_dir}{experiment}_{ds}.{fmt}",
