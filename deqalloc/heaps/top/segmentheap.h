@@ -163,6 +163,9 @@ class SegmentHeap : public deqalloc::AlignedMmapHeap {
 
       alignas(8) header_t* next_segment = nullptr; //linked list of segments of size sz
       header_t *segment_retire_next = nullptr;
+#ifdef REMOTE_FREE
+      size_t owner_tid;
+#endif
       std::atomic<list_size_t> head; //points to first element in node list
 
       static constexpr size_t num_sz_replicas = 64;
@@ -365,6 +368,9 @@ pushNode_n_retry:
         head.store(h);
         for(int i = 0; i < num_sz_replicas; i++)
           size_threadlocal[i].sz = sz;
+#ifdef REMOTE_FREE
+        owner_tid = thread_id();
+#endif
         //Don't initialize linked list on segment creation, initialize as we go
       }
 
@@ -406,6 +412,11 @@ pushNode_n_retry:
     bool insertSegment(header_t* header, header_t* expected, bool _internal_call) {
       if(!_internal_call) return get_seglist().compare_and_add(&header->next_segment, expected);
       else return get_seglist().add(&header->next_segment);
+    }
+
+  public:
+    static inline size_t getOwner(void *ptr) {
+      return ((header_t *) getBasePointer(ptr))->owner_tid;
     }
 
     static inline void* getBasePointer(void* ptr) {

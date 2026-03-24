@@ -628,6 +628,13 @@ class FlockRunner:
         self.config.allocators_raw = prev_allocs
         self.rf.close()
 
+    def run_ablation_remotefree(self):
+        prev_allocs = self.config.allocators_raw
+        self.config.allocators_raw = ["deqalloc_genericdeque_localseglist", "deqalloc_remotefree"]
+        self.run_sizes("ablation_remotefree")
+        self.config.allocators_raw = prev_allocs
+        self.rf.close()
+
     def run(self):
         b = self.config.args.benchmark
         run_all = "all" in b
@@ -638,7 +645,8 @@ class FlockRunner:
             if run_all or "hugepages"   in b: self.run_hugepages()
         if run_all or "ablation"    in b:
             self.run_ablation_localseglist()
-            self.run_ablation_deque()
+            # self.run_ablation_deque()
+            self.run_ablation_remotefree()
         if run_all or "thread-perc" in b: self.run_thread_perc()
         if run_all or "upserts"     in b: self.run_upserts()
 
@@ -830,6 +838,13 @@ class SetbenchRunner:
         self.config.allocators_raw = prev_allocs
         self.rf.close()
 
+    def run_ablation_remotefree(self):
+        prev_allocs = self.config.allocators_raw
+        self.config.allocators_raw = ["deqalloc_genericdeque_localseglist", "deqalloc_remotefree"]
+        self.run_sizes("ablation_remotefree")
+        self.config.allocators_raw = prev_allocs
+        self.rf.close()
+
     def run(self):
         b = self.config.args.benchmark
         run_all = "all" in b
@@ -842,6 +857,7 @@ class SetbenchRunner:
         if run_all or "ablation"  in b:
             self.run_ablation_localseglist()
             self.run_ablation_deque()
+            self.run_ablation_remotefree()
 
 # ---------------------------------------------------------------------------
 # Main

@@ -64,7 +64,25 @@ class DequeHeap : public Super {
 
     inline void free(node_t* start_node, node_t* end_node) {
       deq_assert(start_node != nullptr && end_node != nullptr);
+#ifdef REMOTE_FREE
+      auto *curr_start = start_node;
+      auto *curr_end = start_node;
+      while (true) {
+        auto *next = curr_end->next;
+        size_t owner_tid = Super::getOwner(curr_end);
+        if (curr_end == end_node || owner_tid != Super::getOwner(next)) {
+          // end of contiguous region
+          deques[owner_tid].push_top({curr_start, curr_end});
+          if (curr_end == end_node)
+            // processed all nodes
+            break;
+          curr_start = next;
+        }
+        curr_end = next;
+      }
+#else
       my_deq().push_bottom({start_node, end_node});
+#endif
     }
 
     inline size_t getSize(void *ptr) {

@@ -47,6 +47,8 @@ add_custom_target(build_allocators
     deqalloc
     deqalloc_localseglist
     deqalloc_genericdeque
+    deqalloc_genericdeque_localseglist
+    deqalloc_remotefree
   COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/build_allocators.sh
   COMMAND ${CMAKE_COMMAND} -E create_symlink
     ${CMAKE_BINARY_DIR}/libdeqalloc.so
@@ -57,6 +59,12 @@ add_custom_target(build_allocators
   COMMAND ${CMAKE_COMMAND} -E create_symlink
     ${CMAKE_BINARY_DIR}/libdeqalloc_genericdeque.so
     ${ALLOCATOR_LIB_DIR}/libdeqalloc_genericdeque.so
+  COMMAND ${CMAKE_COMMAND} -E create_symlink
+    ${CMAKE_BINARY_DIR}/libdeqalloc_genericdeque_localseglist.so
+    ${ALLOCATOR_LIB_DIR}/libdeqalloc_genericdeque_localseglist.so
+  COMMAND ${CMAKE_COMMAND} -E create_symlink
+    ${CMAKE_BINARY_DIR}/libdeqalloc_remotefree.so
+    ${ALLOCATOR_LIB_DIR}/libdeqalloc_remotefree.so
   BYPRODUCTS
     ${ALLOCATOR_LIB_DIR}/libjemalloc.so
     ${ALLOCATOR_LIB_DIR}/libmesh.so
