@@ -1,0 +1,51 @@
+Command: ./run_experiments.py setbench --benchmark ablation --runs 3 --time 3 -o LAROCHETTE_1 --nohugepages
+Date: 03-23-2026
+Experiment: setbench ablation_localseglist
+Model name:                              INTEL(R) XEON(R) PLATINUM 8568Y+
+Git: 9f7faae
+allocator versions:
+	jemalloc: 86b72192
+	mesh: 5d9b390
+	mimalloc: 75d69f4a
+	hoard: 1cd9101
+	scalloc: 1a11827
+	tcmalloc: 068dd9e9
+	snmalloc: 3fca4c8
+	lockfree: 915f51b
+	rpmalloc: feb43ae
+	tbbmalloc: ef6f9b5e
+	mimalloc-batchit: da52048
+---
+allocator             update%    scheme     ds                        key_size   #threads  numa   results
+deqalloc              100        debra      guerraoui_ext_bst_ticket  5000       192       False  [ 270.096432 271.5309 268.781619 ] 270.1363, 5341926 KB
+deqalloc_localseglist 100        debra      guerraoui_ext_bst_ticket  5000       192       False  [ 257.662884 252.267219 258.991106 ] 256.3071, 7939949 KB
+deqalloc              100        debra      brown_ext_abtree_lf       5000       192       False  [ 62.757168 63.360992 64.479227 ] 63.5325, 6352518 KB
+deqalloc_localseglist 100        debra      brown_ext_abtree_lf       5000       192       False  [ 53.850033 64.913649 64.076879 ] 60.9469, 8948270 KB
+deqalloc              100        debra      hm_hashtable              5000       192       False  [ 492.663312 503.208478 494.979017 ] 496.9503, 5332950 KB
+deqalloc_localseglist 100        debra      hm_hashtable              5000       192       False  [ 488.958465 491.503374 486.933405 ] 489.1317, 7511824 KB
+deqalloc              100        debra      hmlist                    500        192       False  [ 22.06013 21.995339 21.745891 ] 21.9338, 5069585 KB
+deqalloc_localseglist 100        debra      hmlist                    500        192       False  [ 19.702983 20.86231 20.779688 ] 20.4483, 7382769 KB
+deqalloc              100        debra      guerraoui_ext_bst_ticket  200000     192       False  [ 250.008151 247.909293 247.620471 ] 248.5126, 5359004 KB
+deqalloc_localseglist 100        debra      guerraoui_ext_bst_ticket  200000     192       False  [ 242.580888 243.987223 243.055599 ] 243.2079, 8110553 KB
+deqalloc              100        debra      brown_ext_abtree_lf       200000     192       False  [ 195.153566 195.633622 192.123635 ] 194.3036, 7644948 KB
+deqalloc_localseglist 100        debra      brown_ext_abtree_lf       200000     192       False  [ 192.302053 192.919494 189.614408 ] 191.6120, 9887124 KB
+deqalloc              100        debra      hm_hashtable              200000     192       False  [ 309.696517 308.911841 309.312092 ] 309.3068, 5246135 KB
+deqalloc_localseglist 100        debra      hm_hashtable              200000     192       False  [ 304.365928 303.997799 304.774633 ] 304.3795, 7523425 KB
+deqalloc              100        debra      hmlist                    2000       192       False  [ 23.995823 23.871425 23.921956 ] 23.9297, 5031382 KB
+deqalloc_localseglist 100        debra      hmlist                    2000       192       False  [ 20.084472 20.071413 17.704692 ] 19.2869, 7387501 KB
+deqalloc              100        debra      guerraoui_ext_bst_ticket  20000000   192       False  [ 138.399565 139.217105 138.924317 ] 138.8470, 6213091 KB
+deqalloc_localseglist 100        debra      guerraoui_ext_bst_ticket  20000000   192       False  [ 129.89582 133.670946 131.970521 ] 131.8458, 9138641 KB
+deqalloc              100        debra      brown_ext_abtree_lf       20000000   192       False  [ 185.782087 180.556924 185.314881 ] 183.8846, 7717868 KB
+deqalloc_localseglist 100        debra      brown_ext_abtree_lf       20000000   192       False  [ 191.059269 187.20476 179.34695 ] 185.8703, 9615400 KB
+deqalloc              100        debra      hm_hashtable              20000000   192       False  [ 8.861939 8.935067 8.568458 ] 8.7885, 5360461 KB
+deqalloc_localseglist 100        debra      hm_hashtable              20000000   192       False  [ 8.369472 9.205806 8.458799 ] 8.6780, 7621840 KB
+deqalloc              100        debra      hmlist                    10000      192       False  [ 9.545731 8.985878 9.543365 ] 9.3583, 5075733 KB
+deqalloc_localseglist 100        debra      hmlist                    10000      192       False  [ 4.815694 4.153047 3.85856 ] 4.2758, 7373953 KB
+deqalloc              100        debra      guerraoui_ext_bst_ticket  200000000  192       False  [ 82.855343 82.747883 81.49946 ] 82.3676, 14613259 KB
+deqalloc_localseglist 100        debra      guerraoui_ext_bst_ticket  200000000  192       False  [ 75.130567 80.593024 79.903486 ] 78.5424, 18074799 KB
+deqalloc              100        debra      brown_ext_abtree_lf       200000000  192       False  [ 156.757821 160.110583 158.351168 ] 158.4065, 11103311 KB
+deqalloc_localseglist 100        debra      brown_ext_abtree_lf       200000000  192       False  [ 155.433836 156.858608 151.212286 ] 154.5016, 13537392 KB
+deqalloc              100        debra      hm_hashtable              100000000  192       False  [ 0.6043 0.589033 0.604395 ] 0.5992, 6546319 KB
+deqalloc_localseglist 100        debra      hm_hashtable              100000000  192       False  [ 0.584115 0.58794 0.596391 ] 0.5895, 8839127 KB
+deqalloc              100        debra      hmlist                    20000      192       False  [ 5.338347 5.326464 5.314052 ] 5.3263, 5095940 KB
+deqalloc_localseglist 100        debra      hmlist                    20000      192       False  [ 1.461286 1.463336 1.65917 ] 1.5279, 7362307 KB

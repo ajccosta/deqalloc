@@ -878,7 +878,7 @@ def main():
     parser.add_argument("--tracker",     default=None,              help="Run only this tracker/memory reclamation scheme for tracker benchmarks.")
     parser.add_argument("--time",        type=int, default=5,       help="Amount of time each run takes (default: 5)")
     parser.add_argument("--benchmark",   type=str, default=["all"], help="Run specific benchmark(s) (default: all)",
-                            nargs="+", choices=["updates", "sizes", "threads", "trackers", "thread-perc", "upserts", "ablation", "all"])
+                            nargs="+", choices=["updates", "sizes", "threads", "trackers", "thread-perc", "upserts", "hugepages", "ablation", "all"])
     parser.add_argument("--hugepages",   default=None,              help="Set hugepages setting",
                         choices=["never", "always", "madvise"])
     parser.add_argument("--nohugepages", action='store_true',       help="Do not run hugepages benchmark")
