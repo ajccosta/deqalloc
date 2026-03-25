@@ -101,11 +101,12 @@ def append_to_csv(file_path, row_data):
 #get percentage of time spent remote freeing
 def get_remote_freeing_perc(results, allocator):
     if "jemalloc" in allocator:
-        return results["je_tcache_bin_flush_small"]["children"]
+        func_name = "je_tcache_bin_flush_small"
     elif "mimalloc" in allocator:
-        return results["mi_free_block_delayed_mt"]["children"]
+        func_name = "mi_free_block_delayed_mt"
     else:
         assert(False)
+    return results.get(func_name, {}).get("children", "0%")
 
 # ---------------------------------------------------------------------------
 # Configuration
@@ -120,10 +121,25 @@ class PerfConfig:
     ])
     
     trackers: List[str] = field(default_factory=lambda: [
-        "debra", "debra_df", "2geibr", "2geibr_df", "he", "he_df", 
-        "ibr_hp", "ibr_hp_df", "ibr_rcu", "ibr_rcu_df", "nbr", 
-        "nbr_df", "nbrplus", "nbrplus_df", "qsbr", "qsbr_df", 
-        "token4", "wfe", "wfe_df"
+        "debra",
+        "debra_df",
+        "2geibr",
+        "2geibr_df",
+        "he",
+        "he_df",
+        "ibr_hp",
+        "ibr_hp_df",
+        "ibr_rcu",
+        "ibr_rcu_df",
+        "nbr",
+        "nbr_df",
+        "nbrplus",
+        "nbrplus_df",
+        "qsbr",
+        "qsbr_df",
+        "token4",
+        "wfe",
+        "wfe_df"
     ])
 
     rideables_sizes: List[Tuple[str, int]] = field(default_factory=lambda: [

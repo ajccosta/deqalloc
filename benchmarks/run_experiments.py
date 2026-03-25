@@ -565,8 +565,8 @@ class FlockRunner:
         self.rf.close()
 
     #vary number if threads
-    def run_threads(self):
-        self.new_results_file("threads")
+    def run_threads(self, experiment="threads"):
+        self.new_results_file(experiment)
         for rideable in self.config.rideables:
             for nthreads in self.config.thread_counts:
                 self.run_all_allocs(
@@ -617,7 +617,8 @@ class FlockRunner:
     def run_ablation_localseglist(self):
         prev_allocs = self.config.allocators_raw
         self.config.allocators_raw = ["deqalloc", "deqalloc_localseglist"]
-        self.run_sizes("ablation_localseglist")
+        self.run_sizes("ablation_localseglist_sizes")
+        self.run_threads("ablation_localseglist_threads")
         self.config.allocators_raw = prev_allocs
         self.rf.close()
 
@@ -785,8 +786,8 @@ class SetbenchRunner:
         self.rf.close()
 
     #vary number if threads
-    def run_threads(self):
-        self.new_results_file("threads")
+    def run_threads(self, experiment="threads"):
+        self.new_results_file(experiment)
         for rideable in self.config.rideables:
             for nthreads in self.config.thread_counts:
                 self.run_all_allocs(
@@ -827,7 +828,8 @@ class SetbenchRunner:
     def run_ablation_localseglist(self):
         prev_allocs = self.config.allocators_raw
         self.config.allocators_raw = ["deqalloc", "deqalloc_localseglist"]
-        self.run_sizes("ablation_localseglist")
+        self.run_sizes("ablation_localseglist_sizes")
+        self.run_threads("ablation_localseglist_threads")
         self.config.allocators_raw = prev_allocs
         self.rf.close()
 

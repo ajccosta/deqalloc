@@ -1,0 +1,27 @@
+allocator,update%,ds,tracker,key_size,#threads,Numa,remote freeing (%)
+mimalloc,100,hmlist,ibr_hp,2000,192,False,0
+jemalloc,100,hmlist,ibr_hp,2000,192,True,0
+mimalloc,100,hmlist,ibr_hp_df,2000,192,False,0
+jemalloc,100,hmlist,ibr_hp_df,2000,192,True,0
+mimalloc,100,hmlist,ibr_rcu,2000,192,False,0.09%
+jemalloc,100,hmlist,ibr_rcu,2000,192,True,0.18%
+mimalloc,100,hmlist,ibr_rcu_df,2000,192,False,0.26%
+jemalloc,100,hmlist,ibr_rcu_df,2000,192,True,0.13%
+mimalloc,100,hmlist,nbr,2000,192,False,0.27%
+jemalloc,100,hmlist,nbr,2000,192,True,0.21%
+mimalloc,100,hmlist,nbr_df,2000,192,False,0.37%
+jemalloc,100,hmlist,nbr_df,2000,192,True,0.29%
+mimalloc,100,hmlist,nbrplus,2000,192,False,0.27%
+jemalloc,100,hmlist,nbrplus,2000,192,True,0.22%
+mimalloc,100,hmlist,nbrplus_df,2000,192,False,0.42%
+jemalloc,100,hmlist,nbrplus_df,2000,192,True,0.25%
+mimalloc,100,hmlist,qsbr,2000,192,False,0.09%
+jemalloc,100,hmlist,qsbr,2000,192,True,0.19%
+mimalloc,100,hmlist,qsbr_df,2000,192,False,0.27%
+jemalloc,100,hmlist,qsbr_df,2000,192,True,0.14%
+mimalloc,100,hmlist,token4,2000,192,False,0.29%
+jemalloc,100,hmlist,token4,2000,192,True,0.07%
+mimalloc,100,hmlist,wfe,2000,192,False,0.17%
+jemalloc,100,hmlist,wfe,2000,192,True,0.07%
+mimalloc,100,hmlist,wfe_df,2000,192,False,0.20%
+jemalloc,100,hmlist,wfe_df,2000,192,True,0.06%
