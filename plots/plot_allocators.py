@@ -10,6 +10,7 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
+from matplotlib.lines import Line2D
 from matplotlib.colors import LinearSegmentedColormap
 from collections import defaultdict
 import argparse
@@ -149,10 +150,30 @@ ALLOC_HATCHES = {
 
 scale = 1.5
 
+
+linestyle_tuple = {
+     'loosely dotted'        :  (0, (1, 10)),
+     'dotted'                :  (0, (1, 5)),
+     'densely dotted'        :  (0, (1, 1)),
+
+     'long dash with offset' :  (5, (10, 3)),
+     'loosely dashed'        :  (0, (5, 10)),
+     'dashed'                :  (0, (5, 5)),
+     'densely dashed'        :  (0, (5, 1)),
+
+     'loosely dashdotted'    :  (0, (3, 10, 1, 10)),
+     'dashdotted'            :  (0, (3, 5, 1, 5)),
+     'densely dashdotted'    :  (0, (3, 1, 1, 1)),
+
+     'dashdotdotted'         :  (0, (3, 5, 1, 5, 1, 5)),
+     'loosely dashdotdotted' :  (0, (3, 10, 1, 10, 1, 10)),
+     'densely dashdotdotted' :  (0, (3, 1, 1, 1, 1, 1))
+}
+
 FIG_CONFIGS = {
     "figsize": (2.5, 1.5),
     "linewidth": 1.4,
-    "markersize": 3,
+    "markersize": 4,
     "xlabel_fontsize": scale * 7.5,
     "ylabel_fontsize": scale * 6.0,
     "xtick_fontsize":  scale * 6.5,
@@ -164,8 +185,19 @@ FIG_CONFIGS = {
     "pad_inches": 0.015,
     "xtick_end_margin": 0.1,
     "bar_linewidth": 0.7,
-    "linestyle": 'dashed',
+    "linestyle": {
+        "deqalloc":  linestyle_tuple["densely dashed"],
+        "mimalloc":  linestyle_tuple["dashed"],
+        "jemalloc":  linestyle_tuple["long dash with offset"],
+        "snmalloc":  linestyle_tuple["densely dashdotdotted"],
+        "hoard":     linestyle_tuple["densely dashdotted"],
+        "tcmalloc":  linestyle_tuple["dashdotted"],
+        "tbbmalloc": linestyle_tuple["densely dotted"],
+        "lockfree":  linestyle_tuple["loosely dashed"],
+        "rpmalloc":  linestyle_tuple["loosely dashdotted"],
+    },
 }
+
 
 #which data structures/trackers to show for the paper for the varying plots
 PAPER_DS_FLOCK = ["skiplist_lck", "leaftree_lck", "hash_block_lck"]
@@ -193,6 +225,8 @@ def style_fig(fig, ax, paper_print=True):
     ax.title.set_fontweight('bold')
 
     fig.patch.set_edgecolor('none')
+
+    #ax.tick_params(axis='y', labelrotation=90)
 
     ax.set_ylim(bottom=0)
     ax.grid(linestyle='--')
@@ -248,10 +282,9 @@ def parse_flock(path):
                     reclamation="debra", #hacky way to integrate with other suites
                 )
                 rows.append(entry)
-                if abs(mean - gmean) > 0.5 * 10**1:
+                if mean != 0 and gmean != 0 and \
+                    abs(mean - gmean) / max(gmean, mean) > 0.05:
                     print("Reasonable difference in gmean", entry)
-                if abs(mean - float(m.group(9))) > 10**-3:
-                    print(f"Error in mean checksum. Given: {float(m.group(9))}, Calculated: {mean}")
     return rows, crashes
 
 def parse_setbench(path):
@@ -290,10 +323,9 @@ def parse_setbench(path):
                     mem_kb=float(m.group(10)),
                 )
                 rows.append(entry)
-                if abs(mean - gmean) > 0.5 * 10**1:
+                if mean != 0 and gmean != 0 and \
+                    abs(mean - gmean) / max(gmean, mean) > 0.05:
                     print("Reasonable difference in gmean", entry)
-                if abs(mean - float(m.group(9))) > 10**-3:
-                    print(f"Error in mean checksum. Given: {float(m.group(9))}, Calculated: {mean}")
     return rows, crashes
 
 # -- Helpers ------------------------------------------------------------------
@@ -437,7 +469,7 @@ def plot_size(input_dir, suite, experiment, out_dir, fmt):
                         color=ALLOC_PALETTE.get(alloc),
                         marker=ALLOC_MARKERS.get(alloc),
                         markersize=FIG_CONFIGS["markersize"], 
-                        linestyle=FIG_CONFIGS["linestyle"],
+                        linestyle=FIG_CONFIGS["linestyle"].get(alloc),
                         zorder=ALLOC_ZORDER.get(alloc))
 
             xlabels = get_nice_scinot_labels(sizes)
@@ -489,7 +521,7 @@ def plot_update(input_dir, suite, experiment, out_dir, fmt):
                         color=ALLOC_PALETTE.get(alloc),
                         marker=ALLOC_MARKERS.get(alloc),
                         markersize=FIG_CONFIGS["markersize"], 
-                        linestyle=FIG_CONFIGS["linestyle"],
+                        linestyle=FIG_CONFIGS["linestyle"].get(alloc),
                         zorder=ALLOC_ZORDER.get(alloc))
 
             xlabels = updates
@@ -547,7 +579,7 @@ def plot_threads(input_dir, suite, experiment, out_dir, fmt):
                         color=ALLOC_PALETTE.get(alloc),
                         marker=ALLOC_MARKERS.get(alloc),
                         markersize=FIG_CONFIGS["markersize"], 
-                        linestyle=FIG_CONFIGS["linestyle"],
+                        linestyle=FIG_CONFIGS["linestyle"].get(alloc),
                         zorder=ALLOC_ZORDER.get(alloc))
 
             xlabels = threads
@@ -700,7 +732,7 @@ def plot_geomean(input_dir, suite, experiment, out_dir, fmt):
     #ax.get_legend().get_frame().set_linewidth(0.8)
 
     if suite == SUITES[0]:
-        ax.set_ylabel("Geomean Throughput (Mops/s)")
+        ax.set_ylabel("Normalized Geomean\nThroughput (Mops/s)")
         current_x, current_y = ax.yaxis.label.get_position()
         ax.yaxis.set_label_coords(current_x-0.075, 0.36)
     else:
@@ -710,7 +742,7 @@ def plot_geomean(input_dir, suite, experiment, out_dir, fmt):
 
     #override some style_fig
     ax.grid(visible=False)
-    ax.yaxis.label.set_fontsize(FIG_CONFIGS["ylabel_fontsize"]-3.7)
+    ax.yaxis.label.set_fontsize(FIG_CONFIGS["ylabel_fontsize"]-2.7)
     ax.xaxis.label.set_fontsize(FIG_CONFIGS["xlabel_fontsize"]-4.5)
     ax.tick_params(axis='y', labelsize=FIG_CONFIGS["ytick_fontsize"]-3.5)
 
@@ -772,7 +804,8 @@ def plot_trackers(input_dir, suite, experiment, out_dir, fmt):
             seen_allocs.add(alloc)
 
             offset = group_start + j * (bar_width + intra_group_gap)
-            y = per_struct[alloc] / best_performing
+            #y = per_struct[alloc] / best_performing
+            y = per_struct[alloc]
 
             bars.append((
                     ax.bar(offset,
@@ -791,7 +824,7 @@ def plot_trackers(input_dir, suite, experiment, out_dir, fmt):
             for b in bar:
                 ax.text(
                     b.get_x() + b.get_width() / 2,
-                    b.get_height()*1.015+0.01,
+                    b.get_height()*1.015+0.015,
                     f'{ys:.1f}',
                     ha='center',
                     va='bottom',
@@ -819,8 +852,10 @@ def plot_trackers(input_dir, suite, experiment, out_dir, fmt):
     margin = bar_width / 2 + bar_width * inter_group_gap
     ax.set_xlim(first_bar_center - margin, last_bar_center + margin)
 
-    ax.set_ylim(0, 1.26)
-    ax.set_yticks(np.arange(0, 1.1, 0.2))
+    #ax.set_ylim(0, 1.26)
+    #ax.set_yticks(np.arange(0, 1.1, 0.2))
+    ax.set_ylim(0, ax.dataLim.ymax * 1.35)
+    
 
     plt.xticks([])
     ax.set_xlabel("Reclamation Scheme", labelpad=15)
@@ -848,8 +883,8 @@ def plot_trackers(input_dir, suite, experiment, out_dir, fmt):
 
     #override some style_fig
     ax.grid(visible=False)
-    ax.yaxis.label.set_fontsize(FIG_CONFIGS["ylabel_fontsize"]-1.5)
-    ax.xaxis.label.set_fontsize(FIG_CONFIGS["xlabel_fontsize"]-1.5)
+    ax.yaxis.label.set_fontsize(FIG_CONFIGS["ylabel_fontsize"]-2.7)
+    ax.xaxis.label.set_fontsize(FIG_CONFIGS["xlabel_fontsize"]-2.5)
     ax.tick_params(axis='y', labelsize=FIG_CONFIGS["ytick_fontsize"]-1)
 
     fig.savefig(f"{out_dir}/paper/trackers.{fmt}",
@@ -887,7 +922,7 @@ def plot_memory(input_dir, suite, experiment, out_dir, fmt):
                         color=ALLOC_PALETTE.get(alloc),
                         marker=ALLOC_MARKERS.get(alloc),
                         markersize=FIG_CONFIGS["markersize"], 
-                        linestyle=FIG_CONFIGS["linestyle"],
+                        linestyle=FIG_CONFIGS["linestyle"].get(alloc),
                         zorder=ALLOC_ZORDER.get(alloc))
 
             xlabels = get_nice_scinot_labels(sizes)
@@ -938,6 +973,8 @@ def plot_hugepages(input_dir, suite, experiment, out_dir, fmt):
                 sizes  = sorted(set(r["key_size"] for r in nohp_ds_rows))
                 x_positions = range(len(sizes))
 
+                min_relative_y = 20000
+
                 for alloc in allocs:
                     pts_nohp = {r["key_size"]: r["gmean"] for r in nohp_ds_rows if r["allocator"] == alloc}
                     ys_nohp = [pts_nohp.get(s, None) for s in sizes]
@@ -953,7 +990,7 @@ def plot_hugepages(input_dir, suite, experiment, out_dir, fmt):
                                 color=ALLOC_PALETTE.get(alloc),
                                 marker=ALLOC_MARKERS.get(alloc),
                                 markersize=FIG_CONFIGS["markersize"], 
-                                linestyle=FIG_CONFIGS["linestyle"],
+                                linestyle=FIG_CONFIGS["linestyle"].get(alloc),
                                 zorder=ALLOC_ZORDER.get(alloc))
 
                         ax.plot(x_positions,
@@ -969,9 +1006,13 @@ def plot_hugepages(input_dir, suite, experiment, out_dir, fmt):
                         relative_ys = []
                         for a, b in zip(ys_nohp, ys_hp):
                             if b != 0 and b != None:
-                                relative_ys.append(a / b)
+                                rel = a / b
+                                relative_ys.append(rel)
+                                min_relative_y=min(min_relative_y, rel)
                             else:
                                 relative_ys.append(0)
+
+
 
                         ax.plot(x_positions,
                                 relative_ys,
@@ -980,7 +1021,7 @@ def plot_hugepages(input_dir, suite, experiment, out_dir, fmt):
                                 color=ALLOC_PALETTE.get(alloc),
                                 marker=ALLOC_MARKERS.get(alloc),
                                 markersize=FIG_CONFIGS["markersize"], 
-                                linestyle=FIG_CONFIGS["linestyle"],
+                                linestyle=FIG_CONFIGS["linestyle"].get(alloc),
                                 zorder=ALLOC_ZORDER.get(alloc))
 
                 xlabels = get_nice_scinot_labels(sizes)
@@ -995,6 +1036,10 @@ def plot_hugepages(input_dir, suite, experiment, out_dir, fmt):
                     ylabel.set_y(ylabel.get_position()[1] - 0.05)
 
                 style_fig(fig, ax, paper_print)
+
+                if relative:
+                    ax.set_ylim(bottom=min_relative_y * 0.98)
+
                 fig.savefig(f"{out_dir}/{write_dir}hugepages{'_relative' if relative else ''}_{ds}.{fmt}",
                     dpi=FIG_CONFIGS["dpi"],
                     bbox_inches="tight",
@@ -1045,7 +1090,7 @@ def plot_ablation(input_dir, suite, experiment, out_dir, fmt):
                         color=ALLOC_PALETTE.get(alloc),
                         marker=ALLOC_MARKERS.get(alloc),
                         markersize=FIG_CONFIGS["markersize"], 
-                        linestyle=FIG_CONFIGS["linestyle"],
+                        linestyle=FIG_CONFIGS["linestyle"].get(alloc, "--"),
                         zorder=ALLOC_ZORDER.get(alloc))
 
             xlabels = get_nice_scinot_labels(sizes)
@@ -1102,6 +1147,52 @@ def plot_temp_and_freq(file, out_dir, fmt):
     plt.title('Device Temperature and Frequency over Time', fontsize=14, pad=15)
     fig.tight_layout()
     fig.savefig(f"{out_dir}/temperature.{fmt}")
+
+
+
+
+def generate_legend(allocs, out_path, fmt):
+    """
+    Generates a standalone legend where labels sit directly above their lines/markers.
+    Bypasses standard matplotlib legend logic for custom coordinate placement.
+    """
+    # 1. Create a blank figure.
+    # The width scales dynamically with the number of allocators (e.g., 1.5 inches per item)
+    fig, ax = plt.subplots(figsize=(len(allocs) * 1, 0.5))
+
+    # 2. Keep the bounding box, but hide the internal graph ticks
+    ax.set_xticks([])
+    ax.set_yticks([])
+    ax.set_xlim(0, 1)
+    ax.set_ylim(0, 1)
+
+    # 3. Calculate evenly spaced X coordinates between 5% and 95% of the box width
+    if len(allocs) > 1:
+        xs = [0.05 + i * (0.90 / (len(allocs) - 1)) for i in range(len(allocs))]
+    else:
+        xs = [0.5] # Center if there is only one allocator
+
+    # 4. Draw the items directly onto the canvas
+    for x, alloc in zip(xs, allocs):
+        # Draw the text label in the upper half (y=0.65)
+        ax.text(x, 0.65, alloc, ha='center', va='center')
+
+        # Draw the line and marker directly below the text (y=0.35)
+        line_radius = 0.03  # Determines how wide the horizontal line segment is
+        ax.plot([x - line_radius, x + line_radius], [0.35, 0.35],
+                color=ALLOC_PALETTE.get(alloc),
+                linewidth=FIG_CONFIGS.get("linewidth"),
+                marker=ALLOC_MARKERS.get(alloc),
+                markersize=FIG_CONFIGS.get("markersize"),
+                linestyle=FIG_CONFIGS.get("linestyle").get(alloc),
+                clip_on=False)
+
+    # Save the custom legend
+    fig.savefig(f"{out_path}.{fmt}",
+                dpi=FIG_CONFIGS.get("dpi", 300),
+                bbox_inches="tight",
+                pad_inches=0.05) # Keeps a slight margin inside the box
+    plt.close(fig)
 
 
 # -- Main ----------------------------------------------------------------------
@@ -1168,6 +1259,8 @@ def main():
     if args.benchmark == "all" and do_all or "geomean" in args.plots:
         paper_ds_list = [ f"{args.output_dir}/{s}/paper/geomean.{args.format}" for s in SUITES ] 
         merge_pdfs_horizontally(paper_ds_list, f"{args.output_dir}/joined_geomean.{args.format}")
+
+    generate_legend(ALLOCS, f"{args.output_dir}/legend", args.format)
 
 if __name__ == "__main__":
     main()
