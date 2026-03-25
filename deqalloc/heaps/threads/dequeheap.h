@@ -83,31 +83,78 @@ class DequeHeap : public Super {
     inline void free(node_t* start_node, node_t* end_node) {
       deq_assert(start_node != nullptr && end_node != nullptr);
 #ifdef REMOTE_FREE
-      auto *curr_start = start_node;
-      auto *curr_end = start_node;
-      size_t len = 1;
+      const size_t thread_count = num_threads();
+
+      // size_t actual_length = 1;
+      // auto *node = start_node;
+      // while (node != end_node) {
+      //   actual_length++;
+      //   node = node->next;
+      // }
+
+      // heads[tid] is the head of the sublist with owner `tid`
+      std::array<node_t *, max_threads> heads;
+      heads.fill(nullptr);
+
+      // tails[tid] is the tail of the sublist with owner `tid`
+      std::array<node_t *, max_threads> tails;
+
+      // lengths[tid] is the length of the sublist with owner `tid`
+      std::array<size_t, max_threads> lengths;
+
+      // Successor of the last node
+      auto *succ = end_node->next;
+
+      // Points to node being traversed
+      auto *node = start_node;
       while (true) {
-        auto *next = curr_end->next;
-        size_t owner_tid = Super::getOwner(curr_end);
-        if (curr_end == end_node || owner_tid != Super::getOwner(next)) {
-          // end of contiguous region
-          if (owner_tid == thread_id()) {
-            // push to local deque
-            my_deq().push_bottom({curr_start, curr_end, len});
-          } else {
-            // push to remote deque
-            deques[owner_tid].push_top({curr_start, curr_end, len});
-          }
-          if (curr_end == end_node)
-            // processed all nodes
-            break;
-          curr_start = next;
-          len = 1;
+        size_t owner_tid = Super::getOwner(node);
+        if (heads[owner_tid] == nullptr) {
+          // first node with owner
+          lengths[owner_tid] = 1;
+          heads[owner_tid] = node;
         } else {
-          len++;
+          lengths[owner_tid]++;
+          tails[owner_tid]->next = node;
         }
-        curr_end = next;
+        tails[owner_tid] = node;
+        if (node == end_node)
+          break;
+        node = node->next;
       }
+      // tid of owner of start node
+      size_t start_tid = Super::getOwner(start_node);
+      // Now permute nodes in list to group them by owner
+      // Running tail of permuted list
+      // Have to start with the group owned by the owner of start_node
+      // Note that heads[start_tid] == start_node
+      auto *tail = tails[start_tid];
+      for (size_t tid = 0; tid < thread_count; tid++) {
+        // Already have placed list owned by `start_id`
+        if (tid == start_tid || heads[tid] == nullptr) continue;
+        // Append the list owned by tid
+        tail->next = heads[tid];
+        tail = tails[tid];
+      }
+      // Point the successor of the tail of the last sublist to the
+      // successor of the end_node
+      tail->next = succ;
+      for (size_t tid = 0; tid < thread_count; tid++) {
+        if (heads[tid] == nullptr)
+          continue;
+        if (tid == thread_id()) {
+          // Owned by this thread
+          my_deq().push_bottom({heads[tid], tails[tid], lengths[tid]}, false);
+        } else {
+          // Owner by another thread
+          deques[tid].push_top({heads[tid], tails[tid], lengths[tid]}, false);
+        }
+      }
+      for (size_t tid = 0; tid < thread_count; tid++) {
+        if (heads[tid])
+          deques[tid].wait();
+      }
+      // std::abort();
 #else
       my_deq().push_bottom({start_node, end_node});
 #endif

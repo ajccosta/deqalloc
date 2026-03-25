@@ -49,14 +49,27 @@ public:
     threadRequests(MaxThreads, Allocator<Request>(heap))
   {}
 
-  void push_back(T value) {
+  void push_back(T value, bool block = true) {
     threadRequests[thread_id()].set(value, Request::PushBack);
-    wait();
+    if (block)
+      wait();
   }
 
-  void push_front(T value) {
+  void push_front(T value, bool block = true) {
     threadRequests[thread_id()].set(value, Request::PushFront);
-    wait();
+    if (block)
+      wait();
+  }
+
+  void wait() {
+    size_t tid = thread_id();
+    std::unique_lock<std::mutex> lock(mutex, std::defer_lock);
+    while (threadRequests[tid].isPending()) {
+      if (lock.try_lock()) {
+        combine();
+        return;
+      }
+    }
   }
 
   std::optional<T> pop_back() {
@@ -77,16 +90,16 @@ public:
     return {pop_front(), false};
   }
 
-  void push_top(T val) {
-    push_front(val);
+  void push_top(T val, bool block = true) {
+    push_front(val, block);
   }
 
   auto pop_bottom() {
     return pop_back();
   }
 
-  void push_bottom(T val) {
-    push_back(val);
+  void push_bottom(T val, bool block = true) {
+    push_back(val, block);
   }
 
 private:
@@ -204,17 +217,6 @@ private:
         case Request::Complete:
           // do nothing
           break;
-      }
-    }
-  }
-
-  void wait() {
-    size_t tid = thread_id();
-    std::unique_lock<std::mutex> lock(mutex, std::defer_lock);
-    while (threadRequests[tid].isPending()) {
-      if (lock.try_lock()) {
-        combine();
-        return;
       }
     }
   }
