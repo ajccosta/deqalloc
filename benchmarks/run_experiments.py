@@ -16,6 +16,28 @@ from typing import List, Optional, Tuple, Dict
 # ---------------------------------------------------------------------------
 
 # ---------------------------------------------------------------------------
+# Checkpoint Manager
+# ---------------------------------------------------------------------------
+
+class CheckpointManager:
+    """Manages an auxiliary file to track completed benchmark runs."""
+    def __init__(self, filepath: str):
+        self.filepath = filepath
+        self.completed = set()
+        if os.path.exists(filepath):
+            with open(filepath, 'r') as f:
+                for line in f:
+                    self.completed.add(line.strip())
+
+    def is_done(self, signature: str) -> bool:
+        return signature in self.completed
+
+    def mark_done(self, signature: str):
+        self.completed.add(signature)
+        with open(self.filepath, 'a') as f:
+            f.write(signature + '\n')
+
+# ---------------------------------------------------------------------------
 # Benchmark runner helpers
 # ---------------------------------------------------------------------------
 
@@ -361,7 +383,7 @@ class SetbenchConfig:
 
     def __post_init__(self):
         self.runs = self.args.runs
-        self.ttrial_time_secrial_time_sec = self.args.time * 1000
+        self.trial_time_ms = self.args.time * 1000
         if self.args.hugepages:
             self.hugepages = self.args.hugepages
         if self.args.tracker:
@@ -401,8 +423,13 @@ def find_allocator_lib(alloc_dir: str, name: str) -> Optional[str]:
 
 class ResultsFile:
     def __init__(self, path: str, alloc_dir: str, experiment: str):
-        today = datetime.now().strftime("%m-%d-%Y")
+        self.buffer = ''
+        file_exists = os.path.exists(path)
         self.f = open(path, "a")
+        if file_exists:
+            return
+        #continue execution, dont write header again
+        today = datetime.now().strftime("%m-%d-%Y")
         self.f.write(f"Command: {' '.join(sys.argv)}\n")
         self.f.write(f"Date: {today}\n")
         self.f.write(f"Experiment: {experiment}\n")
@@ -434,9 +461,13 @@ class ResultsFile:
         self.f.flush()
 
     def write(self, line: str):
-        self.f.write(line)
-        self.f.flush()
+        self.buffer += line
         print(line, end="", flush=True)
+
+    def flush(self):
+        self.f.write(self.buffer)
+        self.buffer = ''
+        self.f.flush()
 
     def close(self):
         self.f.close()
@@ -458,6 +489,10 @@ class FlockRunner:
         self.fmt = "{:<21} {:<7} {:<20} {:<10} {:<9} {:<6} {:<21} {}"
         self.header = self.fmt.format("allocator", "update%", "ds", "key_size", "#threads", "numa", "thread-perc", "results")
         self.path = self._output_path("flock")
+        
+        # Checkpoint manager to resume aborted runs
+        self.checkpoint = CheckpointManager(f"{output_dir}/.flock_checkpoint.log")
+        self.current_experiment = "unknown"
 
     def _output_path(self, name: str) -> str:
         today   = datetime.now().strftime("%m-%d-%Y")
@@ -483,6 +518,13 @@ class FlockRunner:
         cfg = self.config
         for raw_alloc in cfg.allocators_raw:
             alloc, use_numa, _ = parse_allocator(raw_alloc)
+            
+            # --- CHECKPOINT SIGNATURE ---
+            sig = f"{self.current_experiment}|{alloc}|{rideable}|{size}|{update_perc}|{nthreads}|{use_numa}|{add_args}"
+            if self.checkpoint.is_done(sig):
+                print(f"  [Skipping completed run] {sig}")
+                continue
+
             lib = find_allocator_lib(self.alloc_dir, alloc)
             if lib is None:
                 print(f"  WARNING: allocator lib not found: {alloc}", file=sys.stderr)
@@ -547,11 +589,20 @@ class FlockRunner:
 
             if status != "ok":
                 self.rf.write(f"# {status.upper()}: {rideable} alloc={alloc} u={update_perc} n={size}\n")
+            
+            # --- MARK CHECKPOINT ---
+            self.checkpoint.mark_done(sig)
+            self.rf.flush()
 
     def new_results_file(self, name: str):
         print(f"Starting {name} experiment")
-        self.rf = ResultsFile(f"{self.output_dir}/{name}", self.alloc_dir, f"flock {name}")
-        self.rf.write(self.header + "\n")
+        self.current_experiment = name
+        new_file = f"{self.output_dir}/{name}"
+        new_file_exists = os.path.exists(new_file)
+        self.rf = ResultsFile(new_file, self.alloc_dir, f"flock {name}")
+        if not new_file_exists:
+            self.rf.write(self.header + "\n")
+            self.rf.flush()
 
     #vary update%
     def run_updates(self):
@@ -669,6 +720,10 @@ class SetbenchRunner:
         self.header = self.fmt.format("allocator", "update%", "scheme", "ds", "key_size", "#threads", "numa", "results")
         self.path = self._output_path("setbench")
 
+        # Checkpoint manager to resume aborted runs
+        self.checkpoint = CheckpointManager(f"{output_dir}/.setbench_checkpoint.log")
+        self.current_experiment = "unknown"
+
     def _output_path(self, name: str) -> str:
         today   = datetime.now().strftime("%m-%d-%Y")
         machine = get_machine_info()
@@ -699,6 +754,12 @@ class SetbenchRunner:
             alloc, use_numa, use_df = parse_allocator(raw_alloc)
             df_suffix = "_df" if use_df else ""
             scheme_label = f"{tracker}{df_suffix}"
+
+            # --- CHECKPOINT SIGNATURE ---
+            sig = f"{self.current_experiment}|{alloc}|{rideable}|{size}|{update_perc}|{nthreads}|{use_numa}|{scheme_label}"
+            if self.checkpoint.is_done(sig):
+                print(f"  [Skipping completed run] {sig}")
+                continue
 
             binary = self._binary(rideable, tracker, use_df)
             if binary is None:
@@ -768,11 +829,20 @@ class SetbenchRunner:
                     f"# {last_status.upper()}: {rideable} "
                     f"tracker={scheme_label} alloc={alloc} u={update_perc} k={size}\n"
                 )
+            
+            # --- MARK CHECKPOINT ---
+            self.checkpoint.mark_done(sig)
+            self.rf.flush()
 
     def new_results_file(self, name: str):
         print(f"Starting {name} experiment")
-        self.rf = ResultsFile(f"{self.output_dir}/{name}", self.alloc_dir, f"setbench {name}")
-        self.rf.write(self.header + "\n")
+        self.current_experiment = name
+        new_file = f"{self.output_dir}/{name}"
+        new_file_exists = os.path.exists(new_file)
+        self.rf = ResultsFile(new_file, self.alloc_dir, f"setbench {name}")
+        if not new_file_exists:
+            self.rf.write(self.header + "\n")
+            self.rf.flush()
 
     #vary update%
     def run_updates(self):
