@@ -44,13 +44,8 @@ class ThreadLocalStack : public Super {
     inline void* malloc(size_t sz, size_t list_length) {
       thread_state& ts = get_thread_state();
       if(ts.sz == 0) {
-#ifndef REMOTE_FREE
         auto [start_node, end_node] = Super::malloc(sz, list_length);
         ts.sz = list_length;
-#else
-        auto [start_node, end_node, len] = Super::malloc(sz, list_length);
-        ts.sz = len;
-#endif 
         ts.head = start_node;
         ts.tail = end_node;
         ts.mid = nullptr;
@@ -68,7 +63,11 @@ class ThreadLocalStack : public Super {
       } else if(ts.sz == list_length+1) {
         ts.mid = ts.head;
       } else if(ts.sz == 2*list_length) {
+#ifdef REMOTE_FREE
+        Super::free(ts.mid->next, ts.tail, list_length);
+#else
         Super::free(ts.mid->next, ts.tail);
+#endif
         ts.tail = ts.mid;
         ts.mid->next = nullptr;
         ts.sz = list_length;

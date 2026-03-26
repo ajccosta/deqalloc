@@ -3,6 +3,7 @@
 
 #include <optional>
 #include <atomic>
+// #include <bitset>
 
 #include "deqalloc/heaps/top/segmentheap.h"
 #include "deqalloc/threads/structures/memorystealingdeque.h"
@@ -22,8 +23,6 @@ class DequeHeap : public Super {
 
 #ifndef FC_DEQUE
     using deque_t = MemoryStealingDeque<std::tuple<node_t*, node_t*>, 2, 1>;
-#elif defined(REMOTE_FREE)
-    using deque_t = FCDeque<std::tuple<node_t*, node_t*, size_t>>;
 #else
     using deque_t = FCDeque<std::tuple<node_t*, node_t*>>;
 #endif
@@ -33,21 +32,23 @@ class DequeHeap : public Super {
     inline deque_t& my_deq() { return deques[thread_id()]; }
     inline deque_t& random_deq(size_t n_threads) { return deques[my_rand.rand() % n_threads]; }
 
+    struct FreedSegment {
+      node_t *head = nullptr;
+      node_t *tail = nullptr;
+      size_t len = 0;
+    };
+
+    std::array<std::array<FreedSegment, max_threads>, max_threads> remote_free_lists;
+
   public:
 
     inline auto malloc(size_t sz, size_t n) {
       auto opt = my_deq().pop_bottom();
       //Try our own deque
       if (opt) {
-#ifndef REMOTE_FREE
         auto [start_node, end_node] = opt.value();
         deq_assert(start_node != nullptr && end_node != nullptr);
         return std::make_pair(start_node, end_node);
-#else
-        auto [start_node, end_node, len] = opt.value();
-        deq_assert(start_node != nullptr && end_node != nullptr);
-        return std::make_tuple(start_node, end_node, len);
-#endif
       }
       //Our deque is empty, try stealing
       //Avoid atomic read of num_threads multiple times
@@ -58,82 +59,69 @@ class DequeHeap : public Super {
         auto res = random_deq(n_threads).pop_top();
         auto [opt, deque_is_empty] = res;
         if (opt) {
-#ifndef REMOTE_FREE
-        auto [start_node, end_node] = opt.value();
-        deq_assert(start_node != nullptr && end_node != nullptr);
-        return std::make_pair(start_node, end_node);
-#else
-        auto [start_node, end_node, len] = opt.value();
-        deq_assert(start_node != nullptr && end_node != nullptr);
-        return std::make_tuple(start_node, end_node, len);
-#endif
+          auto [start_node, end_node] = opt.value();
+          deq_assert(start_node != nullptr && end_node != nullptr);
+          return std::make_pair(start_node, end_node);
         }
       }
       //Could not steal either, allocate from super heap
       //  Currently, we assume that super heap supports "list allocation" (e.g. SegmentHeap)
       auto [start_node, end_node] = Super::malloc(sz, n);
       deq_assert(start_node != nullptr && end_node != nullptr);
-#ifdef REMOTE_FREE
-      return std::make_tuple(start_node, end_node, n);
-#else
       return std::make_pair(start_node, end_node);
-#endif
     }
 
-    inline void free(node_t* start_node, node_t* end_node) {
-      deq_assert(start_node != nullptr && end_node != nullptr);
 #ifdef REMOTE_FREE
-      const size_t thread_count = num_threads();
 
-      // size_t actual_length = 1;
-      // auto *node = start_node;
-      // while (node != end_node) {
-      //   actual_length++;
-      //   node = node->next;
-      // }
-
-      // heads[tid] is the head of the sublist with owner `tid`
-      std::array<node_t *, max_threads> heads;
-      heads.fill(nullptr);
-
-      // tails[tid] is the tail of the sublist with owner `tid`
-      std::array<node_t *, max_threads> tails;
-
-      // lengths[tid] is the length of the sublist with owner `tid`
-      std::array<size_t, max_threads> lengths;
+    inline void free(node_t *start_node, node_t *end_node, size_t list_length) {
+      deq_assert(start_node != nullptr && end_node != nullptr);
+      const size_t my_tid = thread_id();
+      auto &rfl = remote_free_lists[my_tid];
+      // std::bitset<max_threads> waiting;
 
       // Points to node being traversed
       auto *node = start_node;
       while (true) {
         size_t owner_tid = Super::getOwner(node);
-        if (heads[owner_tid] == nullptr) {
+        auto &seg = rfl[owner_tid];
+        if (seg.head == nullptr) {
           // first node with owner
-          lengths[owner_tid] = 1;
-          heads[owner_tid] = node;
+          seg.len = 1;
+          seg.head = node;
         } else {
-          lengths[owner_tid]++;
-          tails[owner_tid]->next = node;
+          seg.len++;
+          seg.tail->next = node;
         }
-        tails[owner_tid] = node;
+        seg.tail = node;
+        auto *next = node->next;
+        if (seg.len == list_length) {
+          node->next = nullptr;
+          if (owner_tid == thread_id()) {
+            my_deq().push_bottom_direct({seg.head, seg.tail});
+          } else {
+            deques[owner_tid].push_top_direct({seg.head, seg.tail});
+          }
+          seg.head = nullptr;
+          // waiting.set(owner_tid);
+        }
         if (node == end_node)
           break;
-        node = node->next;
+        node = next;
       }
-      for (size_t tid = 0; tid < thread_count; tid++) {
-        if (heads[tid] == nullptr)
-          continue;
-        if (tid == thread_id()) {
-          // Owned by this thread
-          my_deq().push_bottom_direct({heads[tid], tails[tid], lengths[tid]});
-        } else {
-          // Owner by another thread
-          deques[tid].push_top_direct({heads[tid], tails[tid], lengths[tid]});
-        }
-      }
-#else
-      my_deq().push_bottom({start_node, end_node});
-#endif
+      // for (size_t tid = 0, nthreads = num_threads(); tid < nthreads; tid++) {
+      //   if (waiting[tid])
+      //     deques[tid].wait();
+      // }
     }
+
+#else
+
+    inline void free(node_t* start_node, node_t* end_node) {
+      deq_assert(start_node != nullptr && end_node != nullptr);
+      my_deq().push_bottom({start_node, end_node});
+    }
+
+#endif
 
     inline size_t getSize(void *ptr) {
       return Super::getSize(ptr);
