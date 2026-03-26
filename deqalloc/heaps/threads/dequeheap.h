@@ -102,9 +102,6 @@ class DequeHeap : public Super {
       // lengths[tid] is the length of the sublist with owner `tid`
       std::array<size_t, max_threads> lengths;
 
-      // Successor of the last node
-      auto *succ = end_node->next;
-
       // Points to node being traversed
       auto *node = start_node;
       while (true) {
@@ -122,39 +119,19 @@ class DequeHeap : public Super {
           break;
         node = node->next;
       }
-      // tid of owner of start node
-      size_t start_tid = Super::getOwner(start_node);
-      // Now permute nodes in list to group them by owner
-      // Running tail of permuted list
-      // Have to start with the group owned by the owner of start_node
-      // Note that heads[start_tid] == start_node
-      auto *tail = tails[start_tid];
-      for (size_t tid = 0; tid < thread_count; tid++) {
-        // Already have placed list owned by `start_id`
-        if (tid == start_tid || heads[tid] == nullptr) continue;
-        // Append the list owned by tid
-        tail->next = heads[tid];
-        tail = tails[tid];
-      }
-      // Point the successor of the tail of the last sublist to the
-      // successor of the end_node
-      tail->next = succ;
+      size_t nthreads = 0;
       for (size_t tid = 0; tid < thread_count; tid++) {
         if (heads[tid] == nullptr)
           continue;
+        nthreads++;
         if (tid == thread_id()) {
           // Owned by this thread
-          my_deq().push_bottom({heads[tid], tails[tid], lengths[tid]}, false);
+          my_deq().push_bottom_direct({heads[tid], tails[tid], lengths[tid]});
         } else {
           // Owner by another thread
-          deques[tid].push_top({heads[tid], tails[tid], lengths[tid]}, false);
+          deques[tid].push_top_direct({heads[tid], tails[tid], lengths[tid]});
         }
       }
-      for (size_t tid = 0; tid < thread_count; tid++) {
-        if (heads[tid])
-          deques[tid].wait();
-      }
-      // std::abort();
 #else
       my_deq().push_bottom({start_node, end_node});
 #endif

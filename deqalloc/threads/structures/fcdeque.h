@@ -31,17 +31,9 @@
 
 #include "../threadmanager.h"
 
-// Padding struct
-template<size_t N>
-struct Pad { char data[N]; };
-
-// Specializtion for zero: empty struct
-template<>
-struct Pad<0> {};
-
 // A concurrent deque based on flat combining
 template<typename T, size_t MaxThreads = max_threads>
-class FCDeque {
+class alignas(64) FCDeque {
 public:
   FCDeque() :
     heap{},
@@ -88,6 +80,16 @@ public:
 
   std::pair<std::optional<T>, bool> pop_top() {
     return {pop_front(), false};
+  }
+
+  void push_top_direct(T val) {
+    std::unique_lock lock(mutex);
+    backing.push_front(val);
+  }
+
+  void push_bottom_direct(T val) {
+    std::unique_lock lock(mutex);
+    backing.push_back(val);
   }
 
   void push_top(T val, bool block = true) {
@@ -138,14 +140,6 @@ private:
     void complete(T value) {
       set(value, Complete);
     }
-
-    static constexpr size_t padding()
-    {
-      constexpr size_t used = sizeof(value) + sizeof(status);
-      constexpr size_t rem = used % 64;
-      return rem == 0 ? 0 : 64 - rem;
-    }
-    Pad<padding()> pad;
   };
 
   static_assert(sizeof(Request) % 64 == 0, "Request must be cache-line sized");
