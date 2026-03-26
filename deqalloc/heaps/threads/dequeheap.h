@@ -119,11 +119,9 @@ class DequeHeap : public Super {
           break;
         node = node->next;
       }
-      size_t nthreads = 0;
       for (size_t tid = 0; tid < thread_count; tid++) {
         if (heads[tid] == nullptr)
           continue;
-        nthreads++;
         if (tid == thread_id()) {
           // Owned by this thread
           my_deq().push_bottom_direct({heads[tid], tails[tid], lengths[tid]});
