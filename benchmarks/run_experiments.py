@@ -682,7 +682,7 @@ class FlockRunner:
 
     def run_ablation_remotefree(self):
         prev_allocs = self.config.allocators_raw
-        self.config.allocators_raw = ["deqalloc_genericdeque_localseglist", "deqalloc_remotefree"]
+        self.config.allocators_raw = ["deqalloc", "deqalloc_genericdeque_localseglist", "deqalloc_remotefree"]
         self.run_sizes("ablation_remotefree")
         self.config.allocators_raw = prev_allocs
         self.rf.close()
@@ -695,10 +695,11 @@ class FlockRunner:
         if run_all or "sizes"       in b: self.run_sizes()
         if not self.config.args.nohugepages:
             if run_all or "hugepages"   in b: self.run_hugepages()
-        if run_all or "ablation"    in b:
-            self.run_ablation_localseglist()
-            # self.run_ablation_deque()
-            self.run_ablation_remotefree()
+        if run_all or any("ablation" in i for i in b):
+            run_all_ab = run_all or "ablation" in b
+            if run_all_ab or "ablation_localseglist" in b: self.run_ablation_localseglist()
+            if run_all_ab or "ablation_deque"        in b: self.run_ablation_deque()
+            if run_all_ab or "ablation_remotefree"   in b: self.run_ablation_remotefree()
         if run_all or "thread-perc" in b: self.run_thread_perc()
         if run_all or "upserts"     in b: self.run_upserts()
 
@@ -912,7 +913,7 @@ class SetbenchRunner:
 
     def run_ablation_remotefree(self):
         prev_allocs = self.config.allocators_raw
-        self.config.allocators_raw = ["deqalloc_genericdeque_localseglist", "deqalloc_remotefree"]
+        self.config.allocators_raw = ["deqalloc", "deqalloc_genericdeque_localseglist", "deqalloc_remotefree"]
         self.run_sizes("ablation_remotefree")
         self.config.allocators_raw = prev_allocs
         self.rf.close()
@@ -926,10 +927,11 @@ class SetbenchRunner:
         if run_all or "sizes"     in b: self.run_sizes()
         if not self.config.args.nohugepages:
             if run_all or "hugepages" in b: self.run_hugepages()
-        if run_all or "ablation"  in b:
-            self.run_ablation_localseglist()
-            self.run_ablation_deque()
-            self.run_ablation_remotefree()
+        if run_all or any("ablation" in i for i in b):
+            run_all_ab = run_all or "ablation" in b
+            if run_all_ab or "ablation_localseglist" in b: self.run_ablation_localseglist()
+            if run_all_ab or "ablation_deque"        in b: self.run_ablation_deque()
+            if run_all_ab or "ablation_remotefree"   in b: self.run_ablation_remotefree()
 
 # ---------------------------------------------------------------------------
 # Main
@@ -970,7 +972,19 @@ def main():
     parser.add_argument("--tracker",     default=None,              help="Run only this tracker/memory reclamation scheme for tracker benchmarks.")
     parser.add_argument("--time",        type=int, default=5,       help="Amount of time each run takes (default: 5)")
     parser.add_argument("--benchmark",   type=str, default=["all"], help="Run specific benchmark(s) (default: all)",
-                            nargs="+", choices=["updates", "sizes", "threads", "trackers", "thread-perc", "upserts", "hugepages", "ablation", "all"])
+                            nargs="+", choices=["updates",
+                                                "sizes",
+                                                "threads",
+                                                "trackers",
+                                                "thread-perc",
+                                                "upserts",
+                                                "hugepages",
+                                                "ablation",
+                                                "ablation_localseglist",
+                                                "ablation_deque",
+                                                "ablation_remotefree",
+                                                "all"])
+
     parser.add_argument("--hugepages",   default=None,              help="Set hugepages setting",
                         choices=["never", "always", "madvise"])
     parser.add_argument("--nohugepages", action='store_true',       help="Do not run hugepages benchmark")
