@@ -1,0 +1,51 @@
+Command: ./run_experiments.py all -o LAROCHETTE_TEST/ --runs 5 --time 5 --benchmark ablation hugepages
+Date: 03-27-2026
+Experiment: setbench ablation_localseglist_sizes
+Model name:                              INTEL(R) XEON(R) PLATINUM 8568Y+
+Git: fe26724
+allocator versions:
+	jemalloc: 86b72192
+	mesh: 5d9b390
+	mimalloc: 75d69f4a
+	hoard: 1cd9101
+	scalloc: 1a11827
+	tcmalloc: 023c20b0
+	snmalloc: 3fca4c8
+	lockfree: 915f51b
+	rpmalloc: feb43ae
+	tbbmalloc: 2561dc7a
+	mimalloc-batchit: da52048
+---
+allocator             update%    scheme     ds                        key_size   #threads  numa   results
+deqalloc              100        debra      guerraoui_ext_bst_ticket  5000       192       False  [ 248.017384 240.889775 247.73059 245.976958 246.507367 ] 245.8244, 4547871 KB
+deqalloc_localseglist 100        debra      guerraoui_ext_bst_ticket  5000       192       False  [ 237.780781 228.333802 240.551955 237.373782 230.93468 ] 234.9950, 4734913 KB
+deqalloc              100        debra      brown_ext_abtree_lf       5000       192       False  [ 64.104108 64.761702 64.681698 64.457671 65.179069 ] 64.6368, 4638915 KB
+deqalloc_localseglist 100        debra      brown_ext_abtree_lf       5000       192       False  [ 64.365768 65.281026 63.568581 60.393505 63.567273 ] 63.4352, 4748346 KB
+deqalloc              100        debra      hm_hashtable              5000       192       False  [ 489.436384 489.42081 473.184119 490.574171 487.77682 ] 486.0785, 4492398 KB
+deqalloc_localseglist 100        debra      hm_hashtable              5000       192       False  [ 486.012908 484.185752 486.683286 489.032787 488.184377 ] 486.8198, 4668499 KB
+deqalloc              100        debra      hmlist                    500        192       False  [ 20.953027 20.933645 20.941593 20.939198 20.887544 ] 20.9310, 4415341 KB
+deqalloc_localseglist 100        debra      hmlist                    500        192       False  [ 20.861421 20.892482 20.904221 20.905441 20.899858 ] 20.8927, 4436260 KB
+deqalloc              100        debra      guerraoui_ext_bst_ticket  200000     192       False  [ 218.414569 214.735182 218.281665 217.220918 215.413049 ] 216.8131, 4635120 KB
+deqalloc_localseglist 100        debra      guerraoui_ext_bst_ticket  200000     192       False  [ 210.241966 213.868374 214.404503 207.86283 213.748912 ] 212.0253, 4708237 KB
+deqalloc              100        debra      brown_ext_abtree_lf       200000     192       False  [ 192.326224 188.25264 193.08143 190.119217 182.368342 ] 189.2296, 5024575 KB
+deqalloc_localseglist 100        debra      brown_ext_abtree_lf       200000     192       False  [ 191.556359 195.7665 192.617255 192.01269 185.566901 ] 191.5039, 5142300 KB
+deqalloc              100        debra      hm_hashtable              200000     192       False  [ 288.011082 285.988514 286.96392 283.689657 283.348636 ] 285.6004, 4464952 KB
+deqalloc_localseglist 100        debra      hm_hashtable              200000     192       False  [ 282.638429 281.573722 281.888454 281.032147 282.334918 ] 281.8935, 4495503 KB
+deqalloc              100        debra      hmlist                    2000       192       False  [ 19.617548 19.622599 19.509825 19.690953 19.665263 ] 19.6212, 4415311 KB
+deqalloc_localseglist 100        debra      hmlist                    2000       192       False  [ 18.809142 18.92009 19.216505 18.892172 18.85008 ] 18.9376, 4437761 KB
+deqalloc              100        debra      guerraoui_ext_bst_ticket  20000000   192       False  [ 111.95058 113.293892 105.187167 113.132403 105.585059 ] 109.8298, 5473930 KB
+deqalloc_localseglist 100        debra      guerraoui_ext_bst_ticket  20000000   192       False  [ 108.380262 107.806675 107.179595 106.617036 108.422748 ] 107.6813, 5587850 KB
+deqalloc              100        debra      brown_ext_abtree_lf       20000000   192       False  [ 167.078189 162.070644 164.808565 170.712815 163.357775 ] 165.6056, 5709155 KB
+deqalloc_localseglist 100        debra      brown_ext_abtree_lf       20000000   192       False  [ 171.292913 165.592487 171.069423 171.610651 171.703609 ] 170.2538, 5660521 KB
+deqalloc              100        debra      hm_hashtable              20000000   192       False  [ 6.687915 6.745042 6.670927 6.707831 6.655754 ] 6.6935, 4742115 KB
+deqalloc_localseglist 100        debra      hm_hashtable              20000000   192       False  [ 6.617962 6.583458 6.540359 6.468859 6.497179 ] 6.5416, 4748885 KB
+deqalloc              100        debra      hmlist                    10000      192       False  [ 6.142082 6.181388 6.145901 5.932554 6.196884 ] 6.1198, 4412406 KB
+deqalloc_localseglist 100        debra      hmlist                    10000      192       False  [ 5.447425 5.420537 5.449622 5.480831 5.529043 ] 5.4655, 4429909 KB
+deqalloc              100        debra      guerraoui_ext_bst_ticket  200000000  192       False  [ 68.82659 68.180143 65.948452 51.125974 64.963384 ] 63.8089, 13878104 KB
+deqalloc_localseglist 100        debra      guerraoui_ext_bst_ticket  200000000  192       False  [ 44.898041 62.873389 63.928469 67.333845 63.72976 ] 60.5527, 14004151 KB
+deqalloc              100        debra      brown_ext_abtree_lf       200000000  192       False  [ 140.457482 123.729897 140.199523 129.134006 139.563986 ] 134.6170, 9095025 KB
+deqalloc_localseglist 100        debra      brown_ext_abtree_lf       200000000  192       False  [ 122.300704 126.786916 130.05443 132.273337 142.702214 ] 130.8235, 9205477 KB
+deqalloc              100        debra      hm_hashtable              100000000  192       False  [ 0.500286 0.462356 0.500052 0.500175 0.498194 ] 0.4922, 5974684 KB
+deqalloc_localseglist 100        debra      hm_hashtable              100000000  192       False  [ 0.498529 0.485494 0.49806 0.489158 0.493824 ] 0.4930, 6002805 KB
+deqalloc              100        debra      hmlist                    20000      192       False  [ 3.254106 3.320697 3.302812 3.30515 3.316424 ] 3.2998, 4412752 KB
+deqalloc_localseglist 100        debra      hmlist                    20000      192       False  [ 2.686749 2.693645 2.655894 2.734209 2.884254 ] 2.7310, 4429054 KB

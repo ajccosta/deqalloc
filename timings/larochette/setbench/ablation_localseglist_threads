@@ -1,0 +1,27 @@
+Command: ./run_experiments.py all -o LAROCHETTE_TEST/ --runs 5 --time 5 --benchmark ablation hugepages
+Date: 03-27-2026
+Experiment: setbench ablation_localseglist_threads
+Model name:                              INTEL(R) XEON(R) PLATINUM 8568Y+
+Git: fe26724
+allocator versions:
+	jemalloc: 86b72192
+	mesh: 5d9b390
+	mimalloc: 75d69f4a
+	hoard: 1cd9101
+	scalloc: 1a11827
+	tcmalloc: 023c20b0
+	snmalloc: 3fca4c8
+	lockfree: 915f51b
+	rpmalloc: feb43ae
+	tbbmalloc: 2561dc7a
+	mimalloc-batchit: da52048
+---
+allocator             update%    scheme     ds                        key_size   #threads  numa   results
+deqalloc              100        debra      guerraoui_ext_bst_ticket  200000     1         False  [ 2.817407 2.809996 2.775129 2.908164 2.794306 ] 2.8210, 4412098 KB
+deqalloc_localseglist 100        debra      guerraoui_ext_bst_ticket  200000     1         False  [ 2.869656 2.764236 2.88766 2.770321 2.843845 ] 2.8271, 4412380 KB
+deqalloc              100        debra      guerraoui_ext_bst_ticket  200000     2         False  [ 5.24831 5.339519 5.318812 4.971224 5.354102 ] 5.2464, 4419791 KB
+deqalloc_localseglist 100        debra      guerraoui_ext_bst_ticket  200000     2         False  [ 5.060795 5.341317 5.070501 5.405834 4.57892 ] 5.0915, 4422045 KB
+deqalloc              100        debra      guerraoui_ext_bst_ticket  200000     4         False  [ 7.457891 7.422949 7.603779 7.510265 7.582967 ] 7.5156, 4420136 KB
+deqalloc_localseglist 100        debra      guerraoui_ext_bst_ticket  200000     4         False  [ 7.387749 7.495792 7.245966 7.457689 7.443868 ] 7.4062, 4421751 KB
+deqalloc              100        debra      guerraoui_ext_bst_ticket  200000     8         False  [ 14.952819 15.200044 14.979628 15.098653 15.05096 ] 15.0564, 4422932 KB
+deqalloc_localseglist 100        debra      guerraoui_ext_bst_ticket  200000     8         False  [ 15.438917 14.978802 15.409878 15.719166 15.667581 ] 15.4429, 4423710 KB

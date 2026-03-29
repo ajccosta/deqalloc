@@ -682,7 +682,7 @@ class FlockRunner:
 
     def run_ablation_remotefree(self):
         prev_allocs = self.config.allocators_raw
-        self.config.allocators_raw = ["deqalloc", "deqalloc_genericdeque_localseglist", "deqalloc_remotefree"]
+        self.config.allocators_raw = ["deqalloc", "deqalloc_genericdeque", "deqalloc_remotefree"]
         self.run_sizes("ablation_remotefree")
         self.config.allocators_raw = prev_allocs
         self.rf.close()
@@ -913,7 +913,7 @@ class SetbenchRunner:
 
     def run_ablation_remotefree(self):
         prev_allocs = self.config.allocators_raw
-        self.config.allocators_raw = ["deqalloc", "deqalloc_genericdeque_localseglist", "deqalloc_remotefree"]
+        self.config.allocators_raw = ["deqalloc", "deqalloc_genericdeque", "deqalloc_remotefree"]
         self.run_sizes("ablation_remotefree")
         self.config.allocators_raw = prev_allocs
         self.rf.close()
