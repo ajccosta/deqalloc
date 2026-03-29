@@ -377,13 +377,13 @@ def which_paper_ds(dss, experiment=None):
     if set(dss).intersection(set(PAPER_DS_FLOCK)):
         if not experiment:
             paper_ds = PAPER_DS_FLOCK
-        elif experiment == "ablation_localseglist":
+        elif experiment == "ablation_localseglist_sizes":
             paper_ds = PAPER_DS_LOCALSEGLIST_FLOCK
     if set(dss).intersection(set(PAPER_DS_SETBENCH)):
         assert(paper_ds == [])
         if not experiment:
             paper_ds = PAPER_DS_SETBENCH
-        elif experiment == "ablation_localseglist":
+        elif experiment == "ablation_localseglist_sizes":
             paper_ds = PAPER_DS_LOCALSEGLIST_SETBENCH
     #assert(paper_ds != [])
     return paper_ds
@@ -1081,7 +1081,7 @@ def plot_ablation(input_dir, suite, experiment, out_dir, fmt):
 
                 #benchmark crashed, skip it
                 if 0 in deqalloc_ys: continue
-                relative_ys = [a / b for a, b in zip(deqalloc_ys, ys)]
+                relative_ys = [a / b if b != 0 else 0 for a, b in zip(deqalloc_ys, ys)]
 
                 ax.plot(range(len(sizes)),
                         relative_ys,
@@ -1241,7 +1241,7 @@ def main():
         if "memory"      in args.plots or do_all:  plot_memory(args.input_dir, "flock", "sizes", out_dir, args.format)
         if "geomean"     in args.plots or do_all: plot_geomean(args.input_dir, "flock", "geomean", out_dir, args.format)
         if "hugepages" in args.plots or do_all: plot_hugepages(args.input_dir, "flock", "hugepages", out_dir, args.format)
-        if "ablation"   in args.plots or do_all: plot_ablation(args.input_dir, "flock", "ablation_localseglist", out_dir, args.format)
+        if "ablation"   in args.plots or do_all: plot_ablation(args.input_dir, "flock", "ablation_localseglist_sizes", out_dir, args.format)
 
     if args.benchmark == "all" or args.benchmark == "setbench":
         out_dir = f"{args.output_dir}/setbench"
@@ -1252,7 +1252,7 @@ def main():
         if "trackers"   in args.plots or do_all: plot_trackers(args.input_dir, "setbench", "trackers", out_dir, args.format)
         if "geomean"     in args.plots or do_all: plot_geomean(args.input_dir, "setbench", "sizes", out_dir, args.format)
         if "hugepages" in args.plots or do_all: plot_hugepages(args.input_dir, "setbench", "hugepages", out_dir, args.format)
-        if "ablation"   in args.plots or do_all: plot_ablation(args.input_dir, "setbench", "ablation_localseglist", out_dir, args.format)
+        if "ablation"   in args.plots or do_all: plot_ablation(args.input_dir, "setbench", "ablation_localseglist_sizes", out_dir, args.format)
 
     plot_temp_and_freq(f"{args.input_dir}/temperature.csv", args.output_dir, args.format)
 
