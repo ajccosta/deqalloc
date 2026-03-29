@@ -377,7 +377,8 @@ def which_paper_ds(dss, experiment=None):
     if set(dss).intersection(set(PAPER_DS_FLOCK)):
         if not experiment:
             paper_ds = PAPER_DS_FLOCK
-        elif experiment == "ablation_localseglist_sizes":
+        elif experiment == "ablation_localseglist_sizes" \
+            or experiment == "ablation_remotefree":
             paper_ds = PAPER_DS_LOCALSEGLIST_FLOCK
     if set(dss).intersection(set(PAPER_DS_SETBENCH)):
         assert(paper_ds == [])
@@ -1053,7 +1054,7 @@ def plot_hugepages(input_dir, suite, experiment, out_dir, fmt):
     merge_pdfs_horizontally(paper_ds_list, f"{out_dir}/paper/hugepages_relative.{fmt}")
 
 # -- plot ablation experiments
-def plot_ablation(input_dir, suite, experiment, out_dir, fmt):
+def plot_ablation_localseglist(input_dir, suite, experiment, out_dir, fmt):
     data, crashes = load_file(input_dir, suite, experiment)
 
     dss = sorted(set(r["ds"] for r in data))
@@ -1112,6 +1113,18 @@ def plot_ablation(input_dir, suite, experiment, out_dir, fmt):
                 min_y = 0
             ax.set_ylim(bottom=min_y * 0.99)
 
+            #ax.legend(
+            #    ncol=len(allocs),
+            #    frameon=True,
+            #    fontsize=FIG_CONFIGS.get("legend_fontsize"),
+            #    loc="upper center",
+            #    alignment="center",
+            #    #bbox_to_anchor=(0.5, 1.24),
+            #    labelcolor="black",
+            #    edgecolor="black",
+            #    fancybox=False,
+            #)
+
             fig.savefig(f"{out_dir}/{write_dir}{experiment}_{ds}.{fmt}",
                 dpi=FIG_CONFIGS["dpi"],
                 bbox_inches="tight",
@@ -1120,6 +1133,84 @@ def plot_ablation(input_dir, suite, experiment, out_dir, fmt):
 
     paper_ds_list = [ f"{out_dir}/paper/{experiment}/{experiment}_{ds}.{fmt}" for ds in paper_ds ] 
     merge_pdfs_horizontally(paper_ds_list, f"{out_dir}/paper/{experiment}.{fmt}")
+
+
+def plot_ablation_remotefree(input_dir, suite, experiment, out_dir, fmt):
+    data, crashes = load_file(input_dir, suite, experiment)
+
+    dss = sorted(set(r["ds"] for r in data))
+    paper_ds = which_paper_ds(dss, experiment)
+
+    for paper_print in [True, False]: #print a paper version and a viewing version
+        write_dir = ("paper/" if paper_print else "readable/") + experiment + "/"
+        os.makedirs(f"{out_dir}/{write_dir}", exist_ok=True)
+
+        for i, ds in enumerate(dss):
+            fig, ax = plt.subplots(figsize=FIG_CONFIGS["figsize"])
+
+            ds_rows = [r for r in data if r["ds"] == ds]
+            allocs = sorted(set(r["allocator"] for r in ds_rows))
+            sizes  = sorted(set(r["key_size"] for r in ds_rows))
+
+            for alloc in allocs:
+                #dont plot deqalloc
+                pts = {r["key_size"]: r["gmean"] for r in ds_rows if r["allocator"] == alloc}
+                ys = [pts.get(s, None) for s in sizes]
+
+                #benchmark crashed, skip it
+                #if 0 in deqalloc_ys: continue
+                #relative_ys = [a / b if b != 0 else 0 for a, b in zip(deqalloc_ys, ys)]
+
+                ax.plot(range(len(sizes)),
+                        ys,
+                        label=ALLOC_RENAMES.get(alloc, alloc),
+                        linewidth=FIG_CONFIGS["linewidth"],
+                        color=ALLOC_PALETTE.get(alloc),
+                        marker=ALLOC_MARKERS.get(alloc),
+                        markersize=FIG_CONFIGS["markersize"], 
+                        linestyle=FIG_CONFIGS["linestyle"].get(alloc, "--"),
+                        zorder=ALLOC_ZORDER.get(alloc))
+
+            xlabels = get_nice_scinot_labels(sizes)
+            plt.xticks(range(len(sizes)), xlabels)
+            ax.set_xlabel("Size (n)")
+            ax.set_title(f'{DS_LABELS.get(ds)}')
+
+            if not write_dir or ds == paper_ds[0]:
+                ax.set_ylabel('Throughput (Mops/s)', fontsize=FIG_CONFIGS["ylabel_fontsize"])
+                ylabel = ax.yaxis.label
+                ylabel.set_y(ylabel.get_position()[1] - 0.05)
+
+
+            style_fig(fig, ax, paper_print)
+
+            #override style_fig
+            min_y = min(ax.dataLim.ymin, 1)
+            if math.isnan(min_y) or math.isinf(min_y):
+                min_y = 0
+            ax.set_ylim(bottom=min_y * 0.99)
+
+            ax.legend(
+                ncol=len(allocs),
+                frameon=True,
+                fontsize=FIG_CONFIGS.get("legend_fontsize"),
+                loc="upper center",
+                alignment="center",
+                bbox_to_anchor=(0.5, 1.40),
+                labelcolor="black",
+                edgecolor="black",
+                fancybox=False,
+            )
+
+            fig.savefig(f"{out_dir}/{write_dir}{experiment}_{ds}.{fmt}",
+                dpi=FIG_CONFIGS["dpi"],
+                bbox_inches="tight",
+                pad_inches=FIG_CONFIGS["pad_inches"])
+            plt.close(fig)
+
+    paper_ds_list = [ f"{out_dir}/paper/{experiment}/{experiment}_{ds}.{fmt}" for ds in paper_ds ] 
+    merge_pdfs_horizontally(paper_ds_list, f"{out_dir}/paper/{experiment}.{fmt}")
+
 
 
 def plot_temp_and_freq(file, out_dir, fmt):
@@ -1241,7 +1332,10 @@ def main():
         if "memory"      in args.plots or do_all:  plot_memory(args.input_dir, "flock", "sizes", out_dir, args.format)
         if "geomean"     in args.plots or do_all: plot_geomean(args.input_dir, "flock", "geomean", out_dir, args.format)
         if "hugepages" in args.plots or do_all: plot_hugepages(args.input_dir, "flock", "hugepages", out_dir, args.format)
-        if "ablation"   in args.plots or do_all: plot_ablation(args.input_dir, "flock", "ablation_localseglist_sizes", out_dir, args.format)
+        if "ablation"   in args.plots or do_all: plot_ablation_localseglist(args.input_dir, "flock", \
+            "ablation_localseglist_sizes", out_dir, args.format)
+        if "ablation"   in args.plots or do_all: plot_ablation_remotefree(args.input_dir, "flock", \
+            "ablation_remotefree", out_dir, args.format)
 
     if args.benchmark == "all" or args.benchmark == "setbench":
         out_dir = f"{args.output_dir}/setbench"
@@ -1252,7 +1346,8 @@ def main():
         if "trackers"   in args.plots or do_all: plot_trackers(args.input_dir, "setbench", "trackers", out_dir, args.format)
         if "geomean"     in args.plots or do_all: plot_geomean(args.input_dir, "setbench", "sizes", out_dir, args.format)
         if "hugepages" in args.plots or do_all: plot_hugepages(args.input_dir, "setbench", "hugepages", out_dir, args.format)
-        if "ablation"   in args.plots or do_all: plot_ablation(args.input_dir, "setbench", "ablation_localseglist_sizes", out_dir, args.format)
+        if "ablation"   in args.plots or do_all: plot_ablation_localseglist(args.input_dir, "setbench", \
+            "ablation_localseglist_sizes", out_dir, args.format)
 
     plot_temp_and_freq(f"{args.input_dir}/temperature.csv", args.output_dir, args.format)
 
