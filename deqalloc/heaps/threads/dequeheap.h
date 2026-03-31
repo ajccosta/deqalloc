@@ -42,7 +42,7 @@ class DequeHeap : public Super {
     inline deque_t& my_deq() { return deques[thread_id()]; }
     inline deque_t& random_deq(size_t n_threads) { return deques[my_rand.rand() % n_threads]; }
 
-#if defined(FC_DEQUE) || defined(LOCKING_DEQUE)
+#ifdef REMOTE_FREE
     struct FreedSegment {
       node_t *head = nullptr;
       node_t *tail = nullptr;
