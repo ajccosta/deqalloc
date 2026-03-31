@@ -73,6 +73,9 @@ target_compile_definitions(deqalloc_localseglist PUBLIC -DNDEBUG -D_REENTRANT=1 
 add_library(deqalloc_genericdeque SHARED ${ALL_SOURCES})
 target_compile_definitions(deqalloc_genericdeque PUBLIC -DNDEBUG -D_REENTRANT=1 -DFC_DEQUE ${DEFINES})
 
+add_library(deqalloc_genericdeque_locking SHARED ${ALL_SOURCES})
+target_compile_definitions(deqalloc_genericdeque_locking PUBLIC -DNDEBUG -D_REENTRANT=1 -DLOCKING_DEQUE ${DEFINES})
+
 add_library(deqalloc_genericdeque_localseglist SHARED ${ALL_SOURCES})
 target_compile_definitions(deqalloc_genericdeque_localseglist PUBLIC -DNDEBUG -D_REENTRANT=1 -DFC_DEQUE -DLOCAL_SEGLIST ${DEFINES})
 
