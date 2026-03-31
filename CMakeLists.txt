@@ -70,23 +70,37 @@ target_compile_definitions(deqalloc PUBLIC -DNDEBUG -D_REENTRANT=1 ${DEFINES})
 add_library(deqalloc_localseglist SHARED ${ALL_SOURCES})
 target_compile_definitions(deqalloc_localseglist PUBLIC -DNDEBUG -D_REENTRANT=1 -DLOCAL_SEGLIST ${DEFINES})
 
-add_library(deqalloc_genericdeque SHARED ${ALL_SOURCES})
+add_library(deqalloc_genericdeque_fc SHARED ${ALL_SOURCES})
 target_compile_definitions(deqalloc_genericdeque PUBLIC -DNDEBUG -D_REENTRANT=1 -DFC_DEQUE ${DEFINES})
 
-add_library(deqalloc_genericdeque_locking SHARED ${ALL_SOURCES})
-target_compile_definitions(deqalloc_genericdeque_locking PUBLIC -DNDEBUG -D_REENTRANT=1 -DLOCKING_DEQUE ${DEFINES})
+add_library(deqalloc_genericdeque SHARED ${ALL_SOURCES})
+target_compile_definitions(deqalloc_genericdeque PUBLIC -DNDEBUG -D_REENTRANT=1 -DLOCKING_DEQUE ${DEFINES})
 
-add_library(deqalloc_genericdeque_localseglist SHARED ${ALL_SOURCES})
+add_library(deqalloc_genericdeque_localseglist_fc SHARED ${ALL_SOURCES})
 target_compile_definitions(deqalloc_genericdeque_localseglist PUBLIC -DNDEBUG -D_REENTRANT=1 -DFC_DEQUE -DLOCAL_SEGLIST ${DEFINES})
 
-add_library(deqalloc_genericdeque_locking_localseglist SHARED ${ALL_SOURCES})
-target_compile_definitions(deqalloc_genericdeque_locking_localseglist PUBLIC -DNDEBUG -D_REENTRANT=1 -DLOCKING_DEQUE -DLOCAL_SEGLIST ${DEFINES})
+add_library(deqalloc_genericdeque_localseglist SHARED ${ALL_SOURCES})
+target_compile_definitions(deqalloc_genericdeque_localseglist PUBLIC -DNDEBUG -D_REENTRANT=1 -DLOCKING_DEQUE -DLOCAL_SEGLIST ${DEFINES})
 
-add_library(deqalloc_remotefree SHARED ${ALL_SOURCES})
+add_library(deqalloc_remotefree_fc SHARED ${ALL_SOURCES})
 target_compile_definitions(deqalloc_remotefree PUBLIC -DNDEBUG -D_REENTRANT=1 -DREMOTE_FREE -DFC_DEQUE -DLOCAL_SEGLIST ${DEFINES})
 
-add_library(deqalloc_remotefree_locking SHARED ${ALL_SOURCES})
+add_library(deqalloc_remotefree SHARED ${ALL_SOURCES})
 target_compile_definitions(deqalloc_remotefree PUBLIC -DNDEBUG -D_REENTRANT=1 -DREMOTE_FREE -DLOCKING_DEQUE -DLOCAL_SEGLIST ${DEFINES})
+
+foreach(BATCH_SIZE 512 1024 2048 4096 8192)
+  add_library(deqalloc_${BATCH_SIZE} SHARED ${ALL_SOURCES})
+  target_compile_definitions(deqalloc_${BATCH_SIZE} PUBLIC -DNDEBUG -D_REENTRANT=1 -DDEFAULT_LIST_BYTES=${BATCH_SIZE})
+
+  add_library(deqalloc_remotefree_fc_${BATCH_SIZE} SHARED ${ALL_SOURCES})
+  target_compile_definitions(deqalloc_remotefree_${BATCH_SIZE} PUBLIC -DNDEBUG -D_REENTRANT=1 -DREMOTE_FREE -DFC_DEQUE -DLOCAL_SEGLIST -DDEFAULT_LIST_BYTES=${BATCH_SIZE})
+
+  add_library(deqalloc_genericdeque_${BATCH_SIZE} SHARED ${ALL_SOURCES})
+  target_compile_definitions(deqalloc_genericdeque_${BATCH_SIZE} PUBLIC -DNDEBUG -D_REENTRANT=1 -DLOCKING_DEQUE -DDEFAULT_LIST_BYTES=${BATCH_SIZE})
+
+  add_library(deqalloc_remotefree_${BATCH_SIZE} SHARED ${ALL_SOURCES})
+  target_compile_definitions(deqalloc_remotefree_${BATCH_SIZE} PUBLIC -DNDEBUG -D_REENTRANT=1 -DREMOTE_FREE -DLOCKING_DEQUE -DLOCAL_SEGLIST -DDEFAULT_LIST_BYTES=${BATCH_SIZE})
+endforeach()
 
 # Let CMake handle platform-specific library settings
 set_target_properties(deqalloc PROPERTIES 
@@ -113,6 +127,14 @@ if(Threads_FOUND)
   target_link_libraries(deqalloc_localseglist Threads::Threads)
   target_link_libraries(deqalloc_genericdeque_localseglist Threads::Threads)
   target_link_libraries(deqalloc_remotefree Threads::Threads)
+  target_link_libraries(deqalloc_genericdeque Threads::Threads)
+  target_link_libraries(deqalloc_remotefree Threads::Threads)
+  foreach(BATCH_SIZE 512 1024 2048 4096 8192)
+    target_link_libraries(deqalloc_${BATCH_SIZE} Threads::Threads)
+    target_link_libraries(deqalloc_remotefree_${BATCH_SIZE} Threads::Threads)
+    target_link_libraries(deqalloc_genericdeque_${BATCH_SIZE} Threads::Threads)
+    target_link_libraries(deqalloc_remotefree_${BATCH_SIZE} Threads::Threads)
+  endforeach()
 endif()
 
 #NOTE: Uncomment the following line in case you need to link statically
