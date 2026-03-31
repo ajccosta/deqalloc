@@ -998,17 +998,17 @@ def main():
 
     # -- flock config --
     flock_cfg = FlockConfig(args=args)
-    if args.allocator:
-        flock_cfg.allocators_raw = [a for a in flock_cfg.allocators_raw
-                                    if a.split(":")[0] in args.allocator or args.allocator == ["all"]]
+    if args.allocator and args.allocator != ["all"]:
+        #flock_cfg.allocators_raw = [a for a in flock_cfg.allocators_raw if a.split(":")[0] in args.allocator]
+        flock_cfg.allocators_raw = args.allocator
     if args.ds:
         flock_cfg.rideables_sizes = [(r, s) for r, s in flock_cfg.rideables_sizes if r == args.ds]
 
     # -- setbench config --
     sb_cfg = SetbenchConfig(args=args)
-    if args.allocator:
-        sb_cfg.allocators_raw = [a for a in sb_cfg.allocators_raw
-                                 if a.split(":")[0] in args.allocator or args.allocator == ["all"]]
+    if args.allocator and args.allocator != ["all"]:
+        #sb_cfg.allocators_raw = [a for a in sb_cfg.allocators_raw if a.split(":")[0] in args.allocator]
+        sb_cfg.allocators_raw = args.allocator
     if args.ds:
         sb_cfg.rideables_sizes = [(r, s) for r, s in sb_cfg.rideables_sizes if r == args.ds]
 

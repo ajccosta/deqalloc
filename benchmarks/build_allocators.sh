@@ -88,6 +88,22 @@ popd
 mv snmalloc/build/libsnmallocshim.so libsnmalloc.so
 rm -rf snmalloc
 
+#compile snmalloc with different remote free batch sizes
+git clone https://github.com/microsoft/snmalloc
+CACHE_VALUES=(1 3 6 8 10 12 14 16 18 20 22)
+for val in "${CACHE_VALUES[@]}"; do
+    val=$((1<<val));
+    mkdir -p "snmalloc/build_$val"
+    pushd "snmalloc/build_$val"
+    env CXX=clang++ cmake -G Ninja .. \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_CXX_FLAGS="-DUSE_REMOTE_CACHE=$val"
+    ninja libsnmallocshim.so libsnmallocshim-checks.so
+    popd
+    mv "snmalloc/build_$val/libsnmallocshim.so" "libsnmalloc_${val}.so"
+done
+rm -rf snmalloc
+
 #compile lockfree 
 git clone https://github.com/Begun/lockfree-malloc
 pushd lockfree-malloc
