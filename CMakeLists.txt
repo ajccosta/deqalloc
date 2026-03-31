@@ -76,8 +76,14 @@ target_compile_definitions(deqalloc_genericdeque PUBLIC -DNDEBUG -D_REENTRANT=1 
 add_library(deqalloc_genericdeque_localseglist SHARED ${ALL_SOURCES})
 target_compile_definitions(deqalloc_genericdeque_localseglist PUBLIC -DNDEBUG -D_REENTRANT=1 -DFC_DEQUE -DLOCAL_SEGLIST ${DEFINES})
 
+add_library(deqalloc_genericdeque_locking_localseglist SHARED ${ALL_SOURCES})
+target_compile_definitions(deqalloc_genericdeque_locking_localseglist PUBLIC -DNDEBUG -D_REENTRANT=1 -DLOCKING_DEQUE -DLOCAL_SEGLIST ${DEFINES})
+
 add_library(deqalloc_remotefree SHARED ${ALL_SOURCES})
 target_compile_definitions(deqalloc_remotefree PUBLIC -DNDEBUG -D_REENTRANT=1 -DREMOTE_FREE -DFC_DEQUE -DLOCAL_SEGLIST ${DEFINES})
+
+add_library(deqalloc_remotefree_locking SHARED ${ALL_SOURCES})
+target_compile_definitions(deqalloc_remotefree PUBLIC -DNDEBUG -D_REENTRANT=1 -DREMOTE_FREE -DLOCKING_DEQUE -DLOCAL_SEGLIST ${DEFINES})
 
 # Let CMake handle platform-specific library settings
 set_target_properties(deqalloc PROPERTIES 

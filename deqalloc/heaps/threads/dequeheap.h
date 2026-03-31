@@ -7,9 +7,16 @@
 
 #include "deqalloc/heaps/top/segmentheap.h"
 #include "deqalloc/threads/structures/memorystealingdeque.h"
-#include "deqalloc/threads/structures/fcdeque.h"
 #include "deqalloc/threads/threadmanager.h"
 #include "deqalloc/utility/random.h"
+
+#ifdef FC_DEQUE
+#include "deqalloc/threads/structures/fcdeque.h"
+#elif defined(LOCKING_DEQUE)
+#include "deqalloc/threads/structures/lockingdeque.h"
+#else
+#include "deqalloc/threads/structures/memorystealingdeque.h"
+#endif
 
 template <class Super = SegmentHeap<>>
 class DequeHeap : public Super {
@@ -21,11 +28,14 @@ class DequeHeap : public Super {
 
   private:
 
-#ifndef FC_DEQUE
-    using deque_t = MemoryStealingDeque<std::tuple<node_t*, node_t*>, 2, 1>;
-#else
+#ifdef FC_DEQUE
     using deque_t = FCDeque<std::tuple<node_t*, node_t*>>;
+#elif defined(LOCKING_DEQUE)
+    using deque_t = LockingDeque<std::tuple<node_t*, node_t*>>;
+#else
+    using deque_t = MemoryStealingDeque<std::tuple<node_t*, node_t*>, 2, 1>;
 #endif
+
     deque_t deques[max_threads];
     static inline thread_local parlay::random my_rand __attribute__((tls_model ("initial-exec")));
 
@@ -77,7 +87,10 @@ class DequeHeap : public Super {
       deq_assert(start_node != nullptr && end_node != nullptr);
       const size_t my_tid = thread_id();
       auto &rfl = remote_free_lists[my_tid];
-      // std::bitset<max_threads> waiting;
+#ifdef FC_DEQUE
+      std::array<size_t, max_threads> waiting;
+      size_t num_waiting = 0;
+#endif
 
       // Points to node being traversed
       auto *node = start_node;
@@ -97,21 +110,37 @@ class DequeHeap : public Super {
         if (seg.len == list_length) {
           node->next = nullptr;
           if (owner_tid == thread_id()) {
-            my_deq().push_bottom_direct({seg.head, seg.tail});
+#ifdef FC_DEQUE
+            my_deq().push_bottom({seg.head, seg.tail}, false);
+#else
+            my_deq().push_bottom({seg.head, seg.tail});
+#endif
           } else {
-            deques[owner_tid].push_top_direct({seg.head, seg.tail});
+#ifdef FC_DEQUE
+            deques[owner_tid].push_top({seg.head, seg.tail}, false);
+#else
+            deques[owner_tid].push_top({seg.head, seg.tail});
+#endif
           }
           seg.head = nullptr;
+#ifdef FC_DEQUE
+          waiting[num_waiting++] = owner_tid;
           // waiting.set(owner_tid);
+#endif
         }
         if (node == end_node)
           break;
         node = next;
       }
-      // for (size_t tid = 0, nthreads = num_threads(); tid < nthreads; tid++) {
+#ifdef FC_DEQUE
+      // for (size_t tid = 0; tid < max_threads; tid++) {
       //   if (waiting[tid])
       //     deques[tid].wait();
       // }
+      for (size_t i = 0; i < num_waiting; i++) {
+        deques[waiting[i]].wait();
+      }
+#endif
     }
 
 #else

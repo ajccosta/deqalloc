@@ -5,11 +5,7 @@
 #include <iostream>
 #include <array>
 
-#ifdef FC_DEQUE
-constexpr size_t max_threads = 256;
-#else
 constexpr size_t max_threads = 1024;
-#endif
 
 static std::atomic<size_t> thread_counter{0};
 

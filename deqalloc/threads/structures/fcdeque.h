@@ -176,8 +176,8 @@ private:
   };
 
   void combine() {
-    size_t threadCount = num_threads();
-    for (size_t i = 0; i < threadCount; i++) {
+    // size_t threadCount = num_threads();
+    for (size_t i = 0; i < max_threads; i++) {
       auto &request = threadRequests[i];
       switch (request.getStatus()) {
         case Request::PushFront: {
