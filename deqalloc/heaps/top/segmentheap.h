@@ -326,7 +326,12 @@ pushNode_n_retry:
             if(!emptied) //failed emptying, retry
               goto pushNode_n_retry;
             //initialize rest of the list
-            initializeList(getNodePointer(index), getSize(), num_nodes);
+            node_t* first_init_node = getNodePointer(index);
+            node_t* last_init_node = getNodePointer(index+num_nodes-1);
+            initializeList(first_init_node, getSize(), num_nodes);
+            //append removed part of the list
+            node_last->next = first_init_node;
+            node_last = last_init_node;
             //CAS will now try to change from empty list
             h = list_size_t_null;
           }
