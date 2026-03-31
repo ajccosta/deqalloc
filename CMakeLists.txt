@@ -71,19 +71,19 @@ add_library(deqalloc_localseglist SHARED ${ALL_SOURCES})
 target_compile_definitions(deqalloc_localseglist PUBLIC -DNDEBUG -D_REENTRANT=1 -DLOCAL_SEGLIST ${DEFINES})
 
 add_library(deqalloc_genericdeque_fc SHARED ${ALL_SOURCES})
-target_compile_definitions(deqalloc_genericdeque PUBLIC -DNDEBUG -D_REENTRANT=1 -DFC_DEQUE ${DEFINES})
+target_compile_definitions(deqalloc_genericdeque_fc PUBLIC -DNDEBUG -D_REENTRANT=1 -DFC_DEQUE ${DEFINES})
 
 add_library(deqalloc_genericdeque SHARED ${ALL_SOURCES})
 target_compile_definitions(deqalloc_genericdeque PUBLIC -DNDEBUG -D_REENTRANT=1 -DLOCKING_DEQUE ${DEFINES})
 
 add_library(deqalloc_genericdeque_localseglist_fc SHARED ${ALL_SOURCES})
-target_compile_definitions(deqalloc_genericdeque_localseglist PUBLIC -DNDEBUG -D_REENTRANT=1 -DFC_DEQUE -DLOCAL_SEGLIST ${DEFINES})
+target_compile_definitions(deqalloc_genericdeque_localseglist_fc PUBLIC -DNDEBUG -D_REENTRANT=1 -DFC_DEQUE -DLOCAL_SEGLIST ${DEFINES})
 
 add_library(deqalloc_genericdeque_localseglist SHARED ${ALL_SOURCES})
 target_compile_definitions(deqalloc_genericdeque_localseglist PUBLIC -DNDEBUG -D_REENTRANT=1 -DLOCKING_DEQUE -DLOCAL_SEGLIST ${DEFINES})
 
 add_library(deqalloc_remotefree_fc SHARED ${ALL_SOURCES})
-target_compile_definitions(deqalloc_remotefree PUBLIC -DNDEBUG -D_REENTRANT=1 -DREMOTE_FREE -DFC_DEQUE -DLOCAL_SEGLIST ${DEFINES})
+target_compile_definitions(deqalloc_remotefree_fc PUBLIC -DNDEBUG -D_REENTRANT=1 -DREMOTE_FREE -DFC_DEQUE -DLOCAL_SEGLIST ${DEFINES})
 
 add_library(deqalloc_remotefree SHARED ${ALL_SOURCES})
 target_compile_definitions(deqalloc_remotefree PUBLIC -DNDEBUG -D_REENTRANT=1 -DREMOTE_FREE -DLOCKING_DEQUE -DLOCAL_SEGLIST ${DEFINES})
@@ -93,7 +93,7 @@ foreach(BATCH_SIZE 512 1024 2048 4096 8192)
   target_compile_definitions(deqalloc_${BATCH_SIZE} PUBLIC -DNDEBUG -D_REENTRANT=1 -DDEFAULT_LIST_BYTES=${BATCH_SIZE})
 
   add_library(deqalloc_remotefree_fc_${BATCH_SIZE} SHARED ${ALL_SOURCES})
-  target_compile_definitions(deqalloc_remotefree_${BATCH_SIZE} PUBLIC -DNDEBUG -D_REENTRANT=1 -DREMOTE_FREE -DFC_DEQUE -DLOCAL_SEGLIST -DDEFAULT_LIST_BYTES=${BATCH_SIZE})
+  target_compile_definitions(deqalloc_remotefree_fc_${BATCH_SIZE} PUBLIC -DNDEBUG -D_REENTRANT=1 -DREMOTE_FREE -DFC_DEQUE -DLOCAL_SEGLIST -DDEFAULT_LIST_BYTES=${BATCH_SIZE})
 
   add_library(deqalloc_genericdeque_${BATCH_SIZE} SHARED ${ALL_SOURCES})
   target_compile_definitions(deqalloc_genericdeque_${BATCH_SIZE} PUBLIC -DNDEBUG -D_REENTRANT=1 -DLOCKING_DEQUE -DDEFAULT_LIST_BYTES=${BATCH_SIZE})
