@@ -45,6 +45,7 @@ ALLOC_PALETTE = {
     "lockfree":  "#26c6da",
     "rpmalloc":  "#d4e157",
     "deqalloc_remotefree": "#ef5350",
+    "deqalloc_genericdeque": "#cda434",
 }
 
 ALLOCS = ["deqalloc", "mimalloc", "jemalloc", "snmalloc", "hoard", "tcmalloc", "tbbmalloc", "lockfree", "rpmalloc"]
@@ -98,6 +99,15 @@ DS_TYPES = {
     "hm_hashtable"              : "normal",
 }
 
+DEFAULT_PARAMS = {
+    "update": 100,
+    "size": {
+        "normal": 200000,
+        "list": 2000,
+    },
+    "reclamation": "debra",
+}
+
 ALLOC_MARKERS = {
     'deqalloc': 's',
     'mimalloc': 'o',
@@ -109,6 +119,7 @@ ALLOC_MARKERS = {
     'lockfree': 'v',
     'rpmalloc': '<',
     'deqalloc_remotefree': 'X',
+    'deqalloc_genericdeque': '>',
     #'': '>',
     #'': '8',
     #'': 'h',
@@ -123,6 +134,7 @@ ALLOC_MARKERS = {
 
 ALLOC_RENAMES = {
     'deqalloc_remotefree': 'deqalloc-rf',
+    'deqalloc_genericdeque': 'deqalloc-gd',
     'deqalloc_localseglist': 'deqalloc-lsl',
 }
 
@@ -199,6 +211,7 @@ FIG_CONFIGS = {
         "lockfree":  linestyle_tuple["loosely dashed"],
         "rpmalloc":  linestyle_tuple["loosely dashdotted"],
         "deqalloc_remotefree": linestyle_tuple["solid"] if "solid" in linestyle_tuple else (0, ()),
+        "deqalloc_genericdeque": linestyle_tuple["densely dashdotted"],
     },
 }
 
@@ -1230,6 +1243,7 @@ def plot_remotefree_batchsize(input_dir, suite, experiment, out_dir, fmt):
     def parse_allocator(name):
         if name == "deqalloc": return "deqalloc", 16384
         if name == "deqalloc_remotefree": return "deqalloc_remotefree", 16384
+        if name == "deqalloc_genericdeque": return "deqalloc_genericdeque", 16384
         
         m = re.match(r'^(.*)_(\d+)$', name)
         if m:
@@ -1243,7 +1257,10 @@ def plot_remotefree_batchsize(input_dir, suite, experiment, out_dir, fmt):
         for i, ds in enumerate(dss):
             fig, ax = plt.subplots(figsize=FIG_CONFIGS["figsize"])
 
-            ds_rows = [r for r in data if r["ds"] == ds]
+
+            default_size = DEFAULT_PARAMS["size"].get(DS_TYPES.get(ds))
+            ds_rows = [r for r in data if r["ds"] == ds and r["key_size"] == default_size]
+            
             
             parsed_rows = []
             for r in ds_rows:
@@ -1309,9 +1326,8 @@ def plot_remotefree_batchsize(input_dir, suite, experiment, out_dir, fmt):
 
             style_fig(fig, ax, paper_print)
             
-            min_y = min(ax.dataLim.ymin, 1)
-            if math.isnan(min_y) or math.isinf(min_y): min_y = 0
-            ax.set_ylim(bottom=min_y * 0.99)
+            max_y = ax.dataLim.ymax
+            ax.set_ylim(top=max_y * 1.05)
 
             fig.savefig(f"{out_dir}/{write_dir}batchsize_{ds}.{fmt}",
                 dpi=FIG_CONFIGS["dpi"],
@@ -1322,6 +1338,7 @@ def plot_remotefree_batchsize(input_dir, suite, experiment, out_dir, fmt):
         paper_ds_list = [ f"{out_dir}/paper/{experiment}/batchsize_{ds}.{fmt}" for ds in paper_ds if ds in dss] 
         if paper_ds_list:
             merge_pdfs_horizontally(paper_ds_list, f"{out_dir}/paper/{experiment}.{fmt}")
+
 
 def plot_temp_and_freq(file, out_dir, fmt):
     if not os.path.exists(file):
@@ -1359,7 +1376,7 @@ def generate_legend(allocs, out_path, fmt):
     """
     # 1. Create a blank figure. 
     # Bumped the multiplier to 1.5 to give the text slightly more breathing room
-    fig, ax = plt.subplots(figsize=(len(allocs) * (1 if len(allocs) > 3 else 2.5), 0.5))
+    fig, ax = plt.subplots(figsize=(len(allocs) * (1 if len(allocs) > 4 else 1.5), 0.5))
 
     # 2. Keep the bounding box, but hide the internal graph ticks
     ax.set_xticks([])
@@ -1470,7 +1487,7 @@ def main():
         merge_pdfs_horizontally(paper_ds_list, f"{args.output_dir}/joined_geomean.{args.format}")
 
     generate_legend(ALLOCS, f"{args.output_dir}/legend", args.format)
-    generate_legend(["deqalloc", "deqalloc_remotefree", "snmalloc"], f"{args.output_dir}/legend_batchsize", args.format)
+    generate_legend(["deqalloc", "deqalloc_remotefree", "deqalloc_genericdeque", "snmalloc"], f"{args.output_dir}/legend_batchsize", args.format)
 
 if __name__ == "__main__":
     main()
