@@ -1,0 +1,203 @@
+Command: ./run_experiments.py flock -o LAROCHETTE_TLP_REMOTEFREE --runs 3 --time 3 --allocator deqalloc_512 deqalloc_1024 deqalloc_2048 deqalloc_4096 deqalloc_8192 deqalloc deqalloc_remotefree_512 deqalloc_remotefree_1024 deqalloc_remotefree_2048 deqalloc_remotefree_4096 deqalloc_remotefree_8192 deqalloc_remotefree snmalloc_4096 snmalloc_16384 snmalloc_65536 snmalloc_262144 snmalloc_1048576 snmalloc_4194304 --nohugepages --benchmark sizes
+Date: 03-31-2026
+Experiment: flock sizes
+Model name:                              INTEL(R) XEON(R) PLATINUM 8568Y+
+Git: 2ce72bf
+---
+allocator             update% ds                   key_size   #threads  numa   thread-perc           results
+deqalloc_512          100     btree_lck            5000       192       False                        [ 8.448 8.785 8.333 ] 8.5220, 246776 KB
+deqalloc_1024         100     btree_lck            5000       192       False                        [ 8.229 8.221 7.933 ] 8.1277, 243732 KB
+deqalloc_2048         100     btree_lck            5000       192       False                        [ 8.229 8.264 9.064 ] 8.5190, 246304 KB
+deqalloc_4096         100     btree_lck            5000       192       False                        [ 8.449 8.688 8.615 ] 8.5840, 283236 KB
+deqalloc_8192         100     btree_lck            5000       192       False                        [ 9.298 8.083 8.58 ] 8.6537, 241712 KB
+deqalloc              100     btree_lck            5000       192       False                        [ 8.477 8.422 8.668 ] 8.5223, 251916 KB
+deqalloc_remotefree_512 100     btree_lck            5000       192       False                        [ 0.8903 2.707 2.834 ] 2.1438, 511740 KB
+deqalloc_remotefree_1024 100     btree_lck            5000       192       False                        [ 0.7157 3.689 2.811 ] 2.4052, 519536 KB
+deqalloc_remotefree_2048 100     btree_lck            5000       192       False                        [ 5.492 4.937 6.279 ] 5.5693, 505676 KB
+deqalloc_remotefree_4096 100     btree_lck            5000       192       False                        [ 6.285 6.709 7.128 ] 6.7073, 496788 KB
+deqalloc_remotefree_8192 100     btree_lck            5000       192       False                        [ 7.849 7.899 7.589 ] 7.7790, 500424 KB
+deqalloc_remotefree   100     btree_lck            5000       192       False                        [ 7.395 8.674 7.961 ] 8.0100, 727040 KB
+snmalloc_4096         100     btree_lck            5000       192       False                        [ 6.067 6.332 6.238 ] 6.2123, 208592 KB
+snmalloc_16384        100     btree_lck            5000       192       False                        [ 6.468 6.362 6.301 ] 6.3770, 220784 KB
+snmalloc_65536        100     btree_lck            5000       192       False                        [ 7.051 6.975 6.644 ] 6.8900, 212844 KB
+snmalloc_262144       100     btree_lck            5000       192       False                        [ 7.552 7.438 7.199 ] 7.3963, 228352 KB
+snmalloc_1048576      100     btree_lck            5000       192       False                        [ 7.813 7.813 8.234 ] 7.9533, 313548 KB
+snmalloc_4194304      100     btree_lck            5000       192       False                        [ 8.87 8.116 8.145 ] 8.3770, 754476 KB
+deqalloc_512          100     hash_block_lck       5000       192       False                        [ 489.3 484.8 471.5 ] 481.8667, 227336 KB
+deqalloc_1024         100     hash_block_lck       5000       192       False                        [ 488.8 492.6 476.0 ] 485.8000, 207104 KB
+deqalloc_2048         100     hash_block_lck       5000       192       False                        [ 488.5 490.7 482.6 ] 487.2667, 222780 KB
+deqalloc_4096         100     hash_block_lck       5000       192       False                        [ 489.7 466.5 484.2 ] 480.1333, 214028 KB
+deqalloc_8192         100     hash_block_lck       5000       192       False                        [ 497.9 492.5 474.8 ] 488.4000, 313056 KB
+deqalloc              100     hash_block_lck       5000       192       False                        [ 502.0 497.8 487.2 ] 495.6667, 246000 KB
+deqalloc_remotefree_512 100     hash_block_lck       5000       192       False                        [ 61.0 94.31 96.2 ] 83.8367, 434684 KB
+deqalloc_remotefree_1024 100     hash_block_lck       5000       192       False                        [ 174.3 229.5 301.4 ] 235.0667, 571868 KB
+deqalloc_remotefree_2048 100     hash_block_lck       5000       192       False                        [ 381.1 332.7 390.5 ] 368.1000, 711292 KB
+deqalloc_remotefree_4096 100     hash_block_lck       5000       192       False                        [ 485.8 489.5 420.9 ] 465.4000, 610620 KB
+deqalloc_remotefree_8192 100     hash_block_lck       5000       192       False                        [ 487.2 487.1 485.9 ] 486.7333, 411224 KB
+deqalloc_remotefree   100     hash_block_lck       5000       192       False                        [ 488.6 475.3 474.1 ] 479.3333, 982112 KB
+snmalloc_4096         100     hash_block_lck       5000       192       False                        [ 407.5 423.5 409.4 ] 413.4667, 420768 KB
+snmalloc_16384        100     hash_block_lck       5000       192       False                        [ 448.3 444.0 452.4 ] 448.2333, 399116 KB
+snmalloc_65536        100     hash_block_lck       5000       192       False                        [ 488.4 485.5 479.2 ] 484.3667, 214176 KB
+snmalloc_262144       100     hash_block_lck       5000       192       False                        [ 485.8 487.9 488.8 ] 487.5000, 397064 KB
+snmalloc_1048576      100     hash_block_lck       5000       192       False                        [ 509.0 507.7 510.5 ] 509.0667, 710632 KB
+snmalloc_4194304      100     hash_block_lck       5000       192       False                        [ 492.7 499.0 499.4 ] 497.0333, 1116460 KB
+deqalloc_512          100     leaftree_lck         5000       192       False                        [ 222.3 228.2 223.2 ] 224.5667, 155524 KB
+deqalloc_1024         100     leaftree_lck         5000       192       False                        [ 232.2 222.5 226.5 ] 227.0667, 148136 KB
+deqalloc_2048         100     leaftree_lck         5000       192       False                        [ 230.1 228.1 215.9 ] 224.7000, 159520 KB
+deqalloc_4096         100     leaftree_lck         5000       192       False                        [ 231.9 227.8 232.6 ] 230.7667, 136460 KB
+deqalloc_8192         100     leaftree_lck         5000       192       False                        [ 231.1 227.4 231.5 ] 230.0000, 119804 KB
+deqalloc              100     leaftree_lck         5000       192       False                        [ 225.5 231.8 231.4 ] 229.5667, 139568 KB
+deqalloc_remotefree_512 100     leaftree_lck         5000       192       False                        [ 34.65 24.05 32.08 ] 30.2600, 367880 KB
+deqalloc_remotefree_1024 100     leaftree_lck         5000       192       False                        [ 69.88 68.46 64.22 ] 67.5200, 434572 KB
+deqalloc_remotefree_2048 100     leaftree_lck         5000       192       False                        [ 157.7 159.9 194.2 ] 170.6000, 450264 KB
+deqalloc_remotefree_4096 100     leaftree_lck         5000       192       False                        [ 214.6 210.3 198.4 ] 207.7667, 456284 KB
+deqalloc_remotefree_8192 100     leaftree_lck         5000       192       False                        [ 211.6 221.9 229.4 ] 220.9667, 410608 KB
+deqalloc_remotefree   100     leaftree_lck         5000       192       False                        [ 212.1 224.0 224.5 ] 220.2000, 674680 KB
+snmalloc_4096         100     leaftree_lck         5000       192       False                        [ 175.3 173.2 176.0 ] 174.8333, 163948 KB
+snmalloc_16384        100     leaftree_lck         5000       192       False                        [ 180.8 181.1 177.3 ] 179.7333, 165696 KB
+snmalloc_65536        100     leaftree_lck         5000       192       False                        [ 190.7 191.8 191.6 ] 191.3667, 127152 KB
+snmalloc_262144       100     leaftree_lck         5000       192       False                        [ 184.5 183.1 185.0 ] 184.2000, 212672 KB
+snmalloc_1048576      100     leaftree_lck         5000       192       False                        [ 193.4 199.0 199.1 ] 197.1667, 288216 KB
+snmalloc_4194304      100     leaftree_lck         5000       192       False                        [ 106.3 106.2 108.7 ] 107.0667, 818276 KB
+deqalloc_512          100     skiplist_lck         5000       192       False                        [ 85.79 85.05 80.88 ] 83.9067, 3906260 KB
+deqalloc_1024         100     skiplist_lck         5000       192       False                        [ 96.81 100.4 97.47 ] 98.2267, 4530704 KB
+deqalloc_2048         100     skiplist_lck         5000       192       False                        [ 108.4 105.7 108.3 ] 107.4667, 5128196 KB
+deqalloc_4096         100     skiplist_lck         5000       192       False                        [ 110.5 108.5 111.6 ] 110.2000, 5442008 KB
+deqalloc_8192         100     skiplist_lck         5000       192       False                        [ 116.1 109.5 112.8 ] 112.8000, 5380308 KB
+deqalloc              100     skiplist_lck         5000       192       False                        [ 116.9 114.7 110.4 ] 114.0000, 5655508 KB
+deqalloc_remotefree_512 100     skiplist_lck         5000       192       False                        [ 10.17 12.12 10.66 ] 10.9833, 691336 KB
+deqalloc_remotefree_1024 100     skiplist_lck         5000       192       False                        [ 24.97 25.15 25.77 ] 25.2967, 1138280 KB
+deqalloc_remotefree_2048 100     skiplist_lck         5000       192       False                        [ 41.31 54.25 48.3 ] 47.9533, 1998076 KB
+deqalloc_remotefree_4096 100     skiplist_lck         5000       192       False                        [ 62.54 73.74 81.78 ] 72.6867, 3349692 KB
+deqalloc_remotefree_8192 100     skiplist_lck         5000       192       False                        [ 90.0 84.37 90.19 ] 88.1867, 4452272 KB
+deqalloc_remotefree   100     skiplist_lck         5000       192       False                        [ 114.6 115.0 107.0 ] 112.2000, 5840656 KB
+snmalloc_4096         100     skiplist_lck         5000       192       False                        [ 112.6 112.7 112.7 ] 112.6667, 6436952 KB
+snmalloc_16384        100     skiplist_lck         5000       192       False                        [ 113.4 113.7 113.8 ] 113.6333, 6616828 KB
+snmalloc_65536        100     skiplist_lck         5000       192       False                        [ 114.1 113.8 114.2 ] 114.0333, 6586584 KB
+snmalloc_262144       100     skiplist_lck         5000       192       False                        [ 113.9 113.7 113.9 ] 113.8333, 6831680 KB
+snmalloc_1048576      100     skiplist_lck         5000       192       False                        [ 113.0 110.8 112.8 ] 112.2000, 6866192 KB
+snmalloc_4194304      100     skiplist_lck         5000       192       False                        [ 112.5 112.4 111.4 ] 112.1000, 6955588 KB
+deqalloc_512          100     arttree_lck          5000       192       False                        [ 1.165 1.313 1.186 ] 1.2213, 179384 KB
+deqalloc_1024         100     arttree_lck          5000       192       False                        [ 1.216 1.24 1.192 ] 1.2160, 156176 KB
+deqalloc_2048         100     arttree_lck          5000       192       False                        [  ] 0.0000, 181576 KB
+# CRASH: arttree_lck alloc=deqalloc_2048 u=100 n=5000
+deqalloc_4096         100     arttree_lck          5000       192       False                        [  ] 0.0000, 183324 KB
+# CRASH: arttree_lck alloc=deqalloc_4096 u=100 n=5000
+deqalloc_8192         100     arttree_lck          5000       192       False                        [  ] 0.0000, 197364 KB
+# CRASH: arttree_lck alloc=deqalloc_8192 u=100 n=5000
+deqalloc              100     arttree_lck          5000       192       False                        [  ] 0.0000, 113780 KB
+# CRASH: arttree_lck alloc=deqalloc u=100 n=5000
+deqalloc_remotefree_512 100     arttree_lck          5000       192       False                        [ 0.02022 0.02034 0.02027 ] 0.0203, 379552 KB
+deqalloc_remotefree_1024 100     arttree_lck          5000       192       False                        [ 0.02206 0.02152 0.02154 ] 0.0217, 384292 KB
+deqalloc_remotefree_2048 100     arttree_lck          5000       192       False                        [ 0.04105 0.03989 0.04136 ] 0.0408, 442848 KB
+deqalloc_remotefree_4096 100     arttree_lck          5000       192       False                        [ 0.07974 0.5436 ] 0.3117, 461724 KB
+# CRASH: arttree_lck alloc=deqalloc_remotefree_4096 u=100 n=5000
+deqalloc_remotefree_8192 100     arttree_lck          5000       192       False                        [  ] 0.0000, 444424 KB
+# CRASH: arttree_lck alloc=deqalloc_remotefree_8192 u=100 n=5000
+deqalloc_remotefree   100     arttree_lck          5000       192       False                        [ 0.5112 1.092 1.322 ] 0.9751, 633372 KB
+snmalloc_4096         100     arttree_lck          5000       192       False                        [  ] 0.0000, 144904 KB
+# CRASH: arttree_lck alloc=snmalloc_4096 u=100 n=5000
+snmalloc_16384        100     arttree_lck          5000       192       False                        [ 1.168 1.114 1.109 ] 1.1303, 215128 KB
+snmalloc_65536        100     arttree_lck          5000       192       False                        [ 1.206 ] 1.2060, 181720 KB
+# CRASH: arttree_lck alloc=snmalloc_65536 u=100 n=5000
+snmalloc_262144       100     arttree_lck          5000       192       False                        [ 1.147 1.219 1.135 ] 1.1670, 171032 KB
+snmalloc_1048576      100     arttree_lck          5000       192       False                        [ 1.257 1.038 ] 1.1475, 259928 KB
+# CRASH: arttree_lck alloc=snmalloc_1048576 u=100 n=5000
+snmalloc_4194304      100     arttree_lck          5000       192       False                        [  ] 0.0000, 711448 KB
+# CRASH: arttree_lck alloc=snmalloc_4194304 u=100 n=5000
+deqalloc_512          100     list_lck             500        192       False                        [ 36.65 36.27 36.54 ] 36.4867, 77784 KB
+deqalloc_1024         100     list_lck             500        192       False                        [ 36.3 36.51 36.6 ] 36.4700, 75140 KB
+deqalloc_2048         100     list_lck             500        192       False                        [ 36.7 36.27 36.49 ] 36.4867, 73780 KB
+deqalloc_4096         100     list_lck             500        192       False                        [ 36.4 36.33 36.38 ] 36.3700, 84648 KB
+deqalloc_8192         100     list_lck             500        192       False                        [ 36.68 36.43 36.62 ] 36.5767, 87172 KB
+deqalloc              100     list_lck             500        192       False                        [ 36.55 36.48 36.73 ] 36.5867, 83868 KB
+deqalloc_remotefree_512 100     list_lck             500        192       False                        [ 20.78 25.44 20.57 ] 22.2633, 326628 KB
+deqalloc_remotefree_1024 100     list_lck             500        192       False                        [ 28.23 27.13 28.95 ] 28.1033, 321012 KB
+deqalloc_remotefree_2048 100     list_lck             500        192       False                        [ 34.72 34.7 30.51 ] 33.3100, 323024 KB
+deqalloc_remotefree_4096 100     list_lck             500        192       False                        [ 36.22 35.96 35.86 ] 36.0133, 323540 KB
+deqalloc_remotefree_8192 100     list_lck             500        192       False                        [ 36.55 36.39 36.52 ] 36.4867, 324512 KB
+deqalloc_remotefree   100     list_lck             500        192       False                        [ 36.07 36.06 36.06 ] 36.0633, 432004 KB
+snmalloc_4096         100     list_lck             500        192       False                        [ 35.66 35.81 35.85 ] 35.7733, 53284 KB
+snmalloc_16384        100     list_lck             500        192       False                        [ 35.78 35.52 35.83 ] 35.7100, 66944 KB
+snmalloc_65536        100     list_lck             500        192       False                        [ 36.06 36.02 35.86 ] 35.9800, 69564 KB
+snmalloc_262144       100     list_lck             500        192       False                        [ 35.9 35.9 35.98 ] 35.9267, 71648 KB
+snmalloc_1048576      100     list_lck             500        192       False                        [ 35.02 35.03 35.12 ] 35.0567, 219316 KB
+snmalloc_4194304      100     list_lck             500        192       False                        [ 32.92 33.14 31.81 ] 32.6233, 805404 KB
+deqalloc_512          100     btree_lck            200000     192       False                        [ 185.7 165.8 103.8 ] 151.7667, 642860 KB
+deqalloc_1024         100     btree_lck            200000     192       False                        [ 195.9 198.4 160.3 ] 184.8667, 535952 KB
+deqalloc_2048         100     btree_lck            200000     192       False                        [ 196.6 198.9 187.2 ] 194.2333, 543228 KB
+deqalloc_4096         100     btree_lck            200000     192       False                        [ 189.2 192.2 187.2 ] 189.5333, 597060 KB
+deqalloc_8192         100     btree_lck            200000     192       False                        [ 191.3 201.9 187.6 ] 193.6000, 582220 KB
+deqalloc              100     btree_lck            200000     192       False                        [ 192.4 189.2 200.4 ] 194.0000, 661116 KB
+deqalloc_remotefree_512 100     btree_lck            200000     192       False                        [ 9.521 7.933 8.247 ] 8.5670, 799720 KB
+deqalloc_remotefree_1024 100     btree_lck            200000     192       False                        [ 13.35 10.61 10.68 ] 11.5467, 840156 KB
+deqalloc_remotefree_2048 100     btree_lck            200000     192       False                        [ 22.76 17.85 15.72 ] 18.7767, 898528 KB
+deqalloc_remotefree_4096 100     btree_lck            200000     192       False                        [ 32.72 37.21 26.67 ] 32.2000, 1048648 KB
+deqalloc_remotefree_8192 100     btree_lck            200000     192       False                        [ 65.66 90.96 60.54 ] 72.3867, 1045432 KB
+deqalloc_remotefree   100     btree_lck            200000     192       False                        [ 160.4 153.2 166.3 ] 159.9667, 1291900 KB
+snmalloc_4096         100     btree_lck            200000     192       False                        [ 32.42 32.16 32.99 ] 32.5233, 1343684 KB
+snmalloc_16384        100     btree_lck            200000     192       False                        [ 46.4 43.29 43.87 ] 44.5200, 1268840 KB
+snmalloc_65536        100     btree_lck            200000     192       False                        [ 56.69 53.27 54.02 ] 54.6600, 1186276 KB
+snmalloc_262144       100     btree_lck            200000     192       False                        [ 81.1 75.2 73.17 ] 76.4900, 1167420 KB
+snmalloc_1048576      100     btree_lck            200000     192       False                        [ 113.6 119.0 108.0 ] 113.5333, 946852 KB
+snmalloc_4194304      100     btree_lck            200000     192       False                        [ 80.1 76.38 79.05 ] 78.5100, 1393704 KB
+deqalloc_512          100     hash_block_lck       200000     192       False                        [ 492.6 493.5 503.3 ] 496.4667, 347772 KB
+deqalloc_1024         100     hash_block_lck       200000     192       False                        [ 505.7 502.1 488.6 ] 498.8000, 343924 KB
+deqalloc_2048         100     hash_block_lck       200000     192       False                        [ 503.8 501.5 494.2 ] 499.8333, 345044 KB
+deqalloc_4096         100     hash_block_lck       200000     192       False                        [ 507.1 507.2 498.5 ] 504.2667, 358284 KB
+deqalloc_8192         100     hash_block_lck       200000     192       False                        [ 507.0 497.4 507.7 ] 504.0333, 414236 KB
+deqalloc              100     hash_block_lck       200000     192       False                        [ 500.9 506.7 496.2 ] 501.2667, 457732 KB
+deqalloc_remotefree_512 100     hash_block_lck       200000     192       False                        [ 58.37 69.11 113.9 ] 80.4600, 603240 KB
+deqalloc_remotefree_1024 100     hash_block_lck       200000     192       False                        [ 197.4 252.2 250.6 ] 233.4000, 743792 KB
+deqalloc_remotefree_2048 100     hash_block_lck       200000     192       False                        [ 359.7 391.0 372.6 ] 374.4333, 800244 KB
+deqalloc_remotefree_4096 100     hash_block_lck       200000     192       False                        [ 489.6 434.6 476.8 ] 467.0000, 760352 KB
+deqalloc_remotefree_8192 100     hash_block_lck       200000     192       False                        [ 507.1 495.3 505.2 ] 502.5333, 653980 KB
+deqalloc_remotefree   100     hash_block_lck       200000     192       False                        [ 470.8 476.2 499.3 ] 482.1000, 1244140 KB
+snmalloc_4096         100     hash_block_lck       200000     192       False                        [ 418.8 416.3 417.4 ] 417.5000, 467720 KB
+snmalloc_16384        100     hash_block_lck       200000     192       False                        [ 448.4 447.5 443.6 ] 446.5000, 754008 KB
+snmalloc_65536        100     hash_block_lck       200000     192       False                        [ 480.3 479.5 480.7 ] 480.1667, 378736 KB
+snmalloc_262144       100     hash_block_lck       200000     192       False                        [ 516.1 515.3 516.4 ] 515.9333, 752208 KB
+snmalloc_1048576      100     hash_block_lck       200000     192       False                        [ 518.2 522.2 523.1 ] 521.1667, 699968 KB
+snmalloc_4194304      100     hash_block_lck       200000     192       False                        [ 519.6 512.0 518.2 ] 516.6000, 1164584 KB
+deqalloc_512          100     leaftree_lck         200000     192       False                        [ 202.8 201.1 201.0 ] 201.6333, 282012 KB
+deqalloc_1024         100     leaftree_lck         200000     192       False                        [ 202.9 204.2 195.4 ] 200.8333, 313580 KB
+deqalloc_2048         100     leaftree_lck         200000     192       False                        [ 203.5 204.7 203.1 ] 203.7667, 285660 KB
+deqalloc_4096         100     leaftree_lck         200000     192       False                        [ 204.6 204.2 202.4 ] 203.7333, 300364 KB
+deqalloc_8192         100     leaftree_lck         200000     192       False                        [ 200.7 205.1 197.5 ] 201.1000, 359500 KB
+deqalloc              100     leaftree_lck         200000     192       False                        [ 204.5 200.8 203.2 ] 202.8333, 332212 KB
+deqalloc_remotefree_512 100     leaftree_lck         200000     192       False                        [ 87.72 62.52 56.21 ] 68.8167, 560136 KB
+deqalloc_remotefree_1024 100     leaftree_lck         200000     192       False                        [ 126.0 123.4 114.8 ] 121.4000, 660972 KB
+deqalloc_remotefree_2048 100     leaftree_lck         200000     192       False                        [ 158.0 171.7 178.2 ] 169.3000, 707684 KB
+deqalloc_remotefree_4096 100     leaftree_lck         200000     192       False                        [ 186.1 196.0 191.0 ] 191.0333, 603716 KB
+deqalloc_remotefree_8192 100     leaftree_lck         200000     192       False                        [ 193.0 198.9 201.4 ] 197.7667, 607536 KB
+deqalloc_remotefree   100     leaftree_lck         200000     192       False                        [ 193.0 180.0 187.1 ] 186.7000, 953408 KB
+snmalloc_4096         100     leaftree_lck         200000     192       False                        [ 170.3 168.7 169.7 ] 169.5667, 411068 KB
+snmalloc_16384        100     leaftree_lck         200000     192       False                        [ 176.2 177.4 175.0 ] 176.2000, 356032 KB
+snmalloc_65536        100     leaftree_lck         200000     192       False                        [ 184.8 185.0 185.5 ] 185.1000, 396608 KB
+snmalloc_262144       100     leaftree_lck         200000     192       False                        [ 189.5 189.9 190.8 ] 190.0667, 396720 KB
+snmalloc_1048576      100     leaftree_lck         200000     192       False                        [ 183.5 181.5 184.0 ] 183.0000, 599560 KB
+snmalloc_4194304      100     leaftree_lck         200000     192       False                        [ 172.4 172.6 172.4 ] 172.4667, 1008560 KB
+deqalloc_512          100     skiplist_lck         200000     192       False                        [ 159.4 160.3 156.1 ] 158.6000, 468180 KB
+deqalloc_1024         100     skiplist_lck         200000     192       False                        [ 159.4 159.5 158.6 ] 159.1667, 463304 KB
+deqalloc_2048         100     skiplist_lck         200000     192       False                        [ 158.7 157.0 159.4 ] 158.3667, 437288 KB
+deqalloc_4096         100     skiplist_lck         200000     192       False                        [ 158.4 158.7 156.3 ] 157.8000, 435632 KB
+deqalloc_8192         100     skiplist_lck         200000     192       False                        [ 159.9 158.7 157.0 ] 158.5333, 460920 KB
+deqalloc              100     skiplist_lck         200000     192       False                        [ 160.4 159.7 155.8 ] 158.6333, 518044 KB
+deqalloc_remotefree_512 100     skiplist_lck         200000     192       False                        [ 29.93 27.58 30.71 ] 29.4067, 549124 KB
+deqalloc_remotefree_1024 100     skiplist_lck         200000     192       False                        [ 76.82 85.34 85.8 ] 82.6533, 702268 KB
+deqalloc_remotefree_2048 100     skiplist_lck         200000     192       False                        [ 113.9 137.1 144.3 ] 131.7667, 719816 KB
+deqalloc_remotefree_4096 100     skiplist_lck         200000     192       False                        [ 153.1 141.9 152.6 ] 149.2000, 699072 KB
+deqalloc_remotefree_8192 100     skiplist_lck         200000     192       False                        [ 158.5 155.0 147.9 ] 153.8000, 810832 KB
+deqalloc_remotefree   100     skiplist_lck         200000     192       False                        [ 153.2 153.5 148.5 ] 151.7333, 1066992 KB
+snmalloc_4096         100     skiplist_lck         200000     192       False                        [ 149.6 149.6 149.6 ] 149.6000, 431676 KB
+snmalloc_16384        100     skiplist_lck         200000     192       False                        [ 150.2 151.2 150.7 ] 150.7000, 453084 KB
+snmalloc_65536        100     skiplist_lck         200000     192       False                        [ 149.5 149.7 149.9 ] 149.7000, 572040 KB
+snmalloc_262144       100     skiplist_lck         200000     192       False                        [ 152.8 149.9 151.5 ] 151.4000, 760940 KB
+snmalloc_1048576      100     skiplist_lck         200000     192       False                        [ 152.6 152.5 151.2 ] 152.1000, 759016 KB
+snmalloc_4194304      100     skiplist_lck         200000     192       False                        [ 150.6 149.7 150.0 ] 150.1000, 1029644 KB
+deqalloc_512          100     arttree_lck          200000     192       False                        [ 228.1 237.4 246.7 ] 237.4000, 478072 KB
+deqalloc_1024         100     arttree_lck          200000     192       False                        [ 217.0 249.8 55.53 ] 174.1100, 494156 KB
+deqalloc_2048         100     arttree_lck          200000     192       False                        [ 251.8 233.3 50.45 ] 178.5167, 450804 KB
+deqalloc_4096         100     arttree_lck          200000     192       False                        [ 257.3 246.0 199.0 ] 234.1000, 452964 KB
+deqalloc_8192         100     arttree_lck          200000     192       False                        [ 51.35 246.6 220.8 ] 172.9167, 481132 KB
+deqalloc              100     arttree_lck          200000     192       False                        [ 162.3 203.1 248.9 ] 204.7667, 508464 KB

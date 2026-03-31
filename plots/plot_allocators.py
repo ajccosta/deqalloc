@@ -202,6 +202,7 @@ FIG_CONFIGS = {
 #which data structures/trackers to show for the paper for the varying plots
 PAPER_DS_FLOCK = ["skiplist_lck", "leaftree_lck", "hash_block_lck"]
 PAPER_DS_LOCALSEGLIST_FLOCK = ["skiplist_lck", "leaftree_lck", "list_lck"]
+PAPER_DS_REMOTEBATCHSIZE_FLOCK = ["btree_lck", "hash_block_lck", "leaftree_lck"]
 
 #PAPER_DS_SETBENCH = ["guerraoui_ext_bst_ticket", "brown_ext_abtree_lf", "hm_hashtable", "hmlist"]
 PAPER_DS_SETBENCH = ["guerraoui_ext_bst_ticket", "brown_ext_abtree_lf", "hmlist"]
@@ -380,6 +381,8 @@ def which_paper_ds(dss, experiment=None):
         elif experiment == "ablation_localseglist_sizes" \
             or experiment == "ablation_remotefree":
             paper_ds = PAPER_DS_LOCALSEGLIST_FLOCK
+        elif experiment == "ablation_remotefree_batchsize":
+            paper_ds = PAPER_DS_REMOTEBATCHSIZE_FLOCK
     if set(dss).intersection(set(PAPER_DS_SETBENCH)):
         assert(paper_ds == [])
         if not experiment:
@@ -1212,6 +1215,108 @@ def plot_ablation_remotefree(input_dir, suite, experiment, out_dir, fmt):
     merge_pdfs_horizontally(paper_ds_list, f"{out_dir}/paper/{experiment}.{fmt}")
 
 
+# -- Plot X: Throughput vs Remote Free Batch Size -----------------------------
+def plot_remotefree_batchsize(input_dir, suite, experiment, out_dir, fmt):
+    data, crashes = load_file(input_dir, suite, experiment)
+
+    dss = sorted(set(r["ds"] for r in data))
+    paper_ds = which_paper_ds(dss, experiment)
+
+    # Helper to parse allocator name and batch size from your specific format
+    def parse_allocator(name):
+        if name == "deqalloc": return "deqalloc", 16384
+        if name == "deqalloc_remotefree": return "deqalloc_remotefree", 16384
+        
+        m = re.match(r'^(.*)_(\d+)$', name)
+        if m:
+            return m.group(1), int(m.group(2))
+        return name, 16384 # fallback
+
+    for paper_print in [True, False]: # print a paper version and a viewing version
+        write_dir = ("paper/" if paper_print else "readable/") + experiment + "/"
+        os.makedirs(f"{out_dir}/{write_dir}", exist_ok=True)
+
+        for i, ds in enumerate(dss):
+            fig, ax = plt.subplots(figsize=FIG_CONFIGS["figsize"])
+
+            ds_rows = [r for r in data if r["ds"] == ds]
+            
+            parsed_rows = []
+            for r in ds_rows:
+                base_alloc, b_size = parse_allocator(r["allocator"])
+                r_new = dict(r)
+                r_new["base_allocator"] = base_alloc
+                r_new["batch_size"] = b_size
+                parsed_rows.append(r_new)
+
+            base_allocs = sorted(set(r["base_allocator"] for r in parsed_rows))
+            
+            # Find the max number of variants to size the X-axis properly
+            max_variants = max(len(set(r["batch_size"] for r in parsed_rows if r["base_allocator"] == alloc)) for alloc in base_allocs)
+            
+            # Grab deqalloc's sizes specifically to use as the baseline X-axis labels
+            deq_sizes = sorted(set(r["batch_size"] for r in parsed_rows if r["base_allocator"] == "deqalloc"))
+            if not deq_sizes: 
+                deq_sizes = list(range(max_variants)) # Fallback if deqalloc is missing
+
+            for alloc in base_allocs:
+                # Sort the batch sizes for THIS specific allocator
+                alloc_sizes = sorted(set(r["batch_size"] for r in parsed_rows if r["base_allocator"] == alloc))
+                
+                pts = {r["batch_size"]: r["gmean"] for r in parsed_rows if r["base_allocator"] == alloc}
+                
+                # ys are ordered from smallest variant to largest variant
+                ys = [pts.get(s, None) for s in alloc_sizes]
+                
+                color = ALLOC_PALETTE.get(alloc, "#9e9e9e") 
+                marker = ALLOC_MARKERS.get(alloc, "o")
+                linestyle = FIG_CONFIGS["linestyle"].get(alloc, "-") if "linestyle" in FIG_CONFIGS else "-"
+                zorder = ALLOC_ZORDER.get(alloc, 0)
+
+                # Plot against rank (0, 1, 2...) instead of absolute byte size
+                ax.plot(range(len(alloc_sizes)),
+                        ys,
+                        label=ALLOC_RENAMES.get(alloc, alloc),
+                        linewidth=FIG_CONFIGS["linewidth"],
+                        color=color,
+                        marker=marker,
+                        markersize=FIG_CONFIGS["markersize"], 
+                        linestyle=linestyle,
+                        zorder=zorder)
+
+            # Generate X-axis labels using deqalloc's byte scale
+            xlabels = [fmt_size(b) if isinstance(b, int) else str(b) for b in deq_sizes]
+            
+            # Pad labels in case another allocator has more variants than deqalloc
+            while len(xlabels) < max_variants: 
+                xlabels.append("")
+                
+            plt.xticks(range(max_variants), xlabels[:max_variants])
+            
+            # Adjust the x-axis label to clarify what the scale represents
+            ax.set_xlabel("Batch Size (deqalloc bytes scale)")
+            ax.set_title(f'{DS_LABELS.get(ds, ds)}')
+
+            if not write_dir or ds == paper_ds[0]:
+                ax.set_ylabel('Throughput (Mops/s)', fontsize=FIG_CONFIGS["ylabel_fontsize"])
+                ylabel = ax.yaxis.label
+                ylabel.set_y(ylabel.get_position()[1] - 0.05)
+
+            style_fig(fig, ax, paper_print)
+            
+            min_y = min(ax.dataLim.ymin, 1)
+            if math.isnan(min_y) or math.isinf(min_y): min_y = 0
+            ax.set_ylim(bottom=min_y * 0.99)
+
+            fig.savefig(f"{out_dir}/{write_dir}batchsize_{ds}.{fmt}",
+                dpi=FIG_CONFIGS["dpi"],
+                bbox_inches="tight",
+                pad_inches=FIG_CONFIGS["pad_inches"])
+            plt.close(fig)
+
+        paper_ds_list = [ f"{out_dir}/paper/{experiment}/batchsize_{ds}.{fmt}" for ds in paper_ds if ds in dss] 
+        if paper_ds_list:
+            merge_pdfs_horizontally(paper_ds_list, f"{out_dir}/paper/{experiment}.{fmt}")
 
 def plot_temp_and_freq(file, out_dir, fmt):
     if not os.path.exists(file):
@@ -1332,10 +1437,12 @@ def main():
         if "memory"      in args.plots or do_all:  plot_memory(args.input_dir, "flock", "sizes", out_dir, args.format)
         if "geomean"     in args.plots or do_all: plot_geomean(args.input_dir, "flock", "geomean", out_dir, args.format)
         if "hugepages" in args.plots or do_all: plot_hugepages(args.input_dir, "flock", "hugepages", out_dir, args.format)
-        if "ablation"   in args.plots or do_all: plot_ablation_localseglist(args.input_dir, "flock", \
-            "ablation_localseglist_sizes", out_dir, args.format)
-        if "ablation"   in args.plots or do_all: plot_ablation_remotefree(args.input_dir, "flock", \
-            "ablation_remotefree", out_dir, args.format)
+        if "ablation"   in args.plots or do_all:
+            plot_ablation_localseglist(args.input_dir, "flock", "ablation_localseglist_sizes", out_dir, args.format)
+        if "ablation"   in args.plots or do_all:
+            plot_ablation_remotefree(args.input_dir, "flock", "ablation_remotefree", out_dir, args.format)
+        if "ablation" in args.plots or do_all: 
+            plot_remotefree_batchsize(args.input_dir, "flock", "ablation_remotefree_batchsize", out_dir, args.format)
 
     if args.benchmark == "all" or args.benchmark == "setbench":
         out_dir = f"{args.output_dir}/setbench"
