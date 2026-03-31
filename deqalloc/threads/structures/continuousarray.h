@@ -25,7 +25,7 @@ class alignas(64) continuous_array
 
   private:
 
-    static constexpr size_t BLOCK_SIZE_LOG = 17;
+    static constexpr size_t BLOCK_SIZE_LOG = 11;
     
     //number of T elements in each block
     static inline constexpr size_t block_size = (1 << BLOCK_SIZE_LOG); 

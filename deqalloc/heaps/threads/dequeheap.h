@@ -33,7 +33,7 @@ class DequeHeap : public Super {
 #elif defined(LOCKING_DEQUE)
     using deque_t = LockingDeque<std::tuple<node_t*, node_t*>>;
 #else
-    using deque_t = MemoryStealingDeque<std::tuple<node_t*, node_t*>, 2, 1>;
+    using deque_t = MemoryStealingDeque<std::tuple<node_t*, node_t*>, 0, 0>;
 #endif
 
     deque_t deques[max_threads];
@@ -42,6 +42,7 @@ class DequeHeap : public Super {
     inline deque_t& my_deq() { return deques[thread_id()]; }
     inline deque_t& random_deq(size_t n_threads) { return deques[my_rand.rand() % n_threads]; }
 
+#if defined(FC_DEQUE) || defined(LOCKING_DEQUE)
     struct FreedSegment {
       node_t *head = nullptr;
       node_t *tail = nullptr;
@@ -49,6 +50,7 @@ class DequeHeap : public Super {
     };
 
     std::array<std::array<FreedSegment, max_threads>, max_threads> remote_free_lists;
+#endif
 
   public:
 
