@@ -44,9 +44,10 @@ ALLOC_PALETTE = {
     "tbbmalloc": "#ff7043",
     "lockfree":  "#26c6da",
     "rpmalloc":  "#d4e157",
+    "deqalloc_remotefree": "#ef5350",
 }
 
-ALLOCS = list(ALLOC_PALETTE.keys())
+ALLOCS = ["deqalloc", "mimalloc", "jemalloc", "snmalloc", "hoard", "tcmalloc", "tbbmalloc", "lockfree", "rpmalloc"]
 
 DS_LABELS = {
     "btree_lck"                 : "b-tree",
@@ -107,6 +108,7 @@ ALLOC_MARKERS = {
     'tbbmalloc': 'p',
     'lockfree': 'v',
     'rpmalloc': '<',
+    'deqalloc_remotefree': 'X',
     #'': '>',
     #'': '8',
     #'': 'h',
@@ -120,7 +122,8 @@ ALLOC_MARKERS = {
 }
 
 ALLOC_RENAMES = {
-    'deqalloc_localseglist': 'deqalloc_lsl',
+    'deqalloc_remotefree': 'deqalloc-rf',
+    'deqalloc_localseglist': 'deqalloc-lsl',
 }
 
 #order in which lines appear
@@ -195,6 +198,7 @@ FIG_CONFIGS = {
         "tbbmalloc": linestyle_tuple["densely dotted"],
         "lockfree":  linestyle_tuple["loosely dashed"],
         "rpmalloc":  linestyle_tuple["loosely dashdotted"],
+        "deqalloc_remotefree": linestyle_tuple["solid"] if "solid" in linestyle_tuple else (0, ()),
     },
 }
 
@@ -1291,10 +1295,11 @@ def plot_remotefree_batchsize(input_dir, suite, experiment, out_dir, fmt):
             while len(xlabels) < max_variants: 
                 xlabels.append("")
                 
-            plt.xticks(range(max_variants), xlabels[:max_variants])
+            #plt.xticks(range(max_variants), xlabels[:max_variants])
+            plt.xticks(range(max_variants))
             
             # Adjust the x-axis label to clarify what the scale represents
-            ax.set_xlabel("Batch Size (deqalloc bytes scale)")
+            ax.set_xlabel("Batch Size Rank")
             ax.set_title(f'{DS_LABELS.get(ds, ds)}')
 
             if not write_dir or ds == paper_ds[0]:
@@ -1352,9 +1357,9 @@ def generate_legend(allocs, out_path, fmt):
     Generates a standalone legend where labels sit directly above their lines/markers.
     Bypasses standard matplotlib legend logic for custom coordinate placement.
     """
-    # 1. Create a blank figure.
-    # The width scales dynamically with the number of allocators (e.g., 1.5 inches per item)
-    fig, ax = plt.subplots(figsize=(len(allocs) * 1, 0.5))
+    # 1. Create a blank figure. 
+    # Bumped the multiplier to 1.5 to give the text slightly more breathing room
+    fig, ax = plt.subplots(figsize=(len(allocs) * (1 if len(allocs) > 3 else 2.5), 0.5))
 
     # 2. Keep the bounding box, but hide the internal graph ticks
     ax.set_xticks([])
@@ -1362,19 +1367,21 @@ def generate_legend(allocs, out_path, fmt):
     ax.set_xlim(0, 1)
     ax.set_ylim(0, 1)
 
-    # 3. Calculate evenly spaced X coordinates between 5% and 95% of the box width
-    if len(allocs) > 1:
-        xs = [0.05 + i * (0.90 / (len(allocs) - 1)) for i in range(len(allocs))]
-    else:
-        xs = [0.5] # Center if there is only one allocator
+    # 3. Calculate evenly spaced X coordinates using 'center of slots' math.
+    # If len=2, slots are width 0.5. Centers will be at 0.25 and 0.75.
+    # This guarantees perfect centering regardless of the number of items.
+    slot_width = 1.0 / len(allocs)
+    xs = [(i + 0.5) * slot_width for i in range(len(allocs))]
 
     # 4. Draw the items directly onto the canvas
     for x, alloc in zip(xs, allocs):
         # Draw the text label in the upper half (y=0.65)
-        ax.text(x, 0.65, alloc, ha='center', va='center')
+        ax.text(x, 0.65, ALLOC_RENAMES.get(alloc, alloc), ha='center', va='center')
 
         # Draw the line and marker directly below the text (y=0.35)
-        line_radius = 0.03  # Determines how wide the horizontal line segment is
+        # Dynamically bound the line width so it never exceeds its slot
+        line_radius = min(0.04, slot_width * 0.35) 
+        
         ax.plot([x - line_radius, x + line_radius], [0.35, 0.35],
                 color=ALLOC_PALETTE.get(alloc),
                 linewidth=FIG_CONFIGS.get("linewidth"),
@@ -1463,6 +1470,7 @@ def main():
         merge_pdfs_horizontally(paper_ds_list, f"{args.output_dir}/joined_geomean.{args.format}")
 
     generate_legend(ALLOCS, f"{args.output_dir}/legend", args.format)
+    generate_legend(["deqalloc", "deqalloc_remotefree", "snmalloc"], f"{args.output_dir}/legend_batchsize", args.format)
 
 if __name__ == "__main__":
     main()
