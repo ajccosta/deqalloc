@@ -54,27 +54,46 @@ def parse_allocator(raw: str) -> Tuple[str, bool]:
     return name, use_numa
 
 def parse_perf_output(file_path):
-    line_pattern = re.compile(r'^\s+(\d+\.\d+%)\s+(\d+\.\d+%)\s+')
+    # Matches hierarchical profile (Children % and Self %)
+    pattern_two_pct = re.compile(r'^\s+(\d+\.\d+%)\s+(\d+\.\d+%)\s+')
+    # Matches flat profile (Overhead % only)
+    pattern_one_pct = re.compile(r'^\s+(\d+\.\d+%)\s+')
+    
     perf_data = {}
     try:
         with open(file_path, 'r', encoding='utf-8') as f:
             for line in f:
-                match = line_pattern.match(line)
-                if match:
-                    children_pct = match.group(1)
-                    self_pct = match.group(2)
-                    symbol_start = line.find('[.]')
-                    if symbol_start == -1:
-                        symbol_start = line.find('[k]')
-                    if symbol_start != -1:
-                        symbol = line[symbol_start + 4:].strip()
-                    else:
-                        parts = line.split()
-                        symbol = " ".join(parts[4:]) if len(parts) > 4 else "Unknown"
-                    perf_data[symbol] = {
-                        'children': children_pct,
-                        'self': self_pct
-                    }
+                if line.startswith('#') or not line.strip():
+                    continue
+                
+                match_two = pattern_two_pct.match(line)
+                match_one = pattern_one_pct.match(line)
+                
+                if match_two:
+                    children_pct = match_two.group(1)
+                    self_pct = match_two.group(2)
+                elif match_one:
+                    # If it's a flat profile, we assign the overhead to 'children' 
+                    # so downstream processing behaves the same way.
+                    children_pct = match_one.group(1)
+                    self_pct = match_one.group(1)
+                else:
+                    continue
+                
+                symbol_start = line.find('[.]')
+                if symbol_start == -1:
+                    symbol_start = line.find('[k]')
+                    
+                if symbol_start != -1:
+                    symbol = line[symbol_start + 4:].strip()
+                else:
+                    parts = line.split()
+                    symbol = " ".join(parts[4:]) if len(parts) > 4 else "Unknown"
+                
+                perf_data[symbol] = {
+                    'children': children_pct,
+                    'self': self_pct
+                }
         return perf_data
     except FileNotFoundError:
         print(f"Error: Could not find file '{file_path}'")
@@ -104,9 +123,17 @@ def get_remote_freeing_perc(results, allocator):
         func_name = "je_tcache_bin_flush_small"
     elif "mimalloc" in allocator:
         func_name = "mi_free_block_delayed_mt"
+    elif "snmalloc" in allocator:
+        func_name = "RemoteDeallocCache"
     else:
         assert(False)
-    return results.get(func_name, {}).get("children", "0%")
+        
+    # Check for substring match in case of C++ templated names in perf output
+    for sym, data in results.items():
+        if func_name in sym:
+            return data.get("children", "0%")
+            
+    return "0%"
 
 # ---------------------------------------------------------------------------
 # Configuration
@@ -117,7 +144,8 @@ class PerfConfig:
     """Configuration for perf allocator+tracker benchmarks."""
     allocators_raw: List[str] = field(default_factory=lambda: [
         "mimalloc", 
-        "jemalloc:numa"
+        "jemalloc:numa",
+        "snmalloc"
     ])
     
     trackers: List[str] = field(default_factory=lambda: [
@@ -204,10 +232,11 @@ class PerfRunner:
 
                             print(f"\n--- [Recording] {alloc}{numa_name} | {rideable} | {tracker} | Run {a} ---")
                             
+                            minus_g = "-g" if alloc == "jemalloc" else ""
                             # 1. Run Perf Record
                             record_cmd = (
                                 f"NO_DESTRUCT=1 LD_PRELOAD={lib} "
-                                f"{numa_cmd} perf record -g -o {perf_file} "
+                                f"{numa_cmd} perf record {minus_g} -o {perf_file} "
                                 f"{binary} -nwork {cfg.nproc} -nprefill {cfg.nproc} "
                                 f"-i {update_half} -d {update_half} -rq 0 -rqsize 1 -k {size} "
                                 f"-nrq 0 -t {cfg.trial_time_ms}"
@@ -298,7 +327,7 @@ def main():
     parser = argparse.ArgumentParser(description="Perf Allocator Experiment Runner")
     parser.add_argument("--runs", type=int, default=1, help="Number of runs (default: 1)")
     parser.add_argument("--time", type=int, default=3, help="Amount of time each run takes in seconds (default: 3)")
-    parser.add_argument("--allocator", default=["all"], nargs="+", help="Run only specific allocator(s) e.g., mimalloc jemalloc:numa")
+    parser.add_argument("--allocator", default=["all"], nargs="+", help="Run only specific allocator(s) e.g., mimalloc jemalloc:numa snmalloc")
     parser.add_argument("--alloc-dir", metavar="DIR",
                         default=os.path.join(script_dir, "../build/allocators"),
                         help="Path to allocator .so files")
