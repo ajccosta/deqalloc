@@ -285,10 +285,13 @@ def parse_flock(path):
                 vals = [float(x) for x in vals_str.split()] if vals_str else []
                 mean = stat.mean(vals) if len(vals) > 0 else 0
                 gmean = stat.geometric_mean(vals) if len(vals) > 0 else 0
+                ds = m.group(3)
+                #crashes often, ignore
+                if ds == "arttree_lck": continue
                 entry = dict(
                     allocator=m.group(1),
                     update=int(m.group(2)),
-                    ds=m.group(3),
+                    ds=ds,
                     key_size=int(m.group(4)),
                     threads=int(m.group(5)),
                     numa=m.group(6) == "True",
@@ -395,7 +398,7 @@ def which_paper_ds(dss, experiment=None):
     if set(dss).intersection(set(PAPER_DS_FLOCK)):
         if not experiment:
             paper_ds = PAPER_DS_FLOCK
-        elif experiment == "ablation_localseglist_sizes" \
+        elif experiment == "ablation_localseglist" \
             or experiment == "ablation_remotefree":
             paper_ds = PAPER_DS_LOCALSEGLIST_FLOCK
         elif experiment == "ablation_remotefree_batchsize":
@@ -404,7 +407,7 @@ def which_paper_ds(dss, experiment=None):
         assert(paper_ds == [])
         if not experiment:
             paper_ds = PAPER_DS_SETBENCH
-        elif experiment == "ablation_localseglist_sizes":
+        elif experiment == "ablation_localseglist":
             paper_ds = PAPER_DS_LOCALSEGLIST_SETBENCH
     #assert(paper_ds != [])
     return paper_ds
@@ -637,7 +640,7 @@ def plot_geomean(input_dir, suite, experiment, out_dir, fmt):
     dss = sorted(set(r["ds"] for r in data))
     
     szx, szy = FIG_CONFIGS["figsize"]
-    fig, ax = plt.subplots(figsize=(len(dss), szy))
+    fig, ax = plt.subplots(figsize=(len(dss), szy*0.8))
     
     seen_allocs = set()
     all_values_global = {}
@@ -729,7 +732,7 @@ def plot_geomean(input_dir, suite, experiment, out_dir, fmt):
     margin = bar_width / 2 + bar_width * inter_group_gap
     ax.set_xlim(first_bar_center - margin, last_bar_center + margin)
 
-    ax.set_ylim(0, 1.25)
+    ax.set_ylim(0, 1.35)
     ax.set_yticks(np.arange(0, 1.1, 0.2))
 
     plt.xticks([])
@@ -1462,9 +1465,7 @@ def main():
         if "geomean"     in args.plots or do_all: plot_geomean(args.input_dir, "flock", "geomean", out_dir, args.format)
         if "hugepages" in args.plots or do_all: plot_hugepages(args.input_dir, "flock", "hugepages", out_dir, args.format)
         if "ablation"   in args.plots or do_all:
-            plot_ablation_localseglist(args.input_dir, "flock", "ablation_localseglist_sizes", out_dir, args.format)
-        if "ablation"   in args.plots or do_all:
-            plot_ablation_remotefree(args.input_dir, "flock", "ablation_remotefree", out_dir, args.format)
+            plot_ablation_localseglist(args.input_dir, "flock", "ablation_localseglist", out_dir, args.format)
         if "ablation" in args.plots or do_all: 
             plot_remotefree_batchsize(args.input_dir, "flock", "ablation_remotefree_batchsize", out_dir, args.format)
 
@@ -1478,7 +1479,7 @@ def main():
         if "geomean"     in args.plots or do_all: plot_geomean(args.input_dir, "setbench", "sizes", out_dir, args.format)
         if "hugepages" in args.plots or do_all: plot_hugepages(args.input_dir, "setbench", "hugepages", out_dir, args.format)
         if "ablation"   in args.plots or do_all: plot_ablation_localseglist(args.input_dir, "setbench", \
-            "ablation_localseglist_sizes", out_dir, args.format)
+            "ablation_localseglist", out_dir, args.format)
 
     plot_temp_and_freq(f"{args.input_dir}/temperature.csv", args.output_dir, args.format)
 

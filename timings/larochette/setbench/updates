@@ -1,259 +1,235 @@
-Command: ./run_experiments.py all -o LAROCHETTE --runs 5 --time 5
-Date: 03-25-2026
+Command: ./run_experiments.py all -o ../timings/larochette --runs 3 --time 3
+Date: 03-23-2026
 Experiment: setbench updates
 Model name:                              INTEL(R) XEON(R) PLATINUM 8568Y+
-Git: 4fd4490
+Git: 3ed47c2
 allocator versions:
 	jemalloc: 86b72192
 	mesh: 5d9b390
 	mimalloc: 75d69f4a
 	hoard: 1cd9101
 	scalloc: 1a11827
-	tcmalloc: 023c20b0
+	tcmalloc: 068dd9e9
 	snmalloc: 3fca4c8
 	lockfree: 915f51b
 	rpmalloc: feb43ae
-	tbbmalloc: 2561dc7a
+	tbbmalloc: ef6f9b5e
 	mimalloc-batchit: da52048
 ---
 allocator             update%    scheme     ds                        key_size   #threads  numa   results
-deqalloc              0          debra      guerraoui_ext_bst_ticket  200000     192       False  [ 553.646343 557.500992 555.063435 553.929329 555.666067 ] 555.1612, 5128706 KB
-deqalloc_genericdeque 0          debra      guerraoui_ext_bst_ticket  200000     192       False  [ 567.707119 553.645827 556.243456 555.661655 560.5476 ] 558.7611, 7639440 KB
-mimalloc              0          debra      guerraoui_ext_bst_ticket  200000     192       False  [ 471.463904 531.494171 472.517605 534.66193 474.155227 ] 496.8586, 4516559 KB
-jemalloc              0          debra_df   guerraoui_ext_bst_ticket  200000     192       True   [ 523.200605 526.704269 524.918714 531.333455 521.945265 ] 525.6205, 5014184 KB
-snmalloc              0          debra      guerraoui_ext_bst_ticket  200000     192       False  [ 543.026927 546.674892 545.085142 544.140017 539.564915 ] 543.6984, 4320010 KB
-hoard                 0          debra      guerraoui_ext_bst_ticket  200000     192       True   [ 437.061183 433.460233 430.723944 433.786309 434.164535 ] 433.8392, 4227578 KB
-tcmalloc              0          debra_df   guerraoui_ext_bst_ticket  200000     192       False  [ 499.40176 499.280568 495.573114 499.963898 498.451774 ] 498.5342, 4259173 KB
-tbbmalloc             0          debra_df   guerraoui_ext_bst_ticket  200000     192       False  [ 456.249915 454.321324 454.917696 454.213062 455.719024 ] 455.0842, 4260618 KB
-lockfree              0          debra_df   guerraoui_ext_bst_ticket  200000     192       True   [ 467.609388 468.005024 468.758436 466.06297 462.076959 ] 466.5026, 4217490 KB
-rpmalloc              0          debra_df   guerraoui_ext_bst_ticket  200000     192       False  [ 509.183456 512.584167 514.043371 514.95838 513.312254 ] 512.8163, 5032868 KB
-deqalloc              1          debra      guerraoui_ext_bst_ticket  200000     192       False  [ 544.516225 544.357115 542.426573 536.988617 537.370466 ] 541.1318, 5159400 KB
-deqalloc_genericdeque 1          debra      guerraoui_ext_bst_ticket  200000     192       False  [ 533.680061 540.799859 547.865502 544.184718 537.851768 ] 540.8764, 7682408 KB
-mimalloc              1          debra      guerraoui_ext_bst_ticket  200000     192       False  [ 484.443446 462.967699 483.305964 461.173816 471.438899 ] 472.6660, 4961349 KB
-jemalloc              1          debra_df   guerraoui_ext_bst_ticket  200000     192       True   [ 505.949677 509.421615 504.134619 506.79224 509.70526 ] 507.2007, 5808895 KB
-snmalloc              1          debra      guerraoui_ext_bst_ticket  200000     192       False  [ 528.132568 528.891223 524.945371 528.257203 532.130051 ] 528.4713, 4342866 KB
-hoard                 1          debra      guerraoui_ext_bst_ticket  200000     192       True   [ 415.346161 412.701372 412.875195 414.130531 412.110281 ] 413.4327, 4233779 KB
-tcmalloc              1          debra_df   guerraoui_ext_bst_ticket  200000     192       False  [ 538.376825 542.152829 537.971738 536.17652 536.668931 ] 538.2694, 4268766 KB
-tbbmalloc             1          debra_df   guerraoui_ext_bst_ticket  200000     192       False  [ 420.999431 449.481915 417.406171 455.327792 418.836398 ] 432.4103, 4275136 KB
-lockfree              1          debra_df   guerraoui_ext_bst_ticket  200000     192       True   [ 438.686692 442.256763 436.470314 436.634408 441.209386 ] 439.0515, 4225015 KB
-rpmalloc              1          debra_df   guerraoui_ext_bst_ticket  200000     192       False  [ 449.852782 452.583256 450.557822 454.850267 449.197636 ] 451.4084, 5450520 KB
-deqalloc              5          debra      guerraoui_ext_bst_ticket  200000     192       False  [ 500.115747 495.488942 498.765913 509.18 499.23662 ] 500.5574, 5181515 KB
-deqalloc_genericdeque 5          debra      guerraoui_ext_bst_ticket  200000     192       False  [ 502.388205 504.380756 500.477777 497.417951 489.886193 ] 498.9102, 7738606 KB
-mimalloc              5          debra      guerraoui_ext_bst_ticket  200000     192       False  [ 400.473224 422.780926 448.444667 442.522409 414.812577 ] 425.8068, 4917978 KB
-jemalloc              5          debra_df   guerraoui_ext_bst_ticket  200000     192       True   [ 416.640102 443.791064 441.831983 420.819537 451.243664 ] 434.8653, 5808087 KB
-snmalloc              5          debra      guerraoui_ext_bst_ticket  200000     192       False  [ 479.230037 483.40125 478.240526 484.001528 489.559353 ] 482.8865, 4398640 KB
-hoard                 5          debra      guerraoui_ext_bst_ticket  200000     192       True   [ 388.623918 390.044677 389.056893 391.407135 381.305049 ] 388.0875, 4250099 KB
-tcmalloc              5          debra_df   guerraoui_ext_bst_ticket  200000     192       False  [ 518.636749 512.910832 503.988173 518.755241 519.608574 ] 514.7799, 4277041 KB
-tbbmalloc             5          debra_df   guerraoui_ext_bst_ticket  200000     192       False  [ 379.019251 385.905259 385.409082 387.313896 384.299841 ] 384.3895, 4291055 KB
-lockfree              5          debra_df   guerraoui_ext_bst_ticket  200000     192       True   [ 375.80292 378.197275 378.023603 374.776099 374.2107 ] 376.2021, 4234223 KB
-rpmalloc              5          debra_df   guerraoui_ext_bst_ticket  200000     192       False  [ 416.737526 415.141536 412.630763 412.713817 414.509227 ] 414.3466, 5464207 KB
-deqalloc              50         debra      guerraoui_ext_bst_ticket  200000     192       False  [ 319.527757 317.615659 320.913711 315.421762 319.427472 ] 318.5813, 5348254 KB
-deqalloc_genericdeque 50         debra      guerraoui_ext_bst_ticket  200000     192       False  [ 315.513432 312.031321 313.446981 312.937561 315.200007 ] 313.8259, 7790486 KB
-mimalloc              50         debra      guerraoui_ext_bst_ticket  200000     192       False  [ 247.582807 252.979291 255.626868 247.677206 254.04406 ] 251.5820, 4952614 KB
-jemalloc              50         debra_df   guerraoui_ext_bst_ticket  200000     192       True   [ 252.192121 250.803063 252.6129 251.034282 250.814135 ] 251.4913, 6146365 KB
-snmalloc              50         debra      guerraoui_ext_bst_ticket  200000     192       False  [ 269.382846 280.700088 282.275387 269.394409 271.087821 ] 274.5681, 4582803 KB
-hoard                 50         debra      guerraoui_ext_bst_ticket  200000     192       True   [ 255.074537 255.177737 246.827362 251.613594 253.433659 ] 252.4254, 4391301 KB
-tcmalloc              50         debra_df   guerraoui_ext_bst_ticket  200000     192       False  [ 126.431015 128.769803 128.076908 125.570165 128.543151 ] 127.4782, 4358930 KB
-tbbmalloc             50         debra_df   guerraoui_ext_bst_ticket  200000     192       False  [ 237.267311 235.051987 239.77121 238.648908 238.387172 ] 237.8253, 4320577 KB
-lockfree              50         debra_df   guerraoui_ext_bst_ticket  200000     192       True   [ 143.372342 141.016876 140.958875 140.805378 141.179392 ] 141.4666, 4254303 KB
-rpmalloc              50         debra_df   guerraoui_ext_bst_ticket  200000     192       False  [ 258.128354 258.748072 257.316396 255.937925 257.455022 ] 257.5172, 5463074 KB
-deqalloc              90         debra      guerraoui_ext_bst_ticket  200000     192       False  [ 256.556237 258.457426 260.818223 257.477953 260.915888 ] 258.8451, 5360966 KB
-deqalloc_genericdeque 90         debra      guerraoui_ext_bst_ticket  200000     192       False  [ 251.452526 249.584926 253.471069 249.831376 250.126567 ] 250.8933, 7816642 KB
-mimalloc              90         debra      guerraoui_ext_bst_ticket  200000     192       False  [ 186.589757 188.911133 194.214456 193.373243 186.49198 ] 189.9161, 4955514 KB
-jemalloc              90         debra_df   guerraoui_ext_bst_ticket  200000     192       True   [ 212.040151 212.558705 205.767105 209.369174 209.024604 ] 209.7519, 6398921 KB
-snmalloc              90         debra      guerraoui_ext_bst_ticket  200000     192       False  [ 215.602716 215.577497 215.633079 209.226642 210.18264 ] 213.2445, 4745563 KB
-hoard                 90         debra      guerraoui_ext_bst_ticket  200000     192       True   [ 207.993564 205.376959 210.59804 196.120206 204.744518 ] 204.9667, 4540392 KB
-tcmalloc              90         debra_df   guerraoui_ext_bst_ticket  200000     192       False  [ 93.216524 90.087018 95.235886 93.311618 91.248703 ] 92.6199, 4371658 KB
-tbbmalloc             90         debra_df   guerraoui_ext_bst_ticket  200000     192       False  [ 194.141372 192.71211 191.091286 191.056939 188.499283 ] 191.5002, 4354393 KB
-lockfree              90         debra_df   guerraoui_ext_bst_ticket  200000     192       True   [ 85.565698 85.985116 86.140397 85.849002 87.835645 ] 86.2752, 4256228 KB
-rpmalloc              90         debra_df   guerraoui_ext_bst_ticket  200000     192       False  [ 198.258493 197.054416 200.355907 199.739161 197.239425 ] 198.5295, 5545220 KB
-deqalloc              100        debra      guerraoui_ext_bst_ticket  200000     192       False  [ 249.386368 250.678298 250.188792 248.753595 250.024801 ] 249.8064, 5421974 KB
-deqalloc_genericdeque 100        debra      guerraoui_ext_bst_ticket  200000     192       False  [ 237.504938 241.091797 241.254939 239.31587 238.841388 ] 239.6018, 7858699 KB
-mimalloc              100        debra      guerraoui_ext_bst_ticket  200000     192       False  [ 170.651199 181.372525 182.857557 178.689911 185.092348 ] 179.7327, 4956466 KB
-jemalloc              100        debra_df   guerraoui_ext_bst_ticket  200000     192       True   [ 201.109856 202.405587 207.762311 207.651322 207.84359 ] 205.3545, 6447410 KB
-snmalloc              100        debra      guerraoui_ext_bst_ticket  200000     192       False  [ 203.181043 198.343662 198.702543 195.444751 204.60944 ] 200.0563, 4864248 KB
-hoard                 100        debra      guerraoui_ext_bst_ticket  200000     192       True   [ 202.835368 203.488018 187.235433 197.407806 191.462098 ] 196.4857, 4571228 KB
-tcmalloc              100        debra_df   guerraoui_ext_bst_ticket  200000     192       False  [ 90.663893 89.926891 91.461709 93.530718 88.379948 ] 90.7926, 4372533 KB
-tbbmalloc             100        debra_df   guerraoui_ext_bst_ticket  200000     192       False  [ 180.962412 185.92144 186.323173 182.797607 186.241889 ] 184.4493, 4363679 KB
-lockfree              100        debra_df   guerraoui_ext_bst_ticket  200000     192       True   [ 79.236482 78.4743 78.180761 77.873928 79.202496 ] 78.5936, 4259681 KB
-rpmalloc              100        debra_df   guerraoui_ext_bst_ticket  200000     192       False  [ 186.703226 190.784063 188.273435 187.225528 189.397133 ] 188.4767, 5498232 KB
-deqalloc              0          debra      brown_ext_abtree_lf       200000     192       False  [ 841.577851 831.429474 864.520967 863.890968 858.270788 ] 851.9380, 5196391 KB
-deqalloc_genericdeque 0          debra      brown_ext_abtree_lf       200000     192       False  [ 870.422499 885.633778 874.057809 878.033381 846.291773 ] 870.8878, 7719428 KB
-mimalloc              0          debra      brown_ext_abtree_lf       200000     192       False  [ 838.178268 838.529664 834.380159 823.315984 818.301298 ] 830.5411, 4562102 KB
-jemalloc              0          debra_df   brown_ext_abtree_lf       200000     192       True   [ 870.679933 874.050691 866.109087 872.104148 868.576289 ] 870.3040, 5012957 KB
-snmalloc              0          debra      brown_ext_abtree_lf       200000     192       False  [ 867.440129 874.359433 878.609864 860.597524 867.338707 ] 869.6691, 4315454 KB
-hoard                 0          debra      brown_ext_abtree_lf       200000     192       True   [ 776.808908 771.847723 777.95799 778.551 773.710931 ] 775.7753, 4220620 KB
-tcmalloc              0          debra_df   brown_ext_abtree_lf       200000     192       False  [ 854.17508 852.882201 851.925482 851.06237 850.732036 ] 852.1554, 4247562 KB
-tbbmalloc             0          debra_df   brown_ext_abtree_lf       200000     192       False  [ 806.930178 811.444231 811.206215 808.90786 811.930778 ] 810.0839, 4261436 KB
-lockfree              0          debra_df   brown_ext_abtree_lf       200000     192       True   [ 770.129538 784.36912 779.383131 770.375808 780.887056 ] 777.0289, 4212631 KB
-rpmalloc              0          debra_df   brown_ext_abtree_lf       200000     192       False  [ 808.092782 811.496743 806.516312 797.370309 788.472616 ] 802.3898, 5035462 KB
-deqalloc              1          debra      brown_ext_abtree_lf       200000     192       False  [ 627.671641 653.516258 633.871936 629.804695 637.167812 ] 636.4065, 5418386 KB
-deqalloc_genericdeque 1          debra      brown_ext_abtree_lf       200000     192       False  [ 628.592266 640.320951 643.911348 625.553206 625.356587 ] 632.7469, 7991740 KB
-mimalloc              1          debra      brown_ext_abtree_lf       200000     192       False  [ 618.72032 608.539118 610.24892 628.949257 570.280706 ] 607.3477, 4964293 KB
-jemalloc              1          debra_df   brown_ext_abtree_lf       200000     192       True   [ 645.410892 628.816744 645.622364 649.115227 641.433855 ] 642.0798, 5805473 KB
-snmalloc              1          debra      brown_ext_abtree_lf       200000     192       False  [ 635.306556 651.195447 635.072517 638.715224 629.216178 ] 637.9012, 4402010 KB
-hoard                 1          debra      brown_ext_abtree_lf       200000     192       True   [ 631.659379 631.784074 640.009335 635.653063 639.704505 ] 635.7621, 4246041 KB
-tcmalloc              1          debra_df   brown_ext_abtree_lf       200000     192       False  [ 614.798158 609.166528 625.644613 625.226596 615.978087 ] 618.1628, 4296632 KB
-tbbmalloc             1          debra_df   brown_ext_abtree_lf       200000     192       False  [ 613.078946 625.876202 618.894183 607.31744 621.933693 ] 617.4201, 4313084 KB
-lockfree              1          debra_df   brown_ext_abtree_lf       200000     192       True   [ 635.945766 636.048034 633.76932 636.397129 629.354938 ] 634.3030, 4234247 KB
-rpmalloc              1          debra_df   brown_ext_abtree_lf       200000     192       False  [ 525.169091 515.996916 515.90724 504.805352 520.010758 ] 516.3779, 5462880 KB
-deqalloc              5          debra      brown_ext_abtree_lf       200000     192       False  [ 543.36923 533.587918 527.018285 528.53444 533.652699 ] 533.2325, 5611287 KB
-deqalloc_genericdeque 5          debra      brown_ext_abtree_lf       200000     192       False  [ 523.344125 529.284592 532.686205 534.45594 533.680281 ] 530.6902, 8098140 KB
-mimalloc              5          debra      brown_ext_abtree_lf       200000     192       False  [ 539.218129 529.141635 537.295102 515.549128 533.781588 ] 530.9971, 4957941 KB
-jemalloc              5          debra_df   brown_ext_abtree_lf       200000     192       True   [ 549.337463 544.333856 555.894829 552.843886 549.580536 ] 550.3981, 6057328 KB
-snmalloc              5          debra      brown_ext_abtree_lf       200000     192       False  [ 538.326236 535.945699 531.169836 534.519646 534.914236 ] 534.9751, 4599146 KB
-hoard                 5          debra      brown_ext_abtree_lf       200000     192       True   [ 535.092966 536.985356 541.29788 540.028453 511.292669 ] 532.9395, 4378511 KB
-tcmalloc              5          debra_df   brown_ext_abtree_lf       200000     192       False  [ 257.063431 255.905928 256.13197 258.581005 258.020188 ] 257.1405, 4313770 KB
-tbbmalloc             5          debra_df   brown_ext_abtree_lf       200000     192       False  [ 481.544061 480.453792 472.567738 455.720663 477.871515 ] 473.6316, 4322947 KB
-lockfree              5          debra_df   brown_ext_abtree_lf       200000     192       True   [ 487.961052 493.15195 489.710295 491.466288 493.521134 ] 491.1621, 4251058 KB
-rpmalloc              5          debra_df   brown_ext_abtree_lf       200000     192       False  [ 503.363923 459.274489 467.201385 449.868773 500.850394 ] 476.1118, 5410888 KB
-deqalloc              50         debra      brown_ext_abtree_lf       200000     192       False  [ 255.513064 253.916811 254.37236 257.766346 253.431178 ] 255.0000, 6531685 KB
-deqalloc_genericdeque 50         debra      brown_ext_abtree_lf       200000     192       False  [ 203.220271 229.099886 245.570268 206.392131 174.179537 ] 211.6924, 8199465 KB
-mimalloc              50         debra      brown_ext_abtree_lf       200000     192       False  [ 233.949339 233.474782 233.092555 233.925788 233.380505 ] 233.5646, 5458586 KB
-jemalloc              50         debra_df   brown_ext_abtree_lf       200000     192       True   [ 225.094522 225.366287 223.563782 227.449043 223.661621 ] 225.0271, 7593776 KB
-snmalloc              50         debra      brown_ext_abtree_lf       200000     192       False  [ 256.525263 256.931233 256.538385 255.03027 254.447117 ] 255.8945, 5354126 KB
-hoard                 50         debra      brown_ext_abtree_lf       200000     192       True   [ 254.332687 249.311564 229.510115 252.356104 244.955538 ] 246.0932, 4701244 KB
-tcmalloc              50         debra_df   brown_ext_abtree_lf       200000     192       False  [ 29.53354 32.127486 32.346636 32.607018 29.524938 ] 31.2279, 4322717 KB
-tbbmalloc             50         debra_df   brown_ext_abtree_lf       200000     192       False  [ 183.740605 181.459872 183.397321 180.803632 182.69407 ] 182.4191, 4352096 KB
-lockfree              50         debra_df   brown_ext_abtree_lf       200000     192       True   [ 126.468603 126.321607 126.37629 129.884891 125.376671 ] 126.8856, 4296349 KB
-rpmalloc              50         debra_df   brown_ext_abtree_lf       200000     192       False  [ 260.232812 258.187349 257.024385 259.33243 256.359026 ] 258.2272, 5901355 KB
-deqalloc              90         debra      brown_ext_abtree_lf       200000     192       False  [ 205.324204 203.9641 203.484893 204.964713 203.333776 ] 204.2143, 7213657 KB
-deqalloc_genericdeque 90         debra      brown_ext_abtree_lf       200000     192       False  [ 158.96716 200.5207 155.725465 104.573523 181.161655 ] 160.1897, 8139158 KB
-mimalloc              90         debra      brown_ext_abtree_lf       200000     192       False  [ 168.949223 168.796986 168.717709 168.508616 167.816986 ] 168.5579, 5678484 KB
-jemalloc              90         debra_df   brown_ext_abtree_lf       200000     192       True   [ 183.620814 182.255976 182.758777 183.662164 185.543827 ] 183.5683, 8010302 KB
-snmalloc              90         debra      brown_ext_abtree_lf       200000     192       False  [ 185.025558 186.074446 183.980119 187.429371 184.153955 ] 185.3327, 5702346 KB
-hoard                 90         debra      brown_ext_abtree_lf       200000     192       True   [ 177.908325 201.928638 188.366864 184.344756 198.56194 ] 190.2221, 4922324 KB
-tcmalloc              90         debra_df   brown_ext_abtree_lf       200000     192       False  [ 24.258334 22.199652 24.411503 24.209027 23.222691 ] 23.6602, 4357306 KB
-tbbmalloc             90         debra_df   brown_ext_abtree_lf       200000     192       False  [ 145.49134 144.235668 142.667308 138.029183 141.865749 ] 142.4578, 4411113 KB
-lockfree              90         debra_df   brown_ext_abtree_lf       200000     192       True   [ 75.314372 75.289704 72.636912 76.270292 74.394628 ] 74.7812, 4332437 KB
-rpmalloc              90         debra_df   brown_ext_abtree_lf       200000     192       False  [ 192.474104 188.812363 188.831056 191.760909 192.350302 ] 190.8457, 6122995 KB
-deqalloc              100        debra      brown_ext_abtree_lf       200000     192       False  [ 194.734536 197.473639 195.7286 195.54617 197.110209 ] 196.1186, 7413818 KB
-deqalloc_genericdeque 100        debra      brown_ext_abtree_lf       200000     192       False  [ 184.499953 187.144811 186.063706 191.270633 190.877839 ] 187.9714, 8197517 KB
-mimalloc              100        debra      brown_ext_abtree_lf       200000     192       False  [ 160.089429 156.982554 159.25494 158.908384 158.964571 ] 158.8400, 5639891 KB
-jemalloc              100        debra_df   brown_ext_abtree_lf       200000     192       True   [ 177.773766 178.696196 177.965704 178.735784 177.236456 ] 178.0816, 7833592 KB
-snmalloc              100        debra      brown_ext_abtree_lf       200000     192       False  [ 174.666668 171.489357 175.187346 173.214051 172.980437 ] 173.5076, 5790996 KB
-hoard                 100        debra      brown_ext_abtree_lf       200000     192       True   [ 187.635662 174.43683 181.61039 191.281634 144.075415 ] 175.8080, 5072829 KB
-tcmalloc              100        debra_df   brown_ext_abtree_lf       200000     192       False  [ 21.373885 23.641604 23.392964 22.811974 22.956255 ] 22.8353, 4365416 KB
-tbbmalloc             100        debra_df   brown_ext_abtree_lf       200000     192       False  [ 138.841525 139.621008 139.916205 138.45576 139.609664 ] 139.2888, 4430221 KB
-lockfree              100        debra_df   brown_ext_abtree_lf       200000     192       True   [ 67.165516 68.097135 67.73627 66.672679 68.294521 ] 67.5932, 4339008 KB
-rpmalloc              100        debra_df   brown_ext_abtree_lf       200000     192       False  [ 177.324735 177.387287 182.723004 182.566078 180.380195 ] 180.0763, 6138927 KB
-deqalloc              0          debra      hm_hashtable              200000     192       False  [ 827.418981 799.842123 833.630062 822.668588 818.436906 ] 820.3993, 5066821 KB
-deqalloc_genericdeque 0          debra      hm_hashtable              200000     192       False  [ 803.201341 810.248507 820.311586 818.285239 826.02044 ] 815.6134, 7575146 KB
-mimalloc              0          debra      hm_hashtable              200000     192       False  [ 812.207392 797.978582 813.587453 804.999554 807.784987 ] 807.3116, 4539232 KB
-jemalloc              0          debra_df   hm_hashtable              200000     192       True   [ 834.842053 845.651382 856.337783 847.819694 856.735872 ] 848.2774, 5004909 KB
-snmalloc              0          debra      hm_hashtable              200000     192       False  [ 836.750363 842.051843 833.289025 844.502398 841.542912 ] 839.6273, 4286548 KB
-hoard                 0          debra      hm_hashtable              200000     192       True   [ 731.871712 728.848727 724.112552 729.936949 731.804253 ] 729.3148, 4215543 KB
-tcmalloc              0          debra_df   hm_hashtable              200000     192       False  [ 890.100923 882.70352 888.410871 884.205896 884.82758 ] 886.0498, 4244910 KB
-tbbmalloc             0          debra_df   hm_hashtable              200000     192       False  [ 771.416795 771.566352 773.280944 774.088253 767.691264 ] 771.6087, 4249438 KB
-lockfree              0          debra_df   hm_hashtable              200000     192       True   [ 797.659625 835.222856 842.038804 827.426435 833.904659 ] 827.2505, 4210573 KB
-rpmalloc              0          debra_df   hm_hashtable              200000     192       False  [ 801.029165 800.651993 802.196526 799.620605 801.681866 ] 801.0360, 4869634 KB
-deqalloc              1          debra      hm_hashtable              200000     192       False  [ 749.018497 775.301349 734.876906 786.296821 774.738022 ] 764.0463, 5110119 KB
-deqalloc_genericdeque 1          debra      hm_hashtable              200000     192       False  [ 760.078077 785.580373 774.056487 753.620795 761.072615 ] 766.8817, 7678279 KB
-mimalloc              1          debra      hm_hashtable              200000     192       False  [ 620.384339 616.563667 615.035324 620.003475 619.699055 ] 618.3372, 4952221 KB
-jemalloc              1          debra_df   hm_hashtable              200000     192       True   [ 697.669449 696.658532 675.010227 688.318926 689.576677 ] 689.4468, 5800802 KB
-snmalloc              1          debra      hm_hashtable              200000     192       False  [ 786.86001 788.354428 793.809565 793.520326 779.068406 ] 788.3225, 4301362 KB
-hoard                 1          debra      hm_hashtable              200000     192       True   [ 642.838381 671.249838 674.195518 682.287388 663.805483 ] 666.8753, 4217795 KB
-tcmalloc              1          debra_df   hm_hashtable              200000     192       False  [ 843.766249 827.272733 837.371394 835.977979 845.799665 ] 838.0376, 4248970 KB
-tbbmalloc             1          debra_df   hm_hashtable              200000     192       False  [ 640.478529 641.998319 635.552827 646.508291 652.161011 ] 643.3398, 4263705 KB
-lockfree              1          debra_df   hm_hashtable              200000     192       True   [ 694.770727 748.118351 746.688484 755.087881 728.799539 ] 734.6930, 4216094 KB
-rpmalloc              1          debra_df   hm_hashtable              200000     192       False  [ 565.678421 567.174379 561.569324 562.761994 566.485907 ] 564.7340, 5289832 KB
-deqalloc              5          debra      hm_hashtable              200000     192       False  [ 670.373831 684.633661 688.542214 676.209865 692.24339 ] 682.4006, 5131219 KB
-deqalloc_genericdeque 5          debra      hm_hashtable              200000     192       False  [ 646.237252 656.429766 675.200703 686.809743 666.283753 ] 666.1922, 7714762 KB
-mimalloc              5          debra      hm_hashtable              200000     192       False  [ 570.478717 575.586687 567.813224 569.199296 577.498928 ] 572.1154, 4984663 KB
-jemalloc              5          debra_df   hm_hashtable              200000     192       True   [ 641.822336 660.498093 634.259295 656.692323 644.699366 ] 647.5943, 5800618 KB
-snmalloc              5          debra      hm_hashtable              200000     192       False  [ 716.733621 699.514188 696.023089 693.206939 695.008762 ] 700.0973, 4310023 KB
-hoard                 5          debra      hm_hashtable              200000     192       True   [ 598.384367 607.330127 607.626543 597.811279 583.539841 ] 598.9384, 4221600 KB
-tcmalloc              5          debra_df   hm_hashtable              200000     192       False  [ 742.169495 744.580087 755.776498 749.548934 747.847778 ] 747.9846, 4255565 KB
-tbbmalloc             5          debra_df   hm_hashtable              200000     192       False  [ 564.849611 538.095727 558.890434 565.991382 560.442232 ] 557.6539, 4263593 KB
-lockfree              5          debra_df   hm_hashtable              200000     192       True   [ 606.03465 609.118081 607.321669 593.848369 580.446693 ] 599.3539, 4219767 KB
-rpmalloc              5          debra_df   hm_hashtable              200000     192       False  [ 521.701493 527.742593 527.283392 528.225396 530.450771 ] 527.0807, 5288870 KB
-deqalloc              50         debra      hm_hashtable              200000     192       False  [ 410.472931 409.722333 407.93411 407.455971 409.051973 ] 408.9275, 5196689 KB
-deqalloc_genericdeque 50         debra      hm_hashtable              200000     192       False  [ 410.83574 407.652047 394.113492 404.1141 400.759559 ] 403.4950, 7752992 KB
-mimalloc              50         debra      hm_hashtable              200000     192       False  [ 302.884588 302.694806 309.985469 296.542755 299.492968 ] 302.3201, 4944852 KB
-jemalloc              50         debra_df   hm_hashtable              200000     192       True   [ 389.497145 391.586683 391.909841 380.886354 381.649163 ] 387.1058, 5803927 KB
-snmalloc              50         debra      hm_hashtable              200000     192       False  [ 383.574468 386.514882 390.460228 386.707548 386.520408 ] 386.7555, 4368918 KB
-hoard                 50         debra      hm_hashtable              200000     192       True   [ 354.403997 353.970258 357.818577 355.726941 349.334762 ] 354.2509, 4258663 KB
-tcmalloc              50         debra_df   hm_hashtable              200000     192       False  [ 217.379372 214.28866 219.699649 224.756561 212.575224 ] 217.7399, 4297670 KB
-tbbmalloc             50         debra_df   hm_hashtable              200000     192       False  [ 325.181697 325.408004 323.286015 325.854692 327.275393 ] 325.4012, 4295826 KB
-lockfree              50         debra_df   hm_hashtable              200000     192       True   [ 174.389878 180.966809 171.143621 178.157816 180.759556 ] 177.0835, 4227107 KB
-rpmalloc              50         debra_df   hm_hashtable              200000     192       False  [ 324.173106 320.602705 323.258978 322.844813 318.165587 ] 321.8090, 5272749 KB
-deqalloc              90         debra      hm_hashtable              200000     192       False  [ 322.053983 324.11266 323.697603 323.152706 324.090757 ] 323.4215, 5224914 KB
-deqalloc_genericdeque 90         debra      hm_hashtable              200000     192       False  [ 323.215106 321.209981 320.835193 320.37631 321.138955 ] 321.3551, 7744023 KB
-mimalloc              90         debra      hm_hashtable              200000     192       False  [ 219.187268 216.133923 217.287162 224.889979 215.698538 ] 218.6394, 4937341 KB
-jemalloc              90         debra_df   hm_hashtable              200000     192       True   [ 286.770079 289.101392 287.237025 286.343782 287.381438 ] 287.3667, 5961994 KB
-snmalloc              90         debra      hm_hashtable              200000     192       False  [ 304.833711 307.517277 305.835634 304.472662 305.347548 ] 305.6014, 4459514 KB
-hoard                 90         debra      hm_hashtable              200000     192       True   [ 284.816683 286.538693 281.927611 284.116424 285.571843 ] 284.5943, 4288674 KB
-tcmalloc              90         debra_df   hm_hashtable              200000     192       False  [ 135.109194 129.757403 134.182418 132.23295 130.360659 ] 132.3285, 4302633 KB
-tbbmalloc             90         debra_df   hm_hashtable              200000     192       False  [ 256.989364 257.576866 258.071973 253.991078 254.882402 ] 256.3023, 4315944 KB
-lockfree              90         debra_df   hm_hashtable              200000     192       True   [ 98.164556 96.839749 98.74134 97.606968 98.838435 ] 98.0382, 4231665 KB
-rpmalloc              90         debra_df   hm_hashtable              200000     192       False  [ 255.004434 254.007121 255.382743 252.453486 255.614139 ] 254.4924, 5264675 KB
-deqalloc              100        debra      hm_hashtable              200000     192       False  [ 309.696878 314.716523 309.680519 309.22943 309.959543 ] 310.6566, 5238500 KB
-deqalloc_genericdeque 100        debra      hm_hashtable              200000     192       False  [ 307.958261 303.79762 307.596573 308.532842 306.723191 ] 306.9217, 7762721 KB
-mimalloc              100        debra      hm_hashtable              200000     192       False  [ 215.65204 204.91429 218.646559 220.056644 213.471586 ] 214.5482, 4976084 KB
-jemalloc              100        debra_df   hm_hashtable              200000     192       True   [ 278.277967 272.968057 274.317901 273.081078 273.935598 ] 274.5161, 6008947 KB
-snmalloc              100        debra      hm_hashtable              200000     192       False  [ 294.035928 292.012853 290.383007 291.734428 291.510853 ] 291.9354, 4427265 KB
-hoard                 100        debra      hm_hashtable              200000     192       True   [ 273.227946 274.532981 274.444568 274.758939 274.821346 ] 274.3572, 4293921 KB
-tcmalloc              100        debra_df   hm_hashtable              200000     192       False  [ 122.415435 119.813303 122.38524 121.791415 119.407478 ] 121.1626, 4310405 KB
-tbbmalloc             100        debra_df   hm_hashtable              200000     192       False  [ 245.256219 245.650521 241.583428 245.170493 245.178922 ] 244.5679, 4305571 KB
-lockfree              100        debra_df   hm_hashtable              200000     192       True   [ 86.434768 87.435722 89.044538 86.435337 85.702942 ] 87.0107, 4230762 KB
-rpmalloc              100        debra_df   hm_hashtable              200000     192       False  [ 244.287209 243.589997 244.179113 246.374632 245.587538 ] 244.8037, 5269585 KB
-deqalloc              0          debra      hmlist                    2000       192       False  [ 130.231885 130.771614 127.895097 132.348086 133.566685 ] 130.9627, 5046395 KB
-deqalloc_genericdeque 0          debra      hmlist                    2000       192       False  [ 130.180195 132.631504 130.805525 129.189 132.485875 ] 131.0584, 7603417 KB
-mimalloc              0          debra      hmlist                    2000       192       False  [ 130.309083 129.962197 134.974384 128.116164 125.858109 ] 129.8440, 4541077 KB
-jemalloc              0          debra_df   hmlist                    2000       192       True   [ 125.728494 128.656281 124.72671 125.803881 128.79093 ] 126.7413, 5003188 KB
-snmalloc              0          debra      hmlist                    2000       192       False  [ 130.672054 128.943974 133.629167 130.924229 130.265372 ] 130.8870, 4283647 KB
-hoard                 0          debra      hmlist                    2000       192       True   [ 129.179751 130.314392 131.114943 129.589035 127.011332 ] 129.4419, 4210936 KB
-tcmalloc              0          debra_df   hmlist                    2000       192       False  [ 125.795885 128.074421 125.2506 128.367396 126.036866 ] 126.7050, 4241962 KB
-tbbmalloc             0          debra_df   hmlist                    2000       192       False  [ 126.92589 123.824011 125.530803 125.488956 125.40844 ] 125.4356, 4264830 KB
-lockfree              0          debra_df   hmlist                    2000       192       True   [ 123.434533 124.241765 124.697123 125.593742 127.996821 ] 125.1928, 4208099 KB
-rpmalloc              0          debra_df   hmlist                    2000       192       False  [ 125.093854 127.372726 123.387611 122.988891 126.637989 ] 125.0962, 4857500 KB
-deqalloc              1          debra      hmlist                    2000       192       False  [ 74.880854 74.179669 74.880785 74.91395 74.640327 ] 74.6991, 4940945 KB
-deqalloc_genericdeque 1          debra      hmlist                    2000       192       False  [ 74.67661 75.514933 75.089313 74.248115 74.639242 ] 74.8336, 7499252 KB
-mimalloc              1          debra      hmlist                    2000       192       False  [ 18.488287 18.296673 18.598379 18.381349 18.813019 ] 18.5155, 4966454 KB
-jemalloc              1          debra_df   hmlist                    2000       192       True   [ 27.067196 27.291336 26.700417 27.139389 27.374129 ] 27.1145, 5801939 KB
-snmalloc              1          debra      hmlist                    2000       192       False  [ 74.610008 74.353762 74.460156 74.492097 74.021098 ] 74.3874, 4284066 KB
-hoard                 1          debra      hmlist                    2000       192       True   [ 47.978519 48.294835 48.197095 48.114686 48.35497 ] 48.1880, 4211539 KB
-tcmalloc              1          debra_df   hmlist                    2000       192       False  [ 73.498876 74.432856 73.62136 73.963406 74.312732 ] 73.9658, 4241267 KB
-tbbmalloc             1          debra_df   hmlist                    2000       192       False  [ 19.317725 19.234086 19.443165 19.193233 19.331733 ] 19.3040, 4262101 KB
-lockfree              1          debra_df   hmlist                    2000       192       True   [ 49.146228 48.973122 48.93107 48.986722 49.098835 ] 49.0272, 4209556 KB
-rpmalloc              1          debra_df   hmlist                    2000       192       False  [ 15.54503 15.571623 15.631829 15.480296 15.815672 ] 15.6089, 5277474 KB
-deqalloc              5          debra      hmlist                    2000       192       False  [ 63.66207 63.742553 64.070327 62.428288 63.897765 ] 63.5602, 5008689 KB
-deqalloc_genericdeque 5          debra      hmlist                    2000       192       False  [ 64.233394 64.11754 63.609234 63.823663 63.726383 ] 63.9020, 7554658 KB
-mimalloc              5          debra      hmlist                    2000       192       False  [ 18.266794 18.346372 17.531116 19.560073 27.154289 ] 20.1717, 4938940 KB
-jemalloc              5          debra_df   hmlist                    2000       192       True   [ 41.39501 41.276432 41.178232 41.343621 41.365068 ] 41.3117, 5801853 KB
-snmalloc              5          debra      hmlist                    2000       192       False  [ 63.822652 63.129138 63.731583 63.702029 63.220499 ] 63.5212, 4293517 KB
-hoard                 5          debra      hmlist                    2000       192       True   [ 41.859735 42.034618 41.706314 41.840173 42.057834 ] 41.8997, 4211657 KB
-tcmalloc              5          debra_df   hmlist                    2000       192       False  [ 61.421796 61.728936 61.890693 61.418433 61.692679 ] 61.6305, 4242306 KB
-tbbmalloc             5          debra_df   hmlist                    2000       192       False  [ 18.842044 18.690145 18.763381 18.781944 18.777208 ] 18.7709, 4266041 KB
-lockfree              5          debra_df   hmlist                    2000       192       True   [ 42.286367 42.340454 42.286671 42.465598 42.25952 ] 42.3277, 4209403 KB
-rpmalloc              5          debra_df   hmlist                    2000       192       False  [ 21.308037 21.399536 21.414609 21.236024 21.274164 ] 21.3265, 5288070 KB
-deqalloc              50         debra      hmlist                    2000       192       False  [ 33.862337 33.705944 33.670532 33.630005 33.71349 ] 33.7165, 5065591 KB
-deqalloc_genericdeque 50         debra      hmlist                    2000       192       False  [ 33.681226 33.9958 33.974703 33.64063 34.105177 ] 33.8795, 7600899 KB
-mimalloc              50         debra      hmlist                    2000       192       False  [ 20.151676 20.183994 20.00661 20.210188 20.102673 ] 20.1310, 4928869 KB
-jemalloc              50         debra_df   hmlist                    2000       192       True   [ 26.334822 26.522845 26.47133 26.359072 26.397889 ] 26.4172, 5801487 KB
-snmalloc              50         debra      hmlist                    2000       192       False  [ 33.808476 33.784024 33.901204 33.7278 33.903651 ] 33.8250, 4301281 KB
-hoard                 50         debra      hmlist                    2000       192       True   [ 24.98372 25.339245 24.925687 25.080469 25.239834 ] 25.1138, 4223647 KB
-tcmalloc              50         debra_df   hmlist                    2000       192       False  [ 33.545016 33.556416 33.874474 33.582253 33.394589 ] 33.5905, 4249603 KB
-tbbmalloc             50         debra_df   hmlist                    2000       192       False  [ 15.214175 15.165311 15.242685 15.340149 15.130028 ] 15.2185, 4264674 KB
-lockfree              50         debra_df   hmlist                    2000       192       True   [ 26.142535 26.045249 26.24491 26.372866 26.226442 ] 26.2064, 4216381 KB
-rpmalloc              50         debra_df   hmlist                    2000       192       False  [ 16.79132 16.747895 16.75314 16.784957 16.797347 ] 16.7749, 5275211 KB
-deqalloc              90         debra      hmlist                    2000       192       False  [ 25.213062 25.33274 25.060795 25.233339 25.382612 ] 25.2445, 5066013 KB
-deqalloc_genericdeque 90         debra      hmlist                    2000       192       False  [ 25.333884 25.374065 25.331027 25.336065 25.068562 ] 25.2887, 7602288 KB
-mimalloc              90         debra      hmlist                    2000       192       False  [ 16.24129 16.280484 16.274752 16.255868 16.250508 ] 16.2606, 4985119 KB
-jemalloc              90         debra_df   hmlist                    2000       192       True   [ 20.924153 20.997903 20.974052 20.862716 20.969986 ] 20.9458, 5802639 KB
-snmalloc              90         debra      hmlist                    2000       192       False  [ 25.400369 25.338885 24.80511 25.11899 24.034902 ] 24.9397, 4309138 KB
-hoard                 90         debra      hmlist                    2000       192       True   [ 20.034045 20.049583 20.000123 19.879379 19.766729 ] 19.9460, 4224977 KB
-tcmalloc              90         debra_df   hmlist                    2000       192       False  [ 23.358025 23.215864 23.262375 23.37748 23.273416 ] 23.2974, 4255132 KB
-tbbmalloc             90         debra_df   hmlist                    2000       192       False  [ 13.390602 13.350812 13.386929 13.321541 13.133618 ] 13.3167, 4274582 KB
-lockfree              90         debra_df   hmlist                    2000       192       True   [ 20.237848 20.227162 20.204106 20.356021 20.274745 ] 20.2600, 4217608 KB
-rpmalloc              90         debra_df   hmlist                    2000       192       False  [ 14.050648 14.042663 14.074226 14.083181 14.080305 ] 14.0662, 5280299 KB
-deqalloc              100        debra      hmlist                    2000       192       False  [ 23.564109 23.385843 23.694004 23.447116 23.93358 ] 23.6049, 5027542 KB
-deqalloc_genericdeque 100        debra      hmlist                    2000       192       False  [ 23.522629 23.880052 23.633903 23.946968 23.881617 ] 23.7730, 7610008 KB
-mimalloc              100        debra      hmlist                    2000       192       False  [ 15.483034 15.927697 15.477806 15.419634 15.676153 ] 15.5969, 4972944 KB
-jemalloc              100        debra_df   hmlist                    2000       192       True   [ 19.845345 19.908752 19.840338 20.003244 19.857907 ] 19.8911, 5801894 KB
-snmalloc              100        debra      hmlist                    2000       192       False  [ 23.080148 22.607667 23.794115 23.060944 23.079658 ] 23.1245, 4312349 KB
-hoard                 100        debra      hmlist                    2000       192       True   [ 18.784898 19.020114 18.874096 19.102933 18.89764 ] 18.9359, 4227228 KB
-tcmalloc              100        debra_df   hmlist                    2000       192       False  [ 22.022399 21.951431 21.933256 22.166757 21.98324 ] 22.0114, 4257649 KB
-tbbmalloc             100        debra_df   hmlist                    2000       192       False  [ 12.824378 12.915082 13.023359 12.97409 12.932679 ] 12.9339, 4266780 KB
-lockfree              100        debra_df   hmlist                    2000       192       True   [ 19.284641 19.224849 19.333299 19.236394 19.298758 ] 19.2756, 4217872 KB
-rpmalloc              100        debra_df   hmlist                    2000       192       False  [ 13.543505 13.546331 13.529931 13.515593 13.547239 ] 13.5365, 5273716 KB
+deqalloc              0          debra      guerraoui_ext_bst_ticket  200000     192       False  [ 549.725143 556.021946 558.853702 ] 554.8669, 5168575 KB
+mimalloc              0          debra      guerraoui_ext_bst_ticket  200000     192       False  [ 532.780876 534.466645 533.857437 ] 533.7017, 4572004 KB
+jemalloc              0          debra_df   guerraoui_ext_bst_ticket  200000     192       True   [ 524.513734 523.220953 523.271682 ] 523.6688, 5012524 KB
+snmalloc              0          debra      guerraoui_ext_bst_ticket  200000     192       False  [ 546.96057 531.65743 527.044338 ] 535.2208, 4320922 KB
+hoard                 0          debra      guerraoui_ext_bst_ticket  200000     192       True   [ 431.819504 431.656747 430.705392 ] 431.3939, 4227988 KB
+tcmalloc              0          debra_df   guerraoui_ext_bst_ticket  200000     192       False  [ 498.432488 497.814636 498.280658 ] 498.1759, 4261023 KB
+tbbmalloc             0          debra_df   guerraoui_ext_bst_ticket  200000     192       False  [ 455.007747 455.191495 451.057585 ] 453.7523, 4261657 KB
+lockfree              0          debra_df   guerraoui_ext_bst_ticket  200000     192       True   [ 468.070936 465.571074 467.769124 ] 467.1370, 4220361 KB
+rpmalloc              0          debra_df   guerraoui_ext_bst_ticket  200000     192       False  [ 511.928027 507.538608 514.80182 ] 511.4228, 5043472 KB
+deqalloc              1          debra      guerraoui_ext_bst_ticket  200000     192       False  [ 540.078206 538.331993 540.592899 ] 539.6677, 5181523 KB
+mimalloc              1          debra      guerraoui_ext_bst_ticket  200000     192       False  [ 462.955787 483.81442 460.500271 ] 469.0902, 4909290 KB
+jemalloc              1          debra_df   guerraoui_ext_bst_ticket  200000     192       True   [ 509.409889 507.574863 510.401592 ] 509.1288, 5808453 KB
+snmalloc              1          debra      guerraoui_ext_bst_ticket  200000     192       False  [ 525.090842 524.822392 526.856032 ] 525.5898, 4340671 KB
+hoard                 1          debra      guerraoui_ext_bst_ticket  200000     192       True   [ 412.880671 415.62807 413.784644 ] 414.0978, 4236225 KB
+tcmalloc              1          debra_df   guerraoui_ext_bst_ticket  200000     192       False  [ 539.981577 537.545783 541.198799 ] 539.5754, 4264246 KB
+tbbmalloc             1          debra_df   guerraoui_ext_bst_ticket  200000     192       False  [ 420.764179 420.044737 420.687498 ] 420.4988, 4283996 KB
+lockfree              1          debra_df   guerraoui_ext_bst_ticket  200000     192       True   [ 441.371262 435.880484 435.887335 ] 437.7130, 4224750 KB
+rpmalloc              1          debra_df   guerraoui_ext_bst_ticket  200000     192       False  [ 444.220662 449.262722 450.432598 ] 447.9720, 5444358 KB
+deqalloc              5          debra      guerraoui_ext_bst_ticket  200000     192       False  [ 496.218652 506.639059 499.746325 ] 500.8680, 5178820 KB
+mimalloc              5          debra      guerraoui_ext_bst_ticket  200000     192       False  [ 439.229721 444.979723 443.265126 ] 442.4915, 4976734 KB
+jemalloc              5          debra_df   guerraoui_ext_bst_ticket  200000     192       True   [ 448.985292 443.903586 445.093367 ] 445.9941, 5809649 KB
+snmalloc              5          debra      guerraoui_ext_bst_ticket  200000     192       False  [ 483.542389 485.460369 474.978588 ] 481.3271, 4378268 KB
+hoard                 5          debra      guerraoui_ext_bst_ticket  200000     192       True   [ 386.525945 392.704564 386.814995 ] 388.6818, 4255040 KB
+tcmalloc              5          debra_df   guerraoui_ext_bst_ticket  200000     192       False  [ 503.37835 515.823971 513.447074 ] 510.8831, 4280922 KB
+tbbmalloc             5          debra_df   guerraoui_ext_bst_ticket  200000     192       False  [ 382.131306 382.769575 383.839504 ] 382.9135, 4286778 KB
+lockfree              5          debra_df   guerraoui_ext_bst_ticket  200000     192       True   [ 372.437413 382.057215 373.541771 ] 376.0121, 4235470 KB
+rpmalloc              5          debra_df   guerraoui_ext_bst_ticket  200000     192       False  [ 417.304989 416.610642 412.558262 ] 415.4913, 5469063 KB
+deqalloc              50         debra      guerraoui_ext_bst_ticket  200000     192       False  [ 315.895268 314.989177 319.612427 ] 316.8323, 5395216 KB
+mimalloc              50         debra      guerraoui_ext_bst_ticket  200000     192       False  [ 244.570078 255.087291 232.629389 ] 244.0956, 5041274 KB
+jemalloc              50         debra_df   guerraoui_ext_bst_ticket  200000     192       True   [ 247.545949 249.832585 251.214254 ] 249.5309, 6125812 KB
+snmalloc              50         debra      guerraoui_ext_bst_ticket  200000     192       False  [ 282.671113 281.419938 281.61321 ] 281.9014, 4625089 KB
+hoard                 50         debra      guerraoui_ext_bst_ticket  200000     192       True   [ 252.691427 245.005308 252.895136 ] 250.1973, 4419167 KB
+tcmalloc              50         debra_df   guerraoui_ext_bst_ticket  200000     192       False  [ 123.919058 127.508475 128.172123 ] 126.5332, 4353757 KB
+tbbmalloc             50         debra_df   guerraoui_ext_bst_ticket  200000     192       False  [ 237.080698 235.652477 239.171468 ] 237.3015, 4327007 KB
+lockfree              50         debra_df   guerraoui_ext_bst_ticket  200000     192       True   [ 141.508889 141.506976 141.257508 ] 141.4245, 4260194 KB
+rpmalloc              50         debra_df   guerraoui_ext_bst_ticket  200000     192       False  [ 255.789401 257.906427 257.538962 ] 257.0783, 5470733 KB
+deqalloc              90         debra      guerraoui_ext_bst_ticket  200000     192       False  [ 260.899344 257.175995 258.358743 ] 258.8114, 5402740 KB
+mimalloc              90         debra      guerraoui_ext_bst_ticket  200000     192       False  [ 190.468574 186.26891 190.39535 ] 189.0443, 4971291 KB
+jemalloc              90         debra_df   guerraoui_ext_bst_ticket  200000     192       True   [ 206.681606 208.84479 206.007649 ] 207.1780, 6420010 KB
+snmalloc              90         debra      guerraoui_ext_bst_ticket  200000     192       False  [ 208.51917 208.4849 216.749147 ] 211.2511, 4783574 KB
+hoard                 90         debra      guerraoui_ext_bst_ticket  200000     192       True   [ 210.199117 207.514512 194.582049 ] 204.0986, 4509379 KB
+tcmalloc              90         debra_df   guerraoui_ext_bst_ticket  200000     192       False  [ 92.067221 91.457659 91.669825 ] 91.7316, 4384988 KB
+tbbmalloc             90         debra_df   guerraoui_ext_bst_ticket  200000     192       False  [ 193.63655 190.519538 193.277465 ] 192.4779, 4361757 KB
+lockfree              90         debra_df   guerraoui_ext_bst_ticket  200000     192       True   [ 86.019562 85.452359 85.914532 ] 85.7955, 4256914 KB
+rpmalloc              90         debra_df   guerraoui_ext_bst_ticket  200000     192       False  [ 199.195439 198.936456 199.462932 ] 199.1983, 5469650 KB
+deqalloc              100        debra      guerraoui_ext_bst_ticket  200000     192       False  [ 249.315557 250.843375 250.741198 ] 250.3000, 5495576 KB
+mimalloc              100        debra      guerraoui_ext_bst_ticket  200000     192       False  [ 174.745542 176.872014 182.845733 ] 178.1544, 5027376 KB
+jemalloc              100        debra_df   guerraoui_ext_bst_ticket  200000     192       True   [ 199.595889 206.909438 207.231846 ] 204.5791, 6463922 KB
+snmalloc              100        debra      guerraoui_ext_bst_ticket  200000     192       False  [ 197.871409 201.022948 197.757106 ] 198.8838, 4644638 KB
+hoard                 100        debra      guerraoui_ext_bst_ticket  200000     192       True   [ 195.10978 204.26343 195.640483 ] 198.3379, 4513107 KB
+tcmalloc              100        debra_df   guerraoui_ext_bst_ticket  200000     192       False  [ 90.2788 92.665342 91.253101 ] 91.3991, 4387444 KB
+tbbmalloc             100        debra_df   guerraoui_ext_bst_ticket  200000     192       False  [ 183.892191 185.668203 184.060758 ] 184.5404, 4355690 KB
+lockfree              100        debra_df   guerraoui_ext_bst_ticket  200000     192       True   [ 78.65459 77.939927 78.857349 ] 78.4840, 4264781 KB
+rpmalloc              100        debra_df   guerraoui_ext_bst_ticket  200000     192       False  [ 190.029967 188.431649 186.178777 ] 188.2135, 5505798 KB
+deqalloc              0          debra      brown_ext_abtree_lf       200000     192       False  [ 840.273375 852.684852 861.840771 ] 851.5997, 5198043 KB
+mimalloc              0          debra      brown_ext_abtree_lf       200000     192       False  [ 830.688655 828.308642 817.506168 ] 825.5012, 4551592 KB
+jemalloc              0          debra_df   brown_ext_abtree_lf       200000     192       True   [ 870.328135 875.545232 875.469097 ] 873.7808, 5011507 KB
+snmalloc              0          debra      brown_ext_abtree_lf       200000     192       False  [ 869.564192 864.003371 862.235854 ] 865.2678, 4318872 KB
+hoard                 0          debra      brown_ext_abtree_lf       200000     192       True   [ 780.239302 773.302003 779.969496 ] 777.8369, 4220615 KB
+tcmalloc              0          debra_df   brown_ext_abtree_lf       200000     192       False  [ 879.609196 856.137275 861.116682 ] 865.6211, 4248418 KB
+tbbmalloc             0          debra_df   brown_ext_abtree_lf       200000     192       False  [ 802.913049 812.018802 804.684535 ] 806.5388, 4270243 KB
+lockfree              0          debra_df   brown_ext_abtree_lf       200000     192       True   [ 784.312082 781.935176 788.956293 ] 785.0679, 4210703 KB
+rpmalloc              0          debra_df   brown_ext_abtree_lf       200000     192       False  [ 814.688576 812.429454 808.664676 ] 811.9276, 5031098 KB
+deqalloc              1          debra      brown_ext_abtree_lf       200000     192       False  [ 630.982927 637.455462 631.885113 ] 633.4412, 5448534 KB
+mimalloc              1          debra      brown_ext_abtree_lf       200000     192       False  [ 625.508142 586.685104 597.52759 ] 603.2403, 4925264 KB
+jemalloc              1          debra_df   brown_ext_abtree_lf       200000     192       True   [ 641.199622 640.759376 643.597231 ] 641.8521, 5805996 KB
+snmalloc              1          debra      brown_ext_abtree_lf       200000     192       False  [ 635.230742 641.021556 634.007113 ] 636.7531, 4400263 KB
+hoard                 1          debra      brown_ext_abtree_lf       200000     192       True   [ 635.48797 633.124602 635.128229 ] 634.5803, 4250246 KB
+tcmalloc              1          debra_df   brown_ext_abtree_lf       200000     192       False  [ 608.830714 613.560992 619.210975 ] 613.8676, 4292985 KB
+tbbmalloc             1          debra_df   brown_ext_abtree_lf       200000     192       False  [ 620.701794 626.812056 620.578378 ] 622.6974, 4319586 KB
+lockfree              1          debra_df   brown_ext_abtree_lf       200000     192       True   [ 636.376198 637.902359 643.878061 ] 639.3855, 4229825 KB
+rpmalloc              1          debra_df   brown_ext_abtree_lf       200000     192       False  [ 521.495352 517.965536 521.298333 ] 520.2531, 5452940 KB
+deqalloc              5          debra      brown_ext_abtree_lf       200000     192       False  [ 531.484522 537.953267 533.72853 ] 534.3888, 5501093 KB
+mimalloc              5          debra      brown_ext_abtree_lf       200000     192       False  [ 531.598065 525.145776 532.96008 ] 529.9013, 4918667 KB
+jemalloc              5          debra_df   brown_ext_abtree_lf       200000     192       True   [ 553.226092 555.517378 541.92103 ] 550.2215, 6069224 KB
+snmalloc              5          debra      brown_ext_abtree_lf       200000     192       False  [ 532.637614 533.184911 535.717812 ] 533.8468, 4593772 KB
+hoard                 5          debra      brown_ext_abtree_lf       200000     192       True   [ 531.684651 538.057924 539.090866 ] 536.2778, 4346889 KB
+tcmalloc              5          debra_df   brown_ext_abtree_lf       200000     192       False  [ 275.180995 263.662017 249.681681 ] 262.8416, 4307124 KB
+tbbmalloc             5          debra_df   brown_ext_abtree_lf       200000     192       False  [ 474.343212 469.813787 476.936424 ] 473.6978, 4329457 KB
+lockfree              5          debra_df   brown_ext_abtree_lf       200000     192       True   [ 487.906857 485.202786 493.705358 ] 488.9383, 4244657 KB
+rpmalloc              5          debra_df   brown_ext_abtree_lf       200000     192       False  [ 459.565269 477.742776 521.097047 ] 486.1350, 5417250 KB
+deqalloc              50         debra      brown_ext_abtree_lf       200000     192       False  [ 255.246328 255.747254 254.551992 ] 255.1819, 6344976 KB
+mimalloc              50         debra      brown_ext_abtree_lf       200000     192       False  [ 232.46873 232.698706 231.018875 ] 232.0621, 5339533 KB
+jemalloc              50         debra_df   brown_ext_abtree_lf       200000     192       True   [ 225.630065 221.78561 224.812902 ] 224.0762, 7501073 KB
+snmalloc              50         debra      brown_ext_abtree_lf       200000     192       False  [ 251.933847 254.764699 253.326099 ] 253.3415, 5200434 KB
+hoard                 50         debra      brown_ext_abtree_lf       200000     192       True   [ 247.815668 246.840717 231.043555 ] 241.9000, 4755384 KB
+tcmalloc              50         debra_df   brown_ext_abtree_lf       200000     192       False  [ 31.05211 31.872514 27.923173 ] 30.2826, 4319783 KB
+tbbmalloc             50         debra_df   brown_ext_abtree_lf       200000     192       False  [ 183.230358 181.677649 179.725015 ] 181.5443, 4345819 KB
+lockfree              50         debra_df   brown_ext_abtree_lf       200000     192       True   [ 128.831052 125.460659 127.682475 ] 127.3247, 4300329 KB
+rpmalloc              50         debra_df   brown_ext_abtree_lf       200000     192       False  [ 256.039098 256.309062 256.308581 ] 256.2189, 6095326 KB
+deqalloc              90         debra      brown_ext_abtree_lf       200000     192       False  [ 199.979929 205.969976 204.567652 ] 203.5059, 7035067 KB
+mimalloc              90         debra      brown_ext_abtree_lf       200000     192       False  [ 167.468109 168.8422 168.970532 ] 168.4269, 6188417 KB
+jemalloc              90         debra_df   brown_ext_abtree_lf       200000     192       True   [ 182.308733 185.058096 183.506353 ] 183.6244, 7821940 KB
+snmalloc              90         debra      brown_ext_abtree_lf       200000     192       False  [ 185.522167 182.205068 186.802584 ] 184.8433, 5528096 KB
+hoard                 90         debra      brown_ext_abtree_lf       200000     192       True   [ 184.910196 199.624095 197.950503 ] 194.1616, 4788579 KB
+tcmalloc              90         debra_df   brown_ext_abtree_lf       200000     192       False  [ 24.431736 23.439332 23.550199 ] 23.8071, 4350985 KB
+tbbmalloc             90         debra_df   brown_ext_abtree_lf       200000     192       False  [ 144.731751 144.847745 142.680447 ] 144.0866, 4413016 KB
+lockfree              90         debra_df   brown_ext_abtree_lf       200000     192       True   [ 74.325246 73.463805 72.832751 ] 73.5406, 4339851 KB
+rpmalloc              90         debra_df   brown_ext_abtree_lf       200000     192       False  [ 186.41852 189.83593 191.166144 ] 189.1402, 6633875 KB
+deqalloc              100        debra      brown_ext_abtree_lf       200000     192       False  [ 197.724126 193.738668 194.645855 ] 195.3695, 7379177 KB
+mimalloc              100        debra      brown_ext_abtree_lf       200000     192       False  [ 158.616474 157.785728 157.177879 ] 157.8600, 5967782 KB
+jemalloc              100        debra_df   brown_ext_abtree_lf       200000     192       True   [ 176.981298 177.851337 178.043912 ] 177.6255, 7773408 KB
+snmalloc              100        debra      brown_ext_abtree_lf       200000     192       False  [ 171.700628 174.801177 175.346214 ] 173.9493, 5559309 KB
+hoard                 100        debra      brown_ext_abtree_lf       200000     192       True   [ 159.046216 188.59689 189.615057 ] 179.0861, 4947549 KB
+tcmalloc              100        debra_df   brown_ext_abtree_lf       200000     192       False  [ 23.204561 24.123517 23.943634 ] 23.7572, 4370862 KB
+tbbmalloc             100        debra_df   brown_ext_abtree_lf       200000     192       False  [ 138.710011 140.752227 138.662898 ] 139.3750, 4430585 KB
+lockfree              100        debra_df   brown_ext_abtree_lf       200000     192       True   [ 66.267596 67.623108 66.584315 ] 66.8250, 4353380 KB
+rpmalloc              100        debra_df   brown_ext_abtree_lf       200000     192       False  [ 181.1901 182.010016 178.861845 ] 180.6873, 5932083 KB
+deqalloc              0          debra      hm_hashtable              200000     192       False  [ 806.011036 810.296695 809.319188 ] 808.5423, 5062035 KB
+mimalloc              0          debra      hm_hashtable              200000     192       False  [ 814.139113 802.290402 788.53933 ] 801.6563, 4544274 KB
+jemalloc              0          debra_df   hm_hashtable              200000     192       True   [ 863.901103 855.0645 687.802778 ] 802.2561, 5004796 KB
+snmalloc              0          debra      hm_hashtable              200000     192       False  [ 845.684642 836.842778 846.572459 ] 843.0333, 4291861 KB
+hoard                 0          debra      hm_hashtable              200000     192       True   [ 729.375835 731.55415 724.941226 ] 728.6237, 4216952 KB
+tcmalloc              0          debra_df   hm_hashtable              200000     192       False  [ 869.601909 886.299876 868.958097 ] 874.9533, 4245270 KB
+tbbmalloc             0          debra_df   hm_hashtable              200000     192       False  [ 765.252039 772.606118 773.64734 ] 770.5018, 4267583 KB
+lockfree              0          debra_df   hm_hashtable              200000     192       True   [ 835.624569 746.80583 838.793111 ] 807.0745, 4213887 KB
+rpmalloc              0          debra_df   hm_hashtable              200000     192       False  [ 799.729884 797.015319 801.948255 ] 799.5645, 4866687 KB
+deqalloc              1          debra      hm_hashtable              200000     192       False  [ 760.264124 765.985209 749.460018 ] 758.5698, 5085864 KB
+mimalloc              1          debra      hm_hashtable              200000     192       False  [ 622.493971 620.508287 618.589941 ] 620.5307, 5001114 KB
+jemalloc              1          debra_df   hm_hashtable              200000     192       True   [ 698.192322 695.690214 700.473125 ] 698.1186, 5799766 KB
+snmalloc              1          debra      hm_hashtable              200000     192       False  [ 778.755757 789.374145 781.892735 ] 783.3409, 4297553 KB
+hoard                 1          debra      hm_hashtable              200000     192       True   [ 672.444853 684.963825 679.259381 ] 678.8894, 4216094 KB
+tcmalloc              1          debra_df   hm_hashtable              200000     192       False  [ 839.209817 834.261969 818.890603 ] 830.7875, 4246040 KB
+tbbmalloc             1          debra_df   hm_hashtable              200000     192       False  [ 643.80224 655.731624 635.561002 ] 645.0316, 4269696 KB
+lockfree              1          debra_df   hm_hashtable              200000     192       True   [ 737.211888 728.644685 740.906802 ] 735.5878, 4215302 KB
+rpmalloc              1          debra_df   hm_hashtable              200000     192       False  [ 559.396607 568.36709 563.143912 ] 563.6359, 5278572 KB
+deqalloc              5          debra      hm_hashtable              200000     192       False  [ 690.483941 672.699516 696.389767 ] 686.5244, 5138464 KB
+mimalloc              5          debra      hm_hashtable              200000     192       False  [ 566.998502 566.462075 572.847746 ] 568.7694, 4981080 KB
+jemalloc              5          debra_df   hm_hashtable              200000     192       True   [ 641.090708 654.473598 646.877856 ] 647.4807, 5803184 KB
+snmalloc              5          debra      hm_hashtable              200000     192       False  [ 701.863481 707.883055 700.751429 ] 703.4993, 4312458 KB
+hoard                 5          debra      hm_hashtable              200000     192       True   [ 580.354266 603.685401 559.843678 ] 581.2944, 4224718 KB
+tcmalloc              5          debra_df   hm_hashtable              200000     192       False  [ 752.29664 752.887733 749.141235 ] 751.4419, 4257825 KB
+tbbmalloc             5          debra_df   hm_hashtable              200000     192       False  [ 560.08287 574.072774 571.900632 ] 568.6854, 4270933 KB
+lockfree              5          debra_df   hm_hashtable              200000     192       True   [ 615.634233 611.841258 582.029397 ] 603.1683, 4218722 KB
+rpmalloc              5          debra_df   hm_hashtable              200000     192       False  [ 532.260369 527.070346 528.648397 ] 529.3264, 5263716 KB
+deqalloc              50         debra      hm_hashtable              200000     192       False  [ 407.457447 407.183433 406.340799 ] 406.9939, 5230738 KB
+mimalloc              50         debra      hm_hashtable              200000     192       False  [ 296.449866 309.703697 303.625617 ] 303.2597, 5000614 KB
+jemalloc              50         debra_df   hm_hashtable              200000     192       True   [ 379.169725 400.26159 382.958524 ] 387.4633, 5811254 KB
+snmalloc              50         debra      hm_hashtable              200000     192       False  [ 384.793104 387.032043 385.077526 ] 385.6342, 4402802 KB
+hoard                 50         debra      hm_hashtable              200000     192       True   [ 356.010659 337.919086 357.843711 ] 350.5912, 4277160 KB
+tcmalloc              50         debra_df   hm_hashtable              200000     192       False  [ 212.831339 222.321326 220.506247 ] 218.5530, 4291063 KB
+tbbmalloc             50         debra_df   hm_hashtable              200000     192       False  [ 325.683262 326.294042 325.920411 ] 325.9659, 4291411 KB
+lockfree              50         debra_df   hm_hashtable              200000     192       True   [ 176.279106 172.773068 172.327113 ] 173.7931, 4229265 KB
+rpmalloc              50         debra_df   hm_hashtable              200000     192       False  [ 325.383897 321.165329 319.406766 ] 321.9853, 5276054 KB
+deqalloc              90         debra      hm_hashtable              200000     192       False  [ 323.526091 318.571612 318.905455 ] 320.3344, 5325584 KB
+mimalloc              90         debra      hm_hashtable              200000     192       False  [ 230.985988 213.747861 228.356528 ] 224.3635, 4994467 KB
+jemalloc              90         debra_df   hm_hashtable              200000     192       True   [ 288.787078 288.624865 287.319624 ] 288.2439, 5974899 KB
+snmalloc              90         debra      hm_hashtable              200000     192       False  [ 307.380881 306.655701 304.277837 ] 306.1048, 4349458 KB
+hoard                 90         debra      hm_hashtable              200000     192       True   [ 286.933604 283.557883 286.067704 ] 285.5197, 4282002 KB
+tcmalloc              90         debra_df   hm_hashtable              200000     192       False  [ 130.77026 127.858329 128.892721 ] 129.1738, 4298014 KB
+tbbmalloc             90         debra_df   hm_hashtable              200000     192       False  [ 255.982701 255.860787 257.460513 ] 256.4347, 4294699 KB
+lockfree              90         debra_df   hm_hashtable              200000     192       True   [ 96.953765 97.404884 96.698911 ] 97.0192, 4231299 KB
+rpmalloc              90         debra_df   hm_hashtable              200000     192       False  [ 254.597435 254.964805 255.152398 ] 254.9049, 5276517 KB
+deqalloc              100        debra      hm_hashtable              200000     192       False  [ 309.824526 308.748309 309.758877 ] 309.4439, 5282530 KB
+mimalloc              100        debra      hm_hashtable              200000     192       False  [ 215.030683 202.361838 205.882498 ] 207.7583, 4993502 KB
+jemalloc              100        debra_df   hm_hashtable              200000     192       True   [ 276.697711 276.192048 274.671946 ] 275.8539, 5990627 KB
+snmalloc              100        debra      hm_hashtable              200000     192       False  [ 291.095887 289.517994 292.452756 ] 291.0222, 4423931 KB
+hoard                 100        debra      hm_hashtable              200000     192       True   [ 265.832777 274.130459 271.159602 ] 270.3743, 4314176 KB
+tcmalloc              100        debra_df   hm_hashtable              200000     192       False  [ 123.286663 122.70285 119.35824 ] 121.7826, 4299471 KB
+tbbmalloc             100        debra_df   hm_hashtable              200000     192       False  [ 244.335681 244.22805 245.253375 ] 244.6057, 4306463 KB
+lockfree              100        debra_df   hm_hashtable              200000     192       True   [ 89.434112 86.630837 89.730405 ] 88.5985, 4232527 KB
+rpmalloc              100        debra_df   hm_hashtable              200000     192       False  [ 244.831458 243.337743 242.782599 ] 243.6506, 5267519 KB
+deqalloc              0          debra      hmlist                    2000       192       False  [ 130.514857 129.577817 126.818817 ] 128.9705, 5057990 KB
+mimalloc              0          debra      hmlist                    2000       192       False  [ 128.964104 130.151592 129.018312 ] 129.3780, 4604309 KB
+jemalloc              0          debra_df   hmlist                    2000       192       True   [ 128.309551 127.28344 126.418591 ] 127.3372, 5004957 KB
+snmalloc              0          debra      hmlist                    2000       192       False  [ 128.972757 129.225428 130.960224 ] 129.7195, 4287162 KB
+hoard                 0          debra      hmlist                    2000       192       True   [ 125.018159 129.483088 129.565171 ] 128.0221, 4212893 KB
+tcmalloc              0          debra_df   hmlist                    2000       192       False  [ 125.879076 125.72451 126.385566 ] 125.9964, 4240395 KB
+tbbmalloc             0          debra_df   hmlist                    2000       192       False  [ 126.223509 125.554759 125.872104 ] 125.8835, 4263155 KB
+lockfree              0          debra_df   hmlist                    2000       192       True   [ 125.571642 126.110208 123.873181 ] 125.1850, 4208457 KB
+rpmalloc              0          debra_df   hmlist                    2000       192       False  [ 125.645821 126.163504 127.078909 ] 126.2961, 4865209 KB
+deqalloc              1          debra      hmlist                    2000       192       False  [ 74.941812 74.468819 74.467377 ] 74.6260, 4918440 KB
+mimalloc              1          debra      hmlist                    2000       192       False  [ 17.300107 18.429738 18.437862 ] 18.0559, 4975694 KB
+jemalloc              1          debra_df   hmlist                    2000       192       True   [ 26.8442 27.197558 27.48374 ] 27.1752, 5800777 KB
+snmalloc              1          debra      hmlist                    2000       192       False  [ 73.820635 74.744451 74.694545 ] 74.4199, 4289926 KB
+hoard                 1          debra      hmlist                    2000       192       True   [ 47.934375 47.587394 47.729032 ] 47.7503, 4210762 KB
+tcmalloc              1          debra_df   hmlist                    2000       192       False  [ 73.58422 73.921391 74.325266 ] 73.9436, 4241168 KB
+tbbmalloc             1          debra_df   hmlist                    2000       192       False  [ 19.302652 19.308437 19.221162 ] 19.2774, 4251082 KB
+lockfree              1          debra_df   hmlist                    2000       192       True   [ 48.710675 48.779074 48.714385 ] 48.7347, 4208726 KB
+rpmalloc              1          debra_df   hmlist                    2000       192       False  [ 15.570738 15.850712 15.688745 ] 15.7034, 5281953 KB
+deqalloc              5          debra      hmlist                    2000       192       False  [ 63.329369 63.379303 63.047232 ] 63.2520, 4995833 KB
+mimalloc              5          debra      hmlist                    2000       192       False  [ 27.15519 25.111341 18.251104 ] 23.5059, 4996396 KB
+jemalloc              5          debra_df   hmlist                    2000       192       True   [ 41.223888 41.247962 41.240949 ] 41.2376, 5801151 KB
+snmalloc              5          debra      hmlist                    2000       192       False  [ 63.353515 63.785447 63.39939 ] 63.5128, 4293373 KB
+hoard                 5          debra      hmlist                    2000       192       True   [ 41.944573 41.844268 41.64739 ] 41.8121, 4212447 KB
+tcmalloc              5          debra_df   hmlist                    2000       192       False  [ 61.670854 61.619912 61.456846 ] 61.5825, 4243616 KB
+tbbmalloc             5          debra_df   hmlist                    2000       192       False  [ 18.732715 18.923035 18.701104 ] 18.7856, 4262630 KB
+lockfree              5          debra_df   hmlist                    2000       192       True   [ 42.118822 42.358766 42.145234 ] 42.2076, 4211954 KB
+rpmalloc              5          debra_df   hmlist                    2000       192       False  [ 21.305226 21.45173 21.255535 ] 21.3375, 5291549 KB
+deqalloc              50         debra      hmlist                    2000       192       False  [ 32.531479 33.730408 33.806343 ] 33.3561, 5048415 KB
+mimalloc              50         debra      hmlist                    2000       192       False  [ 20.054465 19.968693 20.180375 ] 20.0678, 4942678 KB
+jemalloc              50         debra_df   hmlist                    2000       192       True   [ 26.44521 26.341684 26.39759 ] 26.3948, 5799880 KB
+snmalloc              50         debra      hmlist                    2000       192       False  [ 33.755899 32.621942 33.83071 ] 33.4029, 4294821 KB
+hoard                 50         debra      hmlist                    2000       192       True   [ 25.269747 25.305441 24.962865 ] 25.1794, 4224291 KB
+tcmalloc              50         debra_df   hmlist                    2000       192       False  [ 33.338507 33.554002 33.660543 ] 33.5177, 4249695 KB
+tbbmalloc             50         debra_df   hmlist                    2000       192       False  [ 15.239156 15.245453 15.302999 ] 15.2625, 4263832 KB
+lockfree              50         debra_df   hmlist                    2000       192       True   [ 25.814647 26.143762 26.100474 ] 26.0196, 4214888 KB
+rpmalloc              50         debra_df   hmlist                    2000       192       False  [ 16.7905 16.762261 16.775863 ] 16.7762, 5281648 KB
+deqalloc              90         debra      hmlist                    2000       192       False  [ 25.309081 25.283608 25.129494 ] 25.2407, 5066180 KB
+mimalloc              90         debra      hmlist                    2000       192       False  [ 16.263264 16.310559 16.263156 ] 16.2790, 4996640 KB
+jemalloc              90         debra_df   hmlist                    2000       192       True   [ 20.943581 20.913171 20.945402 ] 20.9341, 5802598 KB
+snmalloc              90         debra      hmlist                    2000       192       False  [ 25.36602 24.471787 25.385183 ] 25.0743, 4309062 KB
+hoard                 90         debra      hmlist                    2000       192       True   [ 20.001789 19.771993 19.689585 ] 19.8211, 4228118 KB
+tcmalloc              90         debra_df   hmlist                    2000       192       False  [ 23.238036 23.306623 23.416007 ] 23.3202, 4257568 KB
+tbbmalloc             90         debra_df   hmlist                    2000       192       False  [ 13.470877 13.225027 13.808344 ] 13.5014, 4245698 KB
+lockfree              90         debra_df   hmlist                    2000       192       True   [ 20.271343 20.332648 20.22991 ] 20.2780, 4215294 KB
+rpmalloc              90         debra_df   hmlist                    2000       192       False  [ 14.070332 14.058315 14.089201 ] 14.0726, 5301603 KB
+deqalloc              100        debra      hmlist                    2000       192       False  [ 23.63862 23.648914 23.895636 ] 23.7277, 5031819 KB
+mimalloc              100        debra      hmlist                    2000       192       False  [ 15.4282 15.382053 16.152966 ] 15.6544, 4957174 KB
+jemalloc              100        debra_df   hmlist                    2000       192       True   [ 19.794535 19.822112 19.890421 ] 19.8357, 5802096 KB
+snmalloc              100        debra      hmlist                    2000       192       False  [ 22.844645 23.41591 23.142809 ] 23.1345, 4311106 KB
+hoard                 100        debra      hmlist                    2000       192       True   [ 18.995158 18.895807 18.934836 ] 18.9419, 4231265 KB
+tcmalloc              100        debra_df   hmlist                    2000       192       False  [ 21.97705 22.144699 22.121608 ] 22.0811, 4255792 KB
+tbbmalloc             100        debra_df   hmlist                    2000       192       False  [ 12.964737 12.974196 12.910791 ] 12.9499, 4261842 KB
+lockfree              100        debra_df   hmlist                    2000       192       True   [ 19.273994 19.287094 19.268625 ] 19.2766, 4219474 KB
+rpmalloc              100        debra_df   hmlist                    2000       192       False  [ 13.518137 13.535202 13.499592 ] 13.5176, 5266728 KB
