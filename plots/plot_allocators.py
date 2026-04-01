@@ -790,7 +790,7 @@ def plot_trackers(input_dir, suite, experiment, out_dir, fmt):
     trackers = sorted(set(r["reclamation"] for r in data))
 
     szx, szy = FIG_CONFIGS["figsize"]
-    fig, ax = plt.subplots(figsize=(len(trackers)*1.15, szy))
+    fig, ax = plt.subplots(figsize=(len(trackers)*1.15, szy*0.9))
 
     seen_allocs = set()
     all_values_global = {}
@@ -878,7 +878,7 @@ def plot_trackers(input_dir, suite, experiment, out_dir, fmt):
 
     #ax.set_ylim(0, 1.26)
     #ax.set_yticks(np.arange(0, 1.1, 0.2))
-    ax.set_ylim(0, ax.dataLim.ymax * 1.35)
+    ax.set_ylim(0, ax.dataLim.ymax * 1.37)
     
 
     plt.xticks([])

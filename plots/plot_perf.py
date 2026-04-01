@@ -86,6 +86,7 @@ df["smr"] = pd.Categorical(df["smr"], smr_order, ordered=True)
 # Data structures to plot
 ds_list = df["ds"].unique()
 allocators = df["allocator"].unique()
+n_allocs = len(allocators)
 
 # ---------- Plot styling ----------
 plt.rcParams.update({
@@ -97,13 +98,21 @@ plt.rcParams.update({
 })
 
 mult = 1
-fig, axes = plt.subplots(2, 1, sharex=True, figsize=(12*mult, 2.5*mult))
+
+# Dynamically scale figure height to avoid squishing if there are many allocators
+fig, axes = plt.subplots(n_allocs, 1, sharex=True, figsize=(12*mult, 1.1*mult * n_allocs))
+
+# Ensure axes is always iterable (fixes crash if n_allocs == 1)
+if n_allocs == 1:
+    axes = [axes]
 
 x = np.arange(len(smr_order))
 width = 0.85 / len(ds_list)
 
 ds_hatches = ['..', 'oo', 'OO', 'O.']
-allocator_hatches = [None, None]
+
+# Dynamically size allocator hatches based on the number of allocators
+allocator_hatches = [None] * n_allocs
 
 colors = ["orangered", "royalblue", "forestgreen", "gold"]
 
@@ -155,26 +164,35 @@ ax.set_xticks(x + width * (len(ds_list) - 1) / 2)
 ax.set_xticklabels(smr_order, rotation=45, ha="right")
 ax.ticklabel_format(axis="y", style="plain", scilimits=(0, 0))
 
-legs = []
-legs.append(ax.legend(
+ax = axes[0]
+ax.set_xticks(x + width * (len(ds_list) - 1) / 2)
+ax.set_xticklabels(smr_order, rotation=45, ha="right")
+ax.ticklabel_format(axis="y", style="plain", scilimits=(0, 0))
+
+# 1. Create the main data structure legend on the top subplot
+main_legend = ax.legend(
     handles=ds_handles,
     frameon=True,
     fontsize=9,
     ncol=len(ds_list),
     loc="upper left",
     alignment="left"
-))
+)
+# Add it as a separate artist so it doesn't get overwritten by the allocator legend later
+ax.add_artist(main_legend)
 
-# 1. Find the highest value across ALL data
+# 2. Find the highest value across ALL data
 global_max_y = df["value"].max()
 
-# 2. Add a 10% buffer so the tallest bar looks nice
+# 3. Add a 10% buffer so the tallest bar looks nice
 y_limit = global_max_y * 1.1
 
 for j, allocator in enumerate(allocators):
     ax_ = axes[j]
     handles = [Line2D([], [], linestyle="none", label=alloc) for alloc in [allocator]]
-    legs.append(ax_.legend(
+
+    # Create the allocator label legend for each specific subplot
+    ax_.legend(
         handles=handles,
         handlelength=0,
         handletextpad=0,
@@ -183,25 +201,23 @@ for j, allocator in enumerate(allocators):
         ncol=1,
         loc="upper right",
         alignment="left",
-    ))
+    )
+
     ax_.set_ylabel("runtime %")
     # margin extend
     ax.set_xlim(x.min() - width, x.max() + width * len(ds_list))
     ax.margins(x=0)
+
     # grid
     maxy = int((int(ax_.get_ylim()[1]) / 10)) * 10
-    
+
     # Prevent divide by zero error if maxy is 0
     if maxy > 0:
         ax_.yaxis.set_major_locator(MultipleLocator(maxy / 2))
-        
+
     ax_.grid(True, which="major", axis="y")
     ax_.set_ylim(0, y_limit)
 
-legs.pop()
-for l in legs:
-    ax.add_artist(l)
-
-plt.tight_layout()
+plt.tight_layout(h_pad=0.2)
 os.makedirs(f"plots/", exist_ok=True)
 plt.savefig("plots/perf_analysis.pdf")
