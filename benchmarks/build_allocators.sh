@@ -153,6 +153,16 @@ popd
 cp $(readlink -f mimalloc/out/release/libmimalloc.so) libmimalloc-batchit.so
 rm -rf mimalloc
 
+#compile llheap
+#https://github.com/cforall/llheap
+git clone https://github.com/cforall/llheap.git
+pushd llheap
+echo llheap $(git rev-parse --short HEAD) >> ../versions.txt
+make all
+popd
+cp $(readlink -f llheap/libllheap.so) libllheap.so
+rm -rf llheap
+
 #courtsey of gemini:
 echo ""
 echo "==================================================="
@@ -172,6 +182,7 @@ declare -a allocators=(
     "rpmalloc:librpmalloc.so"
     "tbbmalloc:libtbbmalloc.so"
     "mimalloc-batchit:libmimalloc-batchit.so"
+    "llheap:libllheap.so"
 )
 
 for entry in "${allocators[@]}"; do
