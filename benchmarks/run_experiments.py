@@ -687,6 +687,17 @@ class FlockRunner:
         self.config.allocators_raw = prev_allocs
         self.rf.close()
 
+    def run_config(self):
+        base_names = list(dict.fromkeys(r.split(":")[0] for r in self.config.allocators_raw))
+        expanded = [ variant for name in base_names for variant in (name, f"{name}:numa") ]
+        prev_allocs = self.config.allocators_raw
+        self.config.allocators_raw = expanded
+        self.new_results_file("config")
+        for rideable in self.config.rideables:
+            self.run_all_allocs(rideable=rideable, update_perc=100, nthreads=self.config.nproc)
+        self.rf.close()
+        self.config.allocators_raw = prev_allocs
+
     def run(self):
         b = self.config.args.benchmark
         run_all = "all" in b
@@ -702,6 +713,7 @@ class FlockRunner:
             if run_all_ab or "ablation_remotefree"   in b: self.run_ablation_remotefree()
         if run_all or "thread-perc" in b: self.run_thread_perc()
         if run_all or "upserts"     in b: self.run_upserts()
+        if run_all or "config" in b: self.run_config()
 
 
 # ---------------------------------------------------------------------------
@@ -734,6 +746,7 @@ class SetbenchRunner:
         return f"../../timings/{name}_{self.config.nproc}-{machine}_{today}"
 
     def _binary(self, rideable: str, tracker: str, df: bool) -> Optional[str]:
+        #breakpoint()
         df_suffix = "_df" if df and tracker != "token4" else ""
         name = f"ubench_{rideable}.alloc_new.reclaim_{tracker}{df_suffix}.pool_none.out"
         path = os.path.join(self.bench_dir, name)
@@ -918,6 +931,19 @@ class SetbenchRunner:
         self.config.allocators_raw = prev_allocs
         self.rf.close()
 
+    def run_config(self):
+        #breakpoint()
+        base_names = list(dict.fromkeys(r.split(":")[0] for r in self.config.allocators_raw))
+        expanded = [ variant for name in base_names
+            for variant in (name, f"{name}:numa", f"{name}::df", f"{name}:numa:df") ]
+        prev_allocs = self.config.allocators_raw
+        self.config.allocators_raw = expanded
+        self.new_results_file("config")
+        for rideable in self.config.rideables:
+            self.run_all_allocs(rideable=rideable, update_perc=100, nthreads=self.config.nproc)
+        self.rf.close()
+        self.config.allocators_raw = prev_allocs
+
     def run(self):
         b = self.config.args.benchmark
         run_all = "all" in b
@@ -932,6 +958,7 @@ class SetbenchRunner:
             if run_all_ab or "ablation_localseglist" in b: self.run_ablation_localseglist()
             if run_all_ab or "ablation_deque"        in b: self.run_ablation_deque()
             if run_all_ab or "ablation_remotefree"   in b: self.run_ablation_remotefree()
+        if run_all or "config" in b: self.run_config()
 
 # ---------------------------------------------------------------------------
 # Main
@@ -983,6 +1010,7 @@ def main():
                                                 "ablation_localseglist",
                                                 "ablation_deque",
                                                 "ablation_remotefree",
+                                                "config",
                                                 "all"])
 
     parser.add_argument("--hugepages",   default=None,              help="Set hugepages setting",
