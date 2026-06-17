@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
 
+import warnings
+warnings.filterwarnings("ignore", message=".*Unable to import Axes3D.*")
+
 import sys
 import re
 import math
@@ -301,6 +304,7 @@ def parse_flock(path):
                     gmean=gmean,
                     mem_kb=float(m.group(10)),
                     reclamation="debra", #hacky way to integrate with other suites
+                    df=False,
                 )
                 rows.append(entry)
                 if mean != 0 and gmean != 0 and \
@@ -342,6 +346,7 @@ def parse_setbench(path):
                     mean=mean,
                     gmean=gmean,
                     mem_kb=float(m.group(10)),
+                    df='_df' in m.group(3),
                 )
                 rows.append(entry)
                 if mean != 0 and gmean != 0 and \
@@ -1342,6 +1347,121 @@ def plot_remotefree_batchsize(input_dir, suite, experiment, out_dir, fmt):
         if paper_ds_list:
             merge_pdfs_horizontally(paper_ds_list, f"{out_dir}/paper/{experiment}.{fmt}")
 
+#Function was mostly AI generated (Claude)
+def plot_config(input_dir, suite, experiment, out_dir, fmt):
+    """
+    Grouped bar chart: for each data structure, bars are grouped by base
+    allocator. Within each group, one bar per (numa, df) variant so the
+    viewer can immediately see which combination wins for each allocator.
+    A geomean-across-all-DS chart is prepended as the leftmost panel.
+    """
+    data, crashes = load_file(input_dir, suite, experiment)
+    has_df   = any(r["df"] for r in data)
+    variants = ["base", "numa", "df", "numa+df"] if has_df else ["base", "numa"]
+    nv       = len(variants)
+
+    VARIANT_COLORS = {
+        "base":    "#5b8dd9",
+        "numa":    "#57b894",
+        "df":      "#f4a742",
+        "numa+df": "#e0635a",
+    }
+    VARIANT_HATCHES = {
+        "base":    "",
+        "numa":    "---",
+        "df":      "///",
+        "numa+df": "xxx",
+    }
+
+    bar_w     = 0.10
+    intra_gap = 0.015
+    inter_gap = 1.0
+    group_w   = nv * bar_w + (nv - 1) * intra_gap
+
+    paper_print = True
+    write_dir = ("paper/" if paper_print else "readable/") + experiment + "/"
+    os.makedirs(f"{out_dir}/{write_dir}", exist_ok=True)
+
+    def _variant_key(r):
+        if r["numa"] and r["df"]: return "numa+df"
+        if r["numa"]:             return "numa"
+        if r["df"]:               return "df"
+        return "base"
+
+    def _draw_bars(ax, allocs, rows):
+        """Pool raw values by (allocator, variant), draw grouped bars, return tick_xs."""
+        pool = defaultdict(list)
+        for r in rows:
+            vkey = _variant_key(r)
+            if r["allocator"] in allocs and vkey in variants:
+                pool[(r["allocator"], vkey)].extend(r["values"])
+
+        seen, tick_xs = set(), []
+        for i, alloc in enumerate(allocs):
+            group_start = i * (group_w + inter_gap * bar_w)
+            for j, vkey in enumerate(variants):
+                vals = pool.get((alloc, vkey), [])
+                y    = stat.geometric_mean(vals) if vals else 0.0
+                x    = group_start + j * (bar_w + intra_gap)
+                ax.bar(x, y,
+                       width=bar_w,
+                       color=VARIANT_COLORS[vkey],
+                       hatch=VARIANT_HATCHES[vkey],
+                       edgecolor="black",
+                       linewidth=FIG_CONFIGS["bar_linewidth"],
+                       label=vkey if vkey not in seen else None,
+                       zorder=2)
+                seen.add(vkey)
+                if y > 0:
+                    ax.text(x + bar_w / 2, y * 1.012, f"{y:.2f}",
+                            ha="center", va="bottom",
+                            fontsize=4.2, rotation=90, fontweight="bold")
+            tick_xs.append(group_start + (group_w - intra_gap) / 2)
+        return tick_xs
+
+    def _save(fig, ax, allocs, tick_xs, title, path, show_legend):
+        ax.set_xticks(tick_xs)
+        ax.set_xticklabels([ALLOC_RENAMES.get(a, a) for a in allocs],
+                           rotation=35, ha="right",
+                           fontsize=FIG_CONFIGS["xtick_fontsize"] - 1)
+        ax.set_ylim(bottom=0, top=ax.dataLim.ymax * 1.42)
+        ax.set_ylabel("Throughput (Mops/s)")
+        ax.set_title(title, fontweight="bold")
+        if show_legend:
+            ax.legend(
+                ncol=nv, fontsize=FIG_CONFIGS["legend_fontsize"],
+                loc="upper center", bbox_to_anchor=(0.9, 1),
+                frameon=True, edgecolor="black", fancybox=False,
+            )
+        style_fig(fig, ax, paper_print)
+        ax.grid(visible=False)
+        fig.savefig(path, dpi=FIG_CONFIGS["dpi"], bbox_inches="tight",
+                    pad_inches=FIG_CONFIGS["pad_inches"])
+        plt.close(fig)
+
+    _, szy     = FIG_CONFIGS["figsize"]
+    all_allocs = [a for a in ALLOCS if a in {r["allocator"] for r in data}]
+    dss        = sorted(set(r["ds"] for r in data))
+
+    # --- Geomean across all DS (leftmost panel) ---
+    fig_gm, ax_gm = plt.subplots(figsize=(max(len(all_allocs) * 1.0, 3.5), szy * 1.15))
+    tick_xs_gm    = _draw_bars(ax_gm, all_allocs, data)
+    gm_path       = f"{out_dir}/{write_dir}config_geomean.{fmt}"
+    _save(fig_gm, ax_gm, all_allocs, tick_xs_gm, "Geomean", gm_path, show_legend=True)
+
+    # --- Per-DS panels ---
+    per_ds_paths = []
+    for ds in dss:
+        ds_rows   = [r for r in data if r["ds"] == ds]
+        ds_allocs = [a for a in ALLOCS if a in {r["allocator"] for r in ds_rows}]
+        fig, ax   = plt.subplots(figsize=(max(len(ds_allocs) * 1.0, 3.5), szy * 1.15))
+        tick_xs   = _draw_bars(ax, ds_allocs, ds_rows)
+        path      = f"{out_dir}/{write_dir}config_{ds}.{fmt}"
+        _save(fig, ax, ds_allocs, tick_xs, DS_LABELS.get(ds, ds), path, show_legend=False)
+        per_ds_paths.append(path)
+
+    merge_pdfs_horizontally([gm_path] + per_ds_paths, f"{out_dir}/paper/config.{fmt}")
+
 
 def plot_temp_and_freq(file, out_dir, fmt):
     if not os.path.exists(file):
@@ -1438,6 +1558,7 @@ def main():
                                 'memory',
                                 'hugepages',
                                 'ablation',
+                                'config',
                                 #'machines',
                                 'all'],
                        default=['all'],
@@ -1464,6 +1585,7 @@ def main():
         if "memory"      in args.plots or do_all:  plot_memory(args.input_dir, "flock", "sizes", out_dir, args.format)
         if "geomean"     in args.plots or do_all: plot_geomean(args.input_dir, "flock", "geomean", out_dir, args.format)
         if "hugepages" in args.plots or do_all: plot_hugepages(args.input_dir, "flock", "hugepages", out_dir, args.format)
+        if "config" in args.plots or do_all: plot_config(args.input_dir, "flock", "config", out_dir, args.format)
         if "ablation"   in args.plots or do_all:
             plot_ablation_localseglist(args.input_dir, "flock", "ablation_localseglist", out_dir, args.format)
         if "ablation" in args.plots or do_all: 
@@ -1478,6 +1600,7 @@ def main():
         if "trackers"   in args.plots or do_all: plot_trackers(args.input_dir, "setbench", "trackers", out_dir, args.format)
         if "geomean"     in args.plots or do_all: plot_geomean(args.input_dir, "setbench", "sizes", out_dir, args.format)
         if "hugepages" in args.plots or do_all: plot_hugepages(args.input_dir, "setbench", "hugepages", out_dir, args.format)
+        if "config" in args.plots or do_all: plot_config(args.input_dir, "setbench", "config", out_dir, args.format)
         if "ablation"   in args.plots or do_all: plot_ablation_localseglist(args.input_dir, "setbench", \
             "ablation_localseglist", out_dir, args.format)
 
