@@ -77,7 +77,7 @@ class Config:
     server_bin_dir:   str   = "/home/acosta/deqalloc-rebuttal/fleec/Codigo/fleec/src"
     server_type:      str   = "memcache_text"  # redis | memcache_text
     allocator:        str   = "jemalloc"
-    allocator_dir:    str   = "/home/acosta/deqalloc/build/allocators"
+    allocator_dir:    str   = "../../../build/allocators/"
 
     # SSH
     ssh_opts:         list[str] = field(default_factory=lambda: [
@@ -105,6 +105,7 @@ class Config:
 
     @property
     def server_bin_path(self) -> str:
+        return "memcached"
         return os.path.join(self.server_bin_dir, self.server_bin)
 
     @property
