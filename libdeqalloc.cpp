@@ -29,6 +29,13 @@
 
 volatile int anyThreadCreated = 1;
 
+
+#define SEGMENT_SIZE 2*1024*1024 //2 MiB
+#define SMALL_SIZE_CLASS_MAX 32*1024 //32 KiB
+#ifndef DEFAULT_LIST_BYTES
+  #define DEFAULT_LIST_BYTES 16*1024ull //16KiB
+#endif
+
 #include "tprintf.h"
 #include "heaplayers.h"
 #include "deqalloc.h"
@@ -40,9 +47,6 @@ volatile int anyThreadCreated = 1;
 //#define TRACE
 
 using namespace HL;
-
-#define SEGMENT_SIZE 2*1024*1024 //2 MiB
-#define SMALL_SIZE_CLASS_MAX 32*1024 //32 KiB
 
 class TheDeqallocHeapType_ : public MiniSegHeap<
                                      SMALL_SIZE_CLASS_MAX,

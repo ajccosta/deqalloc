@@ -29,10 +29,6 @@
  * @param LargeHeap The parent class, used for "big" objects.
  */
 
-#ifndef DEFAULT_LIST_BYTES
-  #define DEFAULT_LIST_BYTES 16*1024ull //16KiB
-#endif
-
 //maxSmallObjectSize: largest smallest object size
 template <size_t maxSmallObjectSize, class SmallHeap, class LargeHeap>
 class MiniSegHeap : public SmallHeap {
