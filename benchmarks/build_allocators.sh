@@ -72,6 +72,7 @@ sed -i $ORIG '/linkstatic/d' tcmalloc/variants.bzl
 gawk -i inplace '(f && g) {$0="linkshared = True, )"; f=0; g=0} /This library provides tcmalloc always/{f=1} /alwayslink/{g=1} 1' tcmalloc/BUILD
 gawk -i inplace 'f{$0="cc_binary("; f=0} /This library provides tcmalloc always/{f=1} 1' tcmalloc/BUILD # Change the line after "This library…" to cc_binary (instead of cc_library)
 gawk -i inplace '/alwayslink/ && !f{f=1; next} 1' tcmalloc/BUILD # delete only the first instance of "alwayslink"
+echo 'single_version_override(module_name = "abseil-cpp",version = "20260107.1",)' >> MODULE.bazel
 bazel build -c opt tcmalloc
 popd
 cp $(readlink -f tcmalloc/bazel-bin/tcmalloc/libtcmalloc.so) libtcmalloc.so
