@@ -334,10 +334,11 @@ pushNode_n_retry:
             node_last = last_init_node;
             //CAS will now try to change from empty list
             h = list_size_t_null;
+          } else {
+            node_last->next = getNodePointer(index);
           }
           num_nodes_ = num_nodes;
           new_h = list_size_t(false, tag+1, num_nodes+n_nodes, new_index);
-          node_last->next = getNodePointer(index);
           deq_assert(num_nodes+n_nodes >= 0 && num_nodes+n_nodes <= getMaxNumObjects(getSize()));
           deq_assert((index >= 0 && index < getMaxNumObjects(getSize()))
             || index == list_size_t::node_index_null);
