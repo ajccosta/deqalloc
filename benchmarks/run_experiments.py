@@ -5,6 +5,7 @@ import os
 import re
 import subprocess
 import sys
+import threading
 import time
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -41,13 +42,104 @@ class CheckpointManager:
 # Benchmark runner helpers
 # ---------------------------------------------------------------------------
 
-def run_command(cmd: str, timeout_sec: int = 600) -> Tuple[str, str]:
-    """Run a shell command, streaming output. Returns (output, status)."""
+def _get_process_tree_pids(root_pid: int) -> List[int]:
+    """Return root_pid plus all of its descendants, found by scanning /proc.
+
+    We need the whole tree (not just root_pid) since cmd is usually a chain
+    of wrappers (shell -> env -> numactl -> the actual benchmark binary), and
+    the process that actually allocates memory is a descendant, not the root.
+    """
+    pids = [root_pid]
+    try:
+        children_map: Dict[int, List[int]] = {}
+        for entry in os.listdir("/proc"):
+            if not entry.isdigit():
+                continue
+            try:
+                with open(f"/proc/{entry}/stat", "r") as f:
+                    stat = f.read()
+                # comm field is in parens and may itself contain spaces/parens,
+                # so find the last ')' before splitting the rest on whitespace.
+                rparen = stat.rfind(')')
+                fields = stat[rparen + 2:].split()
+                ppid = int(fields[1])
+                children_map.setdefault(ppid, []).append(int(entry))
+            except (IOError, IndexError, ValueError):
+                continue
+        frontier = [root_pid]
+        while frontier:
+            next_frontier = []
+            for p in frontier:
+                for c in children_map.get(p, []):
+                    if c not in pids:
+                        pids.append(c)
+                        next_frontier.append(c)
+            frontier = next_frontier
+    except Exception:
+        pass
+    return pids
+
+
+def _read_vmpeak_kb(pid: int) -> int:
+    """Read VmPeak (peak virtual memory size, in KB) for a single pid."""
+    try:
+        with open(f"/proc/{pid}/status", "r") as f:
+            for line in f:
+                if line.startswith("VmPeak:"):
+                    return int(line.split()[1])
+    except (IOError, IndexError, ValueError):
+        pass
+    return 0
+
+
+class VirtualMemoryTracker:
+    """Polls /proc for VmPeak across a process's whole tree while it runs.
+
+    VmPeak is a kernel-tracked high-water mark of virtual memory, so we just
+    need to sample it periodically (it can't be read post-mortem once the
+    process exits) and keep the largest total seen across the tree.
+    """
+    def __init__(self, root_pid: int, poll_interval: float = 0.05):
+        self.root_pid = root_pid
+        self.poll_interval = poll_interval
+        self.peak_kb = 0
+        self._stop_event = threading.Event()
+        self._thread = threading.Thread(target=self._run, daemon=True)
+
+    def start(self):
+        self._thread.start()
+
+    def _run(self):
+        while not self._stop_event.is_set():
+            pids = _get_process_tree_pids(self.root_pid)
+            total_kb = sum(_read_vmpeak_kb(p) for p in pids)
+            if total_kb > self.peak_kb:
+                self.peak_kb = total_kb
+            time.sleep(self.poll_interval)
+
+    def stop(self) -> int:
+        self._stop_event.set()
+        self._thread.join(timeout=2)
+        return self.peak_kb
+
+
+def run_command(cmd: str, timeout_sec: int = 600,
+                 track_vmem: bool = False) -> Tuple[str, str, Optional[int]]:
+    """Run a shell command, streaming output.
+
+    Returns (output, status, vmem_peak_kb). vmem_peak_kb is None unless
+    track_vmem is True, in which case it holds the peak virtual memory (KB)
+    observed across the whole process tree spawned by cmd.
+    """
+    vmem_tracker = None
     try:
         proc = subprocess.Popen(
             cmd, shell=True, text=True,
             stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
         )
+        if track_vmem:
+            vmem_tracker = VirtualMemoryTracker(proc.pid)
+            vmem_tracker.start()
         lines = []
         for line in proc.stdout:
             #print(line, end="")
@@ -59,16 +151,19 @@ def run_command(cmd: str, timeout_sec: int = 600) -> Tuple[str, str]:
 
         output = "".join(lines)
         rc = proc.returncode
+        vmem_peak_kb = vmem_tracker.stop() if vmem_tracker else None
         if rc in (124, 137):
             print(f"  TIMEOUT ({timeout_sec}s): {cmd}", file=sys.stderr)
-            return output, "timeout"
+            return output, "timeout", vmem_peak_kb
         elif rc != 0:
             print(f"  CRASH (exit={rc}): {cmd}", file=sys.stderr)
-            return output, "crash"
-        return output, "ok"
+            return output, "crash", vmem_peak_kb
+        return output, "ok", vmem_peak_kb
     except Exception as e:
         print(f"  ERROR: {cmd}: {e}", file=sys.stderr)
-        return "", "error"
+        if vmem_tracker:
+            vmem_tracker.stop()
+        return "", "error", None
 
 def get_machine_info() -> str:
     try:
@@ -212,6 +307,8 @@ class FlockConfig:
     allocators_raw: List[str] = field(default_factory=lambda: [
         "deqalloc",
         "deqalloc_genericdeque",
+        "deqalloc_localseglist",
+        "deqalloc_remotefree",
         "mimalloc",
         #"mimalloc-batchit",
         "jemalloc:numa:df",
@@ -293,12 +390,16 @@ class FlockConfig:
 
     hugepages: str = None
 
+    #toggleable: track peak virtual memory (VmPeak) for every run
+    track_vmem: bool = True
+
     args: argparse.ArgumentParser = None
 
     def __post_init__(self):
         self.runs = self.args.runs
         self.trial_time_sec = self.args.time
         self.hugepages = self.args.hugepages
+        self.track_vmem = not self.args.no_vmem_tracking
 
 
 @dataclass
@@ -307,6 +408,8 @@ class SetbenchConfig:
     allocators_raw: List[str] = field(default_factory=lambda: [
         "deqalloc",
         "deqalloc_genericdeque",
+        "deqalloc_localseglist",
+        "deqalloc_remotefree",
         "mimalloc",
         #"mimalloc-batchit",
         "jemalloc:numa:df",
@@ -381,6 +484,9 @@ class SetbenchConfig:
 
     hugepages: str = None
 
+    #toggleable: track peak virtual memory (VmPeak) for every run
+    track_vmem: bool = True
+
     args: argparse.ArgumentParser = None
 
     def __post_init__(self):
@@ -394,7 +500,8 @@ class SetbenchConfig:
         #change default tracker
         if self.args.default_tracker:
             self.default_tracker = self.args.default_tracker
-        
+        self.track_vmem = not self.args.no_vmem_tracking
+
 
 # ---------------------------------------------------------------------------
 # Allocator helpers
@@ -456,7 +563,9 @@ class ResultsFile:
             self.f.write(f"allocator versions:\n")
             for line in allocator_versions.readlines():
                 line = line.strip()
-                alloc, version = line.split(' ')
+                if not line:
+                    continue
+                alloc, version = line.split(' ', 1)
                 self.f.write(f"\t{alloc}: {version}\n")
         except Exception:
             pass
@@ -564,7 +673,7 @@ class FlockRunner:
             if alloc == "scalloc": prepare_scalloc(True)
             if self.config.hugepages: prepare_hugepages(True, self.config.hugepages)
 
-            output, status = run_command(cmd)
+            output, status, vmem_peak_kb = run_command(cmd, track_vmem=self.config.track_vmem)
 
             if self.config.hugepages: prepare_hugepages(False)
             if alloc == "scalloc": prepare_scalloc(False)
@@ -589,7 +698,8 @@ class FlockRunner:
             tps_str = " ".join(f"{v}" for v in tps)
             tp_avg = sum(tps) / len(tps) if tps else 0.0
             mem_str = f"{memusage_kb} KB" if memusage_kb is not None else "N/A"
-            suffix = f"{tps_str} ] {tp_avg:.4f}, {mem_str}\n"
+            vmem_str = f"{vmem_peak_kb} KB" if vmem_peak_kb is not None else "N/A"
+            suffix = f"{tps_str} ] {tp_avg:.4f}, {mem_str}, vmem_peak={vmem_str}\n"
             self.rf.write(suffix)
 
             if status != "ok":
@@ -692,6 +802,24 @@ class FlockRunner:
         self.config.allocators_raw = prev_allocs
         self.rf.close()
 
+    #peak virtual memory across the size progression, incl. deqalloc_localseglist
+    def run_vmem(self):
+        prev_allocs = self.config.allocators_raw
+        extra = [a for a in ["deqalloc_localseglist"] if a not in prev_allocs]
+        self.config.allocators_raw = prev_allocs + extra
+
+        prev_default_update_perc = self.config.default_update_perc
+        prev_track_vmem = self.config.track_vmem
+        self.config.track_vmem = True
+        self.config.default_update_perc = 0
+
+        self.run_sizes("vmem")
+
+        self.config.allocators_raw = prev_allocs
+        self.config.track_vmem = prev_track_vmem
+        self.config.default_update_perc = prev_default_update_perc 
+        self.rf.close()
+
     def run_config(self):
         base_names = list(dict.fromkeys(r.split(":")[0] for r in self.config.allocators_raw))
         expanded = [ variant for name in base_names for variant in (name, f"{name}:numa") ]
@@ -718,6 +846,7 @@ class FlockRunner:
             if run_all_ab or "ablation_remotefree"   in b: self.run_ablation_remotefree()
         if run_all or "thread-perc" in b: self.run_thread_perc()
         if run_all or "upserts"     in b: self.run_upserts()
+        if run_all or "vmem"        in b: self.run_vmem()
         if run_all or "config" in b: self.run_config()
 
 
@@ -800,6 +929,7 @@ class SetbenchRunner:
 
             tp_avg      = 0.0
             memusage_avg = 0
+            vmem_peak_overall = None
             tps         = []
             last_status = "ok"
 
@@ -820,7 +950,7 @@ class SetbenchRunner:
                 if alloc == "scalloc": prepare_scalloc(True)
                 if self.config.hugepages: prepare_hugepages(True, self.config.hugepages)
 
-                output, status = run_command(cmd)
+                output, status, vmem_peak_kb = run_command(cmd, track_vmem=self.config.track_vmem)
 
                 if self.config.hugepages: prepare_hugepages(False)
                 if alloc == "scalloc": prepare_scalloc(False)
@@ -840,8 +970,14 @@ class SetbenchRunner:
                 if m_mem:
                     memusage_avg += int(m_mem.group(1)) // cfg.runs
 
+                # peak virtual memory (max across the repeated runs)
+                if vmem_peak_kb is not None:
+                    vmem_peak_overall = vmem_peak_kb if vmem_peak_overall is None \
+                        else max(vmem_peak_overall, vmem_peak_kb)
+
             tps_str = " ".join(str(v) for v in tps)
-            suffix  = f"{tps_str} ] {tp_avg:.4f}, {memusage_avg} KB\n"
+            vmem_str = f"{vmem_peak_overall} KB" if vmem_peak_overall is not None else "N/A"
+            suffix  = f"{tps_str} ] {tp_avg:.4f}, {memusage_avg} KB, vmem_peak={vmem_str}\n"
             self.rf.write(suffix)
 
             if last_status != "ok":
@@ -937,6 +1073,24 @@ class SetbenchRunner:
         self.config.allocators_raw = prev_allocs
         self.rf.close()
 
+    #peak virtual memory across the size progression, incl. deqalloc_localseglist
+    def run_vmem(self):
+        prev_allocs = self.config.allocators_raw
+        extra = [a for a in ["deqalloc_localseglist"] if a not in prev_allocs]
+        self.config.allocators_raw = prev_allocs + extra
+
+        prev_track_vmem = self.config.track_vmem
+        prev_default_update_perc = self.config.default_update_perc
+        self.config.track_vmem = True
+        self.config.default_update_perc = 0
+
+        self.run_sizes("vmem")
+
+        self.config.allocators_raw = prev_allocs
+        self.config.track_vmem = prev_track_vmem
+        self.config.default_update_perc = prev_default_update_perc 
+        self.rf.close()
+
     def run_config(self):
         #breakpoint()
         base_names = list(dict.fromkeys(r.split(":")[0] for r in self.config.allocators_raw))
@@ -964,6 +1118,7 @@ class SetbenchRunner:
             if run_all_ab or "ablation_localseglist" in b: self.run_ablation_localseglist()
             if run_all_ab or "ablation_deque"        in b: self.run_ablation_deque()
             if run_all_ab or "ablation_remotefree"   in b: self.run_ablation_remotefree()
+        if run_all or "vmem"      in b: self.run_vmem()
         if run_all or "config" in b: self.run_config()
 
 # ---------------------------------------------------------------------------
@@ -1016,12 +1171,16 @@ def main():
                                                 "ablation_localseglist",
                                                 "ablation_deque",
                                                 "ablation_remotefree",
+                                                "vmem",
                                                 "config",
                                                 "all"])
 
     parser.add_argument("--hugepages",   default=None,              help="Set hugepages setting",
                         choices=["never", "always", "madvise"])
     parser.add_argument("--nohugepages", action='store_true',       help="Do not run hugepages benchmark")
+    parser.add_argument("--no-vmem-tracking", action='store_true',
+                        help="Disable peak virtual memory (VmPeak) tracking, which is otherwise "
+                             "recorded for every run (default: tracking enabled)")
 
     args = parser.parse_args()
 
