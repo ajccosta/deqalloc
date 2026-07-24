@@ -164,6 +164,9 @@ popd
 cp $(readlink -f llheap/libllheap.so) libllheap.so
 rm -rf llheap
 
+#add glibc version
+echo glibc $($(ldd /usr/bin/ls | grep libc | awk '{print $3}') | grep GLIBC) >> versions.txt
+
 #courtsey of gemini:
 echo ""
 echo "==================================================="

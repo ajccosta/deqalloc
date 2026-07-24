@@ -222,6 +222,7 @@ class FlockConfig:
         "lockfree:numa:df",
         "rpmalloc::df",
         #"scalloc", #TODO check whether to use df or numa
+        "glibc"
     ])
 
     rideables: List[str] = field(default_factory=lambda: [
@@ -316,6 +317,7 @@ class SetbenchConfig:
         "lockfree:numa:df",
         "rpmalloc::df",
         #"scalloc", #TODO check whether to use df or numa
+        "glibc"
     ])
 
     rideables: List[str] = field(default_factory=lambda: [
@@ -408,6 +410,7 @@ def parse_allocator(raw: str) -> Tuple[str, bool, bool]:
 
 
 def find_allocator_lib(alloc_dir: str, name: str) -> Optional[str]:
+    if name == "glibc": return ""
     lib = os.path.join(alloc_dir, f"lib{name}.so")
     if os.path.isfile(lib):
         return lib
@@ -529,6 +532,8 @@ class FlockRunner:
             if lib is None:
                 print(f"  WARNING: allocator lib not found: {alloc}", file=sys.stderr)
                 continue
+            #don't LD_PRELOAD in case of glibc
+            ld_preload_clause = f"LD_PRELOAD={lib}" if lib else ""
 
             numa_cmd = "numactl -i all" if use_numa else ""
             prefix = self.fmt.format(alloc, update_perc, rideable, size, nthreads, str(use_numa), add_args, "[ ")
@@ -547,7 +552,7 @@ class FlockRunner:
                 f"env "
                 f"LD_LIBRARY_PATH={current_ld_path} "
                 f"PARLAY_NUM_THREADS={cfg.nproc} "
-                f"LD_PRELOAD={lib} "
+                f"{ld_preload_clause} "
                 f'/usr/bin/time -f "%M KiloBytes" '
                 f"{numa_cmd} "
                 f"{binary} "
@@ -784,6 +789,7 @@ class SetbenchRunner:
             if lib is None:
                 print(f"  WARNING: allocator lib not found: {alloc}", file=sys.stderr)
                 continue
+            ld_preload_clause = f"LD_PRELOAD={lib}" if lib else ""
 
             numa_cmd = "numactl -i all" if use_numa else ""
             update_half = round(update_perc / 2, 2)
@@ -800,7 +806,7 @@ class SetbenchRunner:
             for _ in range(cfg.runs):
                 cmd = (
                     f"NO_DESTRUCT=1 "
-                    f"LD_PRELOAD={lib} "
+                    f"{ld_preload_clause} "
                     f'/usr/bin/time -f "%M KiloBytes /usr/bin/time output" '
                     f"{numa_cmd} "
                     f"{binary} "
@@ -997,7 +1003,7 @@ def main():
     parser.add_argument("--ds",          default=None,              help="Run only this data structure")
     parser.add_argument("--default-tracker", default="debra",       help="Run benchmarks with this tracker/memory reclamation scheme.")
     parser.add_argument("--tracker",     default=None,              help="Run only this tracker/memory reclamation scheme for tracker benchmarks.")
-    parser.add_argument("--time",        type=int, default=5,       help="Amount of time each run takes (default: 5)")
+    parser.add_argument("--time",        type=int, default=5,       help="Amount of time each run takes (default: 5s)")
     parser.add_argument("--benchmark",   type=str, default=["all"], help="Run specific benchmark(s) (default: all)",
                             nargs="+", choices=["updates",
                                                 "sizes",
