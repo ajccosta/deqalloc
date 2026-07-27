@@ -309,14 +309,14 @@ class FlockConfig:
         "deqalloc_genericdeque",
         "deqalloc_localseglist",
         "deqalloc_remotefree",
-        "mimalloc",
-        #"mimalloc-batchit",
+        "mimalloc::df",
+        #"mimalloc-batchit::df",
         "jemalloc:numa:df",
-        "snmalloc",
-        "hoard:numa",
+        "snmalloc::df",
+        "hoard:numa:df",
         "tcmalloc::df",
         "tbbmalloc::df",
-        "lockfree:numa:df",
+        "lockfree::df",
         "rpmalloc::df",
         #"scalloc", #TODO check whether to use df or numa
         "glibc"
@@ -391,7 +391,7 @@ class FlockConfig:
     hugepages: str = None
 
     #toggleable: track peak virtual memory (VmPeak) for every run
-    track_vmem: bool = True
+    track_vmem: bool = False
 
     args: argparse.ArgumentParser = None
 
@@ -399,7 +399,7 @@ class FlockConfig:
         self.runs = self.args.runs
         self.trial_time_sec = self.args.time
         self.hugepages = self.args.hugepages
-        self.track_vmem = not self.args.no_vmem_tracking
+        self.track_vmem = self.args.vmem_tracking
 
 
 @dataclass
@@ -410,14 +410,14 @@ class SetbenchConfig:
         "deqalloc_genericdeque",
         "deqalloc_localseglist",
         "deqalloc_remotefree",
-        "mimalloc",
-        #"mimalloc-batchit",
+        "mimalloc::df",
+        #"mimalloc-batchit::df",
         "jemalloc:numa:df",
-        "snmalloc",
-        "hoard:numa",
+        "snmalloc::df",
+        "hoard:numa:df",
         "tcmalloc::df",
         "tbbmalloc::df",
-        "lockfree:numa:df",
+        "lockfree::df",
         "rpmalloc::df",
         #"scalloc", #TODO check whether to use df or numa
         "glibc"
@@ -485,7 +485,7 @@ class SetbenchConfig:
     hugepages: str = None
 
     #toggleable: track peak virtual memory (VmPeak) for every run
-    track_vmem: bool = True
+    track_vmem: bool = False
 
     args: argparse.ArgumentParser = None
 
@@ -500,7 +500,7 @@ class SetbenchConfig:
         #change default tracker
         if self.args.default_tracker:
             self.default_tracker = self.args.default_tracker
-        self.track_vmem = not self.args.no_vmem_tracking
+        self.track_vmem = self.args.vmem_tracking
 
 
 # ---------------------------------------------------------------------------
@@ -514,6 +514,24 @@ def parse_allocator(raw: str) -> Tuple[str, bool, bool]:
     use_numa = len(parts) > 1 and parts[1] == "numa"
     use_df   = len(parts) > 2 and parts[2] == "df"
     return name, use_numa, use_df
+
+
+def resolve_allocators(default_raw: List[str], requested: List[str]) -> List[str]:
+    """Filter/resolve a --allocator selection against a config's default list.
+
+    If the user only gives a bare name (e.g. "jemalloc"), we look up the
+    matching entry in the default list so any existing ":numa"/":df"
+    modifiers are preserved instead of being dropped. If the user gives an
+    explicit form with modifiers (e.g. "jemalloc:numa"), that's used as-is.
+    """
+    resolved = []
+    for req in requested:
+        if ":" in req:
+            resolved.append(req)
+            continue
+        match = next((raw for raw in default_raw if raw.split(":")[0] == req), None)
+        resolved.append(match if match is not None else req)
+    return resolved
 
 
 def find_allocator_lib(alloc_dir: str, name: str) -> Optional[str]:
@@ -1154,7 +1172,8 @@ def main():
                         default=os.path.join(script_dir, "../build/allocators"),
                         help="Path to allocator .so files")
     parser.add_argument("--runs",        type=int, default=5,       help="Number of runs (default: 5)")
-    parser.add_argument("--allocator",  default=["all"], nargs="+", help="Run only specific allocator(s)")
+    parser.add_argument("--allocator", "--allocators", dest="allocator",
+                        default=["all"], nargs="+", help="Run only specific allocator(s)")
     parser.add_argument("--ds",          default=None,              help="Run only this data structure")
     parser.add_argument("--default-tracker", default="debra",       help="Run benchmarks with this tracker/memory reclamation scheme.")
     parser.add_argument("--tracker",     default=None,              help="Run only this tracker/memory reclamation scheme for tracker benchmarks.")
@@ -1178,9 +1197,9 @@ def main():
     parser.add_argument("--hugepages",   default=None,              help="Set hugepages setting",
                         choices=["never", "always", "madvise"])
     parser.add_argument("--nohugepages", action='store_true',       help="Do not run hugepages benchmark")
-    parser.add_argument("--no-vmem-tracking", action='store_true',
-                        help="Disable peak virtual memory (VmPeak) tracking, which is otherwise "
-                             "recorded for every run (default: tracking enabled)")
+    parser.add_argument("--vmem-tracking", action='store_true',
+                        help="Enable peak virtual memory (VmPeak) tracking for every run "
+                             "(default: tracking disabled)")
 
     args = parser.parse_args()
 
@@ -1192,16 +1211,14 @@ def main():
     # -- flock config --
     flock_cfg = FlockConfig(args=args)
     if args.allocator and args.allocator != ["all"]:
-        #flock_cfg.allocators_raw = [a for a in flock_cfg.allocators_raw if a.split(":")[0] in args.allocator]
-        flock_cfg.allocators_raw = args.allocator
+        flock_cfg.allocators_raw = resolve_allocators(flock_cfg.allocators_raw, args.allocator)
     if args.ds:
         flock_cfg.rideables_sizes = [(r, s) for r, s in flock_cfg.rideables_sizes if r == args.ds]
 
     # -- setbench config --
     sb_cfg = SetbenchConfig(args=args)
     if args.allocator and args.allocator != ["all"]:
-        #sb_cfg.allocators_raw = [a for a in sb_cfg.allocators_raw if a.split(":")[0] in args.allocator]
-        sb_cfg.allocators_raw = args.allocator
+        sb_cfg.allocators_raw = resolve_allocators(sb_cfg.allocators_raw, args.allocator)
     if args.ds:
         sb_cfg.rideables_sizes = [(r, s) for r, s in sb_cfg.rideables_sizes if r == args.ds]
 
