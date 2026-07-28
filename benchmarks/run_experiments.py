@@ -867,7 +867,6 @@ class FlockRunner:
         if run_all or "vmem"        in b: self.run_vmem()
         if run_all or "config" in b: self.run_config()
 
-
 # ---------------------------------------------------------------------------
 # Setbench experiment runner
 # ---------------------------------------------------------------------------
@@ -1122,6 +1121,20 @@ class SetbenchRunner:
         self.rf.close()
         self.config.allocators_raw = prev_allocs
 
+    def run_amortizedfree(self):
+        #allocs = list(dict.fromkeys(r.split(":")[0] for r in self.config.allocators_raw))
+        allocs = [ "deqalloc", "jemalloc", "mimalloc", "snmalloc" ]
+        self.new_results_file("amortizedfree")
+        allocs_to_run = allocs.copy()
+        for alloc in allocs:
+            conf_alloc = list(filter(lambda x: alloc in x, self.config.allocators_raw))[0]
+            numa = "numa" if "numa" in conf_alloc else ""
+            allocs_to_run.insert(allocs_to_run.index(alloc) + 1, f"{alloc}:{numa}:df")
+        prev_allocs = self.config.allocators_raw
+        self.config.allocators_raw = allocs_to_run
+        self.run_sizes("amortizedfree")
+        self.config.allocators_raw = prev_allocs
+
     def run(self):
         b = self.config.args.benchmark
         run_all = "all" in b
@@ -1138,6 +1151,7 @@ class SetbenchRunner:
             if run_all_ab or "ablation_remotefree"   in b: self.run_ablation_remotefree()
         if run_all or "vmem"      in b: self.run_vmem()
         if run_all or "config" in b: self.run_config()
+        if run_all or "amortizedfree" in b: self.run_amortizedfree()
 
 # ---------------------------------------------------------------------------
 # Main
@@ -1192,6 +1206,7 @@ def main():
                                                 "ablation_remotefree",
                                                 "vmem",
                                                 "config",
+                                                "amortizedfree",
                                                 "all"])
 
     parser.add_argument("--hugepages",   default=None,              help="Set hugepages setting",
