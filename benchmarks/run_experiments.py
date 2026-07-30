@@ -1050,8 +1050,8 @@ class SetbenchRunner:
         self.rf.close()
 
     #vary reclamation scheme
-    def run_trackers(self):
-        self.new_results_file("trackers")
+    def run_trackers(self, experiment="trackers"):
+        self.new_results_file(experiment)
         for rideable in self.config.rideables:
             for tracker in self.config.trackers:
                 self.run_all_allocs(
@@ -1121,10 +1121,8 @@ class SetbenchRunner:
         self.rf.close()
         self.config.allocators_raw = prev_allocs
 
-    def run_amortizedfree(self):
-        #allocs = list(dict.fromkeys(r.split(":")[0] for r in self.config.allocators_raw))
-        allocs = [ "deqalloc", "jemalloc", "mimalloc", "snmalloc" ]
-        self.new_results_file("amortizedfree")
+    def run_amortizedfree(self, experiment="sizes"):
+        allocs = [a.replace("::df", "").replace(":df", "") for a in self.config.allocators_raw]
         allocs_to_run = allocs.copy()
         for alloc in allocs:
             conf_alloc = list(filter(lambda x: alloc in x, self.config.allocators_raw))[0]
@@ -1132,7 +1130,11 @@ class SetbenchRunner:
             allocs_to_run.insert(allocs_to_run.index(alloc) + 1, f"{alloc}:{numa}:df")
         prev_allocs = self.config.allocators_raw
         self.config.allocators_raw = allocs_to_run
-        self.run_sizes("amortizedfree")
+        if experiment == "sizes":
+            self.run_sizes("amortizedfree")
+        else:
+            assert(experiment == "trackers")
+            self.run_trackers("amortizedfree_trackers")
         self.config.allocators_raw = prev_allocs
 
     def run(self):
@@ -1152,6 +1154,7 @@ class SetbenchRunner:
         if run_all or "vmem"      in b: self.run_vmem()
         if run_all or "config" in b: self.run_config()
         if run_all or "amortizedfree" in b: self.run_amortizedfree()
+        if run_all or "amortizedfree_trackers" in b: self.run_amortizedfree("trackers")
 
 # ---------------------------------------------------------------------------
 # Main
@@ -1207,6 +1210,7 @@ def main():
                                                 "vmem",
                                                 "config",
                                                 "amortizedfree",
+                                                "amortizedfree_trackers",
                                                 "all"])
 
     parser.add_argument("--hugepages",   default=None,              help="Set hugepages setting",
