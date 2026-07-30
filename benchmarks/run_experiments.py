@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 
 import argparse
+import atexit
 import os
 import re
+import signal
 import subprocess
 import sys
 import threading
@@ -123,6 +125,66 @@ class VirtualMemoryTracker:
         return self.peak_kb
 
 
+# ---------------------------------------------------------------------------
+# Process cleanup: make sure every spawned process (and its whole tree, since
+# cmd is usually a shell -> env -> numactl -> benchmark chain) is killed when
+# this script exits, however it exits (normal completion, Ctrl-C, SIGTERM, or
+# an uncaught exception).
+# ---------------------------------------------------------------------------
+
+_active_procs_lock = threading.Lock()
+_active_procs: List[subprocess.Popen] = []
+
+def _register_proc(proc: subprocess.Popen):
+    with _active_procs_lock:
+        _active_procs.append(proc)
+
+def _unregister_proc(proc: subprocess.Popen):
+    with _active_procs_lock:
+        if proc in _active_procs:
+            _active_procs.remove(proc)
+
+def _kill_process_tree(proc: subprocess.Popen, sig: int):
+    """Send sig to proc's whole process group (it's started via setsid)."""
+    try:
+        os.killpg(os.getpgid(proc.pid), sig)
+    except (ProcessLookupError, PermissionError, OSError):
+        try:
+            proc.send_signal(sig)
+        except Exception:
+            pass
+
+def _cleanup_spawned_processes():
+    with _active_procs_lock:
+        procs = list(_active_procs)
+    if not procs:
+        return
+    #ask nicely first...
+    for proc in procs:
+        if proc.poll() is None:
+            _kill_process_tree(proc, signal.SIGTERM)
+    time.sleep(0.2)
+    #...then force anything still alive
+    for proc in procs:
+        if proc.poll() is None:
+            _kill_process_tree(proc, signal.SIGKILL)
+    #restore any OS settings (hugepages/overcommit) we may have changed
+    try:
+        restore_os_config_states()
+    except Exception:
+        pass
+
+def _handle_termination_signal(signum, frame):
+    print(f"\nReceived signal {signum}, killing spawned processes and exiting...",
+          file=sys.stderr)
+    _cleanup_spawned_processes()
+    sys.exit(128 + signum)
+
+atexit.register(_cleanup_spawned_processes)
+signal.signal(signal.SIGINT, _handle_termination_signal)
+signal.signal(signal.SIGTERM, _handle_termination_signal)
+
+
 def run_command(cmd: str, timeout_sec: int = 600,
                  track_vmem: bool = False) -> Tuple[str, str, Optional[int]]:
     """Run a shell command, streaming output.
@@ -132,11 +194,14 @@ def run_command(cmd: str, timeout_sec: int = 600,
     observed across the whole process tree spawned by cmd.
     """
     vmem_tracker = None
+    proc = None
     try:
         proc = subprocess.Popen(
             cmd, shell=True, text=True,
             stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+            start_new_session=True, #own process group, so we P1+r4632=1B5B32347E\P0+r\can kill the whole tree
         )
+        _register_proc(proc)
         if track_vmem:
             vmem_tracker = VirtualMemoryTracker(proc.pid)
             vmem_tracker.start()
@@ -147,7 +212,8 @@ def run_command(cmd: str, timeout_sec: int = 600,
         try:
             proc.communicate(timeout=timeout_sec)
         except subprocess.TimeoutExpired:
-            proc.kill()
+            _kill_process_tree(proc, signal.SIGKILL)
+            proc.communicate()
 
         output = "".join(lines)
         rc = proc.returncode
@@ -164,6 +230,9 @@ def run_command(cmd: str, timeout_sec: int = 600,
         if vmem_tracker:
             vmem_tracker.stop()
         return "", "error", None
+    finally:
+        if proc is not None:
+            _unregister_proc(proc)
 
 def get_machine_info() -> str:
     try:
@@ -290,10 +359,13 @@ def start_temperature_monitor(log_file="temperature_log.csv", interval_seconds=1
         sleep {interval_seconds}
     done
     """
-    return subprocess.Popen(['bash', '-c', bash_script])
+    proc = subprocess.Popen(['bash', '-c', bash_script], start_new_session=True)
+    _register_proc(proc)
+    return proc
 
 def stop_temperature_monitor(process):
-    process.terminate()
+    _kill_process_tree(process, signal.SIGTERM)
+    _unregister_proc(process)
 
 # ---------------------------------------------------------------------------
 # Configuration
@@ -1122,12 +1194,20 @@ class SetbenchRunner:
         self.config.allocators_raw = prev_allocs
 
     def run_amortizedfree(self, experiment="sizes"):
-        allocs = [a.replace("::df", "").replace(":df", "") for a in self.config.allocators_raw]
-        allocs_to_run = allocs.copy()
-        for alloc in allocs:
-            conf_alloc = list(filter(lambda x: alloc in x, self.config.allocators_raw))[0]
-            numa = "numa" if "numa" in conf_alloc else ""
-            allocs_to_run.insert(allocs_to_run.index(alloc) + 1, f"{alloc}:{numa}:df")
+        #for every configured allocator, run both the plain scheme and its
+        #amortized-free ("_df") counterpart, preserving the numa flag.
+        #(previously this stripped ":df"/"::df" via string replacement, which
+        #left a stray ":numa" in the "base" name for numa allocators like
+        #jemalloc:numa:df -> jemalloc:numa; the inserted "_df" variant then
+        #ended up with parts shifted so it parsed as use_df=False too, giving
+        #it the exact same checkpoint signature as the base variant and
+        #causing it to be silently skipped as "already completed")
+        allocs_to_run = []
+        for raw_alloc in self.config.allocators_raw:
+            name, use_numa, _ = parse_allocator(raw_alloc)
+            numa = "numa" if use_numa else ""
+            allocs_to_run.append(f"{name}:{numa}")
+            allocs_to_run.append(f"{name}:{numa}:df")
         prev_allocs = self.config.allocators_raw
         self.config.allocators_raw = allocs_to_run
         if experiment == "sizes":
