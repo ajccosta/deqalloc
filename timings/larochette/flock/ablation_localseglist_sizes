@@ -1,0 +1,67 @@
+Command: ./run_experiments.py all --nohugepages
+Date: 07-24-2026
+Experiment: flock ablation_localseglist_sizes
+Model name:                              INTEL(R) XEON(R) PLATINUM 8568Y+
+Git: b047dba
+allocator versions:
+	jemalloc: 04aad97f
+	mesh: 2987f88
+	mimalloc: a3ca0e5e
+	hoard: 1cd9101
+	scalloc: 1a11827
+	tcmalloc: a30fe5e6
+	snmalloc: 481b648
+	lockfree: 915f51b
+	rpmalloc: 5dacae8
+	tbbmalloc: 82bfdfe3
+	mimalloc-batchit: da52048
+	llheap: 6e43540
+---
+allocator             update% ds                   key_size   #threads  numa   thread-perc           results
+deqalloc              100     btree_lck            5000       192       False                        [ 8.91 8.842 8.77 8.992 9.161 ] 8.9350, 745024 KB
+deqalloc_localseglist 100     btree_lck            5000       192       False                        [ 9.768 9.15 9.502 8.752 9.156 ] 9.2656, 2979564 KB
+deqalloc              100     hash_block_lck       5000       192       False                        [ 501.2 453.2 488.4 471.5 446.5 ] 472.1600, 1320324 KB
+deqalloc_localseglist 100     hash_block_lck       5000       192       False                        [ 487.4 486.3 493.7 501.8 484.5 ] 490.7400, 2894976 KB
+deqalloc              100     leaftree_lck         5000       192       False                        [ 181.0 236.8 238.5 171.0 206.7 ] 206.8000, 925976 KB
+deqalloc_localseglist 100     leaftree_lck         5000       192       False                        [ 235.1 237.9 182.4 234.9 237.9 ] 225.6400, 1918500 KB
+deqalloc              100     skiplist_lck         5000       192       False                        [ 118.6 110.0 118.9 107.4 119.0 ] 114.7800, 16880392 KB
+deqalloc_localseglist 100     skiplist_lck         5000       192       False                        [ 113.9 102.2 115.9 109.6 113.3 ] 110.9800, 20025500 KB
+deqalloc              100     arttree_lck          5000       192       False                        [ 1.46 ] 1.4600, 485112 KB
+# CRASH: arttree_lck alloc=deqalloc u=100 n=5000
+deqalloc_localseglist 100     arttree_lck          5000       192       False                        [ 1.38 1.336 1.279 1.373 1.342 ] 1.3420, 2596820 KB
+deqalloc              100     list_lck             500        192       False                        [ 37.92 37.57 36.07 36.11 37.73 ] 37.0800, 470684 KB
+deqalloc_localseglist 100     list_lck             500        192       False                        [ 34.69 37.28 37.32 37.18 37.2 ] 36.7340, 1812468 KB
+deqalloc              100     btree_lck            200000     192       False                        [ 179.2 210.3 191.4 198.6 212.9 ] 198.4800, 2648668 KB
+deqalloc_localseglist 100     btree_lck            200000     192       False                        [ 190.1 201.6 196.0 176.6 194.2 ] 191.7000, 4369508 KB
+deqalloc              100     hash_block_lck       200000     192       False                        [ 516.1 520.6 516.3 521.0 502.4 ] 515.2800, 2366260 KB
+deqalloc_localseglist 100     hash_block_lck       200000     192       False                        [ 507.2 508.7 516.4 507.2 516.6 ] 511.2200, 4100560 KB
+deqalloc              100     leaftree_lck         200000     192       False                        [ 207.0 230.1 229.1 230.4 203.2 ] 219.9600, 2465528 KB
+deqalloc_localseglist 100     leaftree_lck         200000     192       False                        [ 228.7 208.2 232.3 220.1 231.5 ] 224.1600, 3433968 KB
+deqalloc              100     skiplist_lck         200000     192       False                        [ 170.6 172.3 157.5 168.1 158.4 ] 165.3800, 2883772 KB
+deqalloc_localseglist 100     skiplist_lck         200000     192       False                        [ 163.7 162.5 162.6 161.0 164.9 ] 162.9400, 4437856 KB
+deqalloc              100     arttree_lck          200000     192       False                        [ 93.34 214.5 191.5 237.8 92.2 ] 165.8680, 2564776 KB
+deqalloc_localseglist 100     arttree_lck          200000     192       False                        [ 248.8 164.4 218.7 237.7 241.8 ] 222.2800, 5383180 KB
+deqalloc              100     list_lck             2000       192       False                        [ 31.41 31.37 31.33 31.43 30.14 ] 31.1360, 471188 KB
+deqalloc_localseglist 100     list_lck             2000       192       False                        [ 26.42 27.03 27.0 27.21 26.6 ] 26.8520, 1802360 KB
+deqalloc              100     btree_lck            20000000   192       False                        [ 211.4 144.8 182.1 189.7 182.6 ] 182.1200, 9347492 KB
+deqalloc_localseglist 100     btree_lck            20000000   192       False                        [ 196.4 191.8 211.4 213.2 173.4 ] 197.2400, 9807928 KB
+deqalloc              100     hash_block_lck       20000000   192       False                        [ 464.2 488.8 469.9 473.9 486.2 ] 476.6000, 5436516 KB
+deqalloc_localseglist 100     hash_block_lck       20000000   192       False                        [ 481.3 485.5 487.8 486.3 450.5 ] 478.2800, 7337364 KB
+deqalloc              100     leaftree_lck         20000000   192       False                        [ 135.3 132.4 122.4 128.4 129.3 ] 129.5600, 4840144 KB
+deqalloc_localseglist 100     leaftree_lck         20000000   192       False                        [ 135.8 136.0 135.7 121.9 126.0 ] 131.0800, 5741620 KB
+deqalloc              100     skiplist_lck         20000000   192       False                        [ 117.7 115.6 108.0 107.1 101.6 ] 110.0000, 5453200 KB
+deqalloc_localseglist 100     skiplist_lck         20000000   192       False                        [ 104.8 112.2 103.8 110.9 109.5 ] 108.2400, 6757452 KB
+deqalloc              100     arttree_lck          20000000   192       False                        [ 361.3 344.6 264.2 310.5 358.8 ] 327.8800, 6990276 KB
+deqalloc_localseglist 100     arttree_lck          20000000   192       False                        [ 350.7 348.4 358.7 355.6 299.5 ] 342.5800, 8596624 KB
+deqalloc              100     list_lck             10000      192       False                        [ 10.3 10.32 10.31 10.31 10.32 ] 10.3120, 759492 KB
+deqalloc_localseglist 100     list_lck             10000      192       False                        [ 8.55 8.513 8.5 8.47 8.529 ] 8.5124, 2152864 KB
+deqalloc              100     btree_lck            200000000  192       False                        [ 147.9 148.0 142.8 170.4 175.3 ] 156.8800, 26743112 KB
+deqalloc_localseglist 100     btree_lck            200000000  192       False                        [ 138.0 170.7 175.2 175.6 146.0 ] 161.1000, 26387652 KB
+deqalloc              100     hash_block_lck       200000000  192       False                        [ 447.3 404.1 416.7 421.3 426.9 ] 423.2600, 29866404 KB
+deqalloc_localseglist 100     hash_block_lck       200000000  192       False                        [ 414.5 421.6 421.3 433.8 422.0 ] 422.6400, 29778816 KB
+deqalloc              100     leaftree_lck         200000000  192       False                        [ 76.5 73.06 73.32 70.34 75.44 ] 73.7320, 26220004 KB
+deqalloc_localseglist 100     leaftree_lck         200000000  192       False                        [ 74.72 76.4 71.11 74.87 71.08 ] 73.6360, 25904604 KB
+deqalloc              100     skiplist_lck         200000000  192       False                        [ 64.48 63.04 60.75 62.83 62.04 ] 62.6280, 27612996 KB
+deqalloc_localseglist 100     skiplist_lck         200000000  192       False                        [ 62.55 61.32 61.95 64.62 61.27 ] 62.3420, 28018248 KB
+deqalloc              100     arttree_lck          200000000  192       False                        [ 259.5 149.7 253.3 176.8 258.1 ] 219.4800, 40591072 KB
+deqalloc_localseglist 100     arttree_lck          200000000  192       False                        [ 255.9 152.7 246.4 234.7 250.0 ] 227.9400, 39672000 KB

@@ -274,42 +274,45 @@ def parse_flock(path):
     row_re   = re.compile(
         r"^([\w-]+)\s+(\d+)\s+(\w+)\s+(\d+)\s+(\d+)\s+(True|False)\s+(.*?)\s+\[([^\]]*)\]\s+([\d.]+),\s*([\d.]+)\s*KB"
     )
-    with open(path) as f:
-        for line in f:
-            line = line.strip()
-            m = crash_re.match(line)
-            if m:
-                crashes.append(dict(ds=m.group(1), allocator=m.group(2),
-                                    update=int(m.group(3)), key_size=int(m.group(4))))
-                continue
-            m = row_re.match(line)
-            if m:
-                vals_str = m.group(8).strip()
-                vals = [float(x) for x in vals_str.split()] if vals_str else []
-                mean = stat.mean(vals) if len(vals) > 0 else 0
-                gmean = stat.geometric_mean(vals) if len(vals) > 0 else 0
-                ds = m.group(3)
-                #crashes often, ignore
-                if ds == "arttree_lck": continue
-                entry = dict(
-                    allocator=m.group(1),
-                    update=int(m.group(2)),
-                    ds=ds,
-                    key_size=int(m.group(4)),
-                    threads=int(m.group(5)),
-                    numa=m.group(6) == "True",
-                    thread_flags=m.group(7).strip(),
-                    values=vals,
-                    mean=mean,
-                    gmean=gmean,
-                    mem_kb=float(m.group(10)),
-                    reclamation="debra", #hacky way to integrate with other suites
-                    df=False,
-                )
-                rows.append(entry)
-                if mean != 0 and gmean != 0 and \
-                    abs(mean - gmean) / max(gmean, mean) > 0.05:
-                    print("Reasonable difference in gmean", entry)
+    try:
+        with open(path) as f:
+            for line in f:
+                line = line.strip()
+                m = crash_re.match(line)
+                if m:
+                    crashes.append(dict(ds=m.group(1), allocator=m.group(2),
+                                        update=int(m.group(3)), key_size=int(m.group(4))))
+                    continue
+                m = row_re.match(line)
+                if m:
+                    vals_str = m.group(8).strip()
+                    vals = [float(x) for x in vals_str.split()] if vals_str else []
+                    mean = stat.mean(vals) if len(vals) > 0 else 0
+                    gmean = stat.geometric_mean(vals) if len(vals) > 0 else 0
+                    ds = m.group(3)
+                    #crashes often, ignore
+                    if ds == "arttree_lck": continue
+                    entry = dict(
+                        allocator=m.group(1),
+                        update=int(m.group(2)),
+                        ds=ds,
+                        key_size=int(m.group(4)),
+                        threads=int(m.group(5)),
+                        numa=m.group(6) == "True",
+                        thread_flags=m.group(7).strip(),
+                        values=vals,
+                        mean=mean,
+                        gmean=gmean,
+                        mem_kb=float(m.group(10)),
+                        reclamation="debra", #hacky way to integrate with other suites
+                        df=False,
+                    )
+                    rows.append(entry)
+                    if mean != 0 and gmean != 0 and \
+                        abs(mean - gmean) / max(gmean, mean) > 0.05:
+                        print("Reasonable difference in gmean", entry)
+    except FileNotFoundError:
+        None
     return rows, crashes
 
 def parse_setbench(path):
@@ -319,39 +322,42 @@ def parse_setbench(path):
     row_re   = re.compile(
         r"^(\w+)\s+(\d+)\s+(\w+)\s+(\w+)\s+(\d+)\s+(\d+)\s+(True|False)\s+\[([^\]]*)\]\s+([\d.]+),\s*([\d.]+)\s*KB"
     )
-    with open(path) as f:
-        for line in f:
-            line = line.strip()
-            m = crash_re.match(line)
-            if m:
-                crashes.append(dict(ds=m.group(1), allocator=m.group(2),
-                                    update=int(m.group(3)), key_size=int(m.group(4))))
-                continue
-            m = row_re.match(line)
-            if m:
-                vals_str = m.group(8).strip()
-                vals = [float(x) for x in vals_str.split()] if vals_str else []
-                mean = stat.mean(vals) if len(vals) > 0 else 0
-                gmean = stat.geometric_mean(vals) if len(vals) > 0 else 0
-                
-                entry = dict(
-                    allocator=m.group(1),
-                    update=int(m.group(2)),
-                    reclamation=TRACKER_LABELS.get(m.group(3)),
-                    ds=m.group(4),
-                    key_size=int(m.group(5)),
-                    threads=int(m.group(6)),
-                    numa=m.group(7) == "True",
-                    values=vals,
-                    mean=mean,
-                    gmean=gmean,
-                    mem_kb=float(m.group(10)),
-                    df='_df' in m.group(3),
-                )
-                rows.append(entry)
-                if mean != 0 and gmean != 0 and \
-                    abs(mean - gmean) / max(gmean, mean) > 0.05:
-                    print("Reasonable difference in gmean", entry)
+    try:
+        with open(path) as f:
+            for line in f:
+                line = line.strip()
+                m = crash_re.match(line)
+                if m:
+                    crashes.append(dict(ds=m.group(1), allocator=m.group(2),
+                                        update=int(m.group(3)), key_size=int(m.group(4))))
+                    continue
+                m = row_re.match(line)
+                if m:
+                    vals_str = m.group(8).strip()
+                    vals = [float(x) for x in vals_str.split()] if vals_str else []
+                    mean = stat.mean(vals) if len(vals) > 0 else 0
+                    gmean = stat.geometric_mean(vals) if len(vals) > 0 else 0
+                    
+                    entry = dict(
+                        allocator=m.group(1),
+                        update=int(m.group(2)),
+                        reclamation=TRACKER_LABELS.get(m.group(3)),
+                        ds=m.group(4),
+                        key_size=int(m.group(5)),
+                        threads=int(m.group(6)),
+                        numa=m.group(7) == "True",
+                        values=vals,
+                        mean=mean,
+                        gmean=gmean,
+                        mem_kb=float(m.group(10)),
+                        df='_df' in m.group(3),
+                    )
+                    rows.append(entry)
+                    if mean != 0 and gmean != 0 and \
+                        abs(mean - gmean) / max(gmean, mean) > 0.05:
+                        print("Reasonable difference in gmean", entry)
+    except FileNotFoundError:
+        None
     return rows, crashes
 
 # -- Helpers ------------------------------------------------------------------
@@ -643,6 +649,10 @@ def plot_geomean(input_dir, suite, experiment, out_dir, fmt):
     intra_group_gap = 0.02
 
     dss = sorted(set(r["ds"] for r in data))
+    #if "list_lck" in dss:
+    #    dss.remove("list_lck")
+    #if "skiplist_lck" in dss:
+    #    dss.remove("skiplist_lck")
     
     szx, szy = FIG_CONFIGS["figsize"]
     fig, ax = plt.subplots(figsize=(len(dss), szy*0.8))
@@ -737,7 +747,7 @@ def plot_geomean(input_dir, suite, experiment, out_dir, fmt):
     margin = bar_width / 2 + bar_width * inter_group_gap
     ax.set_xlim(first_bar_center - margin, last_bar_center + margin)
 
-    ax.set_ylim(0, 1.35)
+    ax.set_ylim(0, 1.4)
     ax.set_yticks(np.arange(0, 1.1, 0.2))
 
     plt.xticks([])
@@ -980,6 +990,9 @@ def plot_hugepages(input_dir, suite, experiment, out_dir, fmt):
     nohp_data, nohp_crashes = load_file(input_dir, suite, experiment)
     #also load sizes (hugepages = always)
     hp_data, nohp_crashes = load_file(input_dir, suite, "sizes")
+
+    if nohp_data == [] or hp_data == []:
+        return
 
     dss = sorted(set(r["ds"] for r in nohp_data))
     assert(dss == sorted(set(r["ds"] for r in hp_data)))

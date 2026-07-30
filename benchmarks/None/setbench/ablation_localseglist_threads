@@ -1,0 +1,108 @@
+Command: ./run_experiments.py all --nohugepages
+Date: 07-22-2026
+Experiment: setbench ablation_localseglist_threads
+Model name:                              INTEL(R) XEON(R) PLATINUM 8568Y+
+Git: 7d55ecd
+allocator versions:
+	jemalloc: 04aad97f
+	mesh: 2987f88
+	mimalloc: a3ca0e5e
+	hoard: 1cd9101
+	scalloc: 1a11827
+	tcmalloc: a30fe5e6
+	snmalloc: 481b648
+	lockfree: 915f51b
+	rpmalloc: 5dacae8
+	tbbmalloc: 82bfdfe3
+	mimalloc-batchit: da52048
+	llheap: 6e43540
+---
+allocator             update%    scheme     ds                        key_size   #threads  numa   results
+deqalloc              100        debra      guerraoui_ext_bst_ticket  200000     1         False  [ 3.20895 3.182649 3.067162 3.133117 3.060372 ] 3.1305, 4479373 KB
+deqalloc_localseglist 100        debra      guerraoui_ext_bst_ticket  200000     1         False  [ 3.163752 3.106806 3.183129 3.092791 3.118634 ] 3.1330, 4484274 KB
+deqalloc              100        debra      guerraoui_ext_bst_ticket  200000     2         False  [ 5.660587 4.272617 5.937312 5.835042 6.001836 ] 5.5415, 4487506 KB
+deqalloc_localseglist 100        debra      guerraoui_ext_bst_ticket  200000     2         False  [ 3.973886 5.967986 5.619903 5.61922 5.224703 ] 5.2811, 4896202 KB
+deqalloc              100        debra      guerraoui_ext_bst_ticket  200000     4         False  [ 8.496974 8.337021 9.168663 8.564321 8.08175 ] 8.5297, 4489921 KB
+deqalloc_localseglist 100        debra      guerraoui_ext_bst_ticket  200000     4         False  [ 8.219627 8.727522 8.596984 8.466665 7.716678 ] 8.3455, 4930606 KB
+deqalloc              100        debra      guerraoui_ext_bst_ticket  200000     8         False  [ 16.481297 17.084924 16.68779 16.501607 16.078387 ] 16.5668, 4507635 KB
+deqalloc_localseglist 100        debra      guerraoui_ext_bst_ticket  200000     8         False  [ 16.58753 16.3003 16.460488 16.715626 16.728771 ] 16.5585, 4999047 KB
+deqalloc              100        debra      guerraoui_ext_bst_ticket  200000     16        False  [ 35.200123 34.279946 34.924398 32.568949 35.228571 ] 34.4404, 4540804 KB
+deqalloc_localseglist 100        debra      guerraoui_ext_bst_ticket  200000     16        False  [ 33.458358 33.640803 33.464351 33.707656 33.889342 ] 33.6321, 5128925 KB
+deqalloc              100        debra      guerraoui_ext_bst_ticket  200000     32        False  [ 65.840131 66.545003 67.593124 67.690622 66.331053 ] 66.8000, 4595845 KB
+deqalloc_localseglist 100        debra      guerraoui_ext_bst_ticket  200000     32        False  [ 65.087607 62.590987 63.948698 66.419421 63.11163 ] 64.2317, 5403922 KB
+deqalloc              100        debra      guerraoui_ext_bst_ticket  200000     64        False  [ 98.492916 101.562192 98.825345 92.297051 95.567211 ] 97.3489, 4668198 KB
+deqalloc_localseglist 100        debra      guerraoui_ext_bst_ticket  200000     64        False  [ 116.507164 118.45773 116.377489 95.2242 118.447824 ] 113.0029, 5942386 KB
+deqalloc              100        debra      guerraoui_ext_bst_ticket  200000     96        False  [ 166.223861 157.154477 169.806147 159.291944 164.830978 ] 163.4615, 4896024 KB
+deqalloc_localseglist 100        debra      guerraoui_ext_bst_ticket  200000     96        False  [ 150.780083 146.696555 160.790325 163.253116 149.768647 ] 154.2577, 6459680 KB
+deqalloc              100        debra      guerraoui_ext_bst_ticket  200000     128       False  [ 184.79163 184.206292 186.680781 184.564845 175.361443 ] 183.1210, 5030076 KB
+deqalloc_localseglist 100        debra      guerraoui_ext_bst_ticket  200000     128       False  [ 173.553422 176.594058 170.735052 183.185418 176.94297 ] 176.2022, 7045645 KB
+deqalloc              100        debra      guerraoui_ext_bst_ticket  200000     192       False  [ 252.43388 247.789294 249.553766 251.852226 247.86674 ] 249.8992, 5208132 KB
+deqalloc_localseglist 100        debra      guerraoui_ext_bst_ticket  200000     192       False  [ 243.894554 242.446289 245.038886 231.510135 243.805256 ] 241.3390, 8069176 KB
+deqalloc              100        debra      guerraoui_ext_bst_ticket  200000     384       False  [ 152.427104 152.283141 153.137388 154.414862 151.572794 ] 152.7671, 9546005 KB
+deqalloc_localseglist 100        debra      guerraoui_ext_bst_ticket  200000     384       False  [ 149.741778 144.334768 147.414478 155.343712 146.181862 ] 148.6033, 13870247 KB
+deqalloc              100        debra      brown_ext_abtree_lf       200000     1         False  [ 5.465022 5.485905 5.437738 5.484926 5.471678 ] 5.4691, 4475323 KB
+deqalloc_localseglist 100        debra      brown_ext_abtree_lf       200000     1         False  [ 5.512144 5.446595 5.469979 5.46024 5.419313 ] 5.4617, 4477755 KB
+deqalloc              100        debra      brown_ext_abtree_lf       200000     2         False  [ 6.468063 6.572837 6.871662 6.005126 6.864868 ] 6.5565, 4537149 KB
+deqalloc_localseglist 100        debra      brown_ext_abtree_lf       200000     2         False  [ 6.944686 5.223296 7.346381 7.006824 7.218819 ] 6.7480, 4946241 KB
+deqalloc              100        debra      brown_ext_abtree_lf       200000     4         False  [ 8.766219 7.609632 8.018041 8.231972 7.938144 ] 8.1128, 4487590 KB
+deqalloc_localseglist 100        debra      brown_ext_abtree_lf       200000     4         False  [ 7.721129 7.402622 7.725073 8.015308 7.700989 ] 7.7130, 4926585 KB
+deqalloc              100        debra      brown_ext_abtree_lf       200000     8         False  [ 16.160979 15.821047 15.530652 16.005153 15.220651 ] 15.7477, 4520381 KB
+deqalloc_localseglist 100        debra      brown_ext_abtree_lf       200000     8         False  [ 15.096297 15.177608 14.666298 16.069019 18.500852 ] 15.9020, 4995056 KB
+deqalloc              100        debra      brown_ext_abtree_lf       200000     16        False  [ 33.621562 37.005617 36.35208 34.785408 37.361652 ] 35.8253, 4570484 KB
+deqalloc_localseglist 100        debra      brown_ext_abtree_lf       200000     16        False  [ 33.02207 31.738026 33.481867 33.432003 24.240413 ] 31.1829, 5146681 KB
+deqalloc              100        debra      brown_ext_abtree_lf       200000     32        False  [ 62.823861 67.841479 68.581994 69.454332 65.224762 ] 66.7853, 4677123 KB
+deqalloc_localseglist 100        debra      brown_ext_abtree_lf       200000     32        False  [ 66.766721 67.747707 66.144424 67.378367 68.966517 ] 67.4007, 5421679 KB
+deqalloc              100        debra      brown_ext_abtree_lf       200000     64        False  [ 81.89156 81.139477 79.853722 82.315162 80.449762 ] 81.1299, 4785011 KB
+deqalloc_localseglist 100        debra      brown_ext_abtree_lf       200000     64        False  [ 123.093687 124.800295 122.094383 125.390088 123.89937 ] 123.8556, 6263455 KB
+deqalloc              100        debra      brown_ext_abtree_lf       200000     96        False  [ 159.330657 166.678418 166.639131 156.137001 164.239808 ] 162.6050, 5306201 KB
+deqalloc_localseglist 100        debra      brown_ext_abtree_lf       200000     96        False  [ 160.086486 141.104182 151.054458 155.748574 151.652639 ] 151.9293, 6933512 KB
+deqalloc              100        debra      brown_ext_abtree_lf       200000     128       False  [ 150.384324 152.363786 160.857275 159.907975 153.394615 ] 155.3816, 5970801 KB
+deqalloc_localseglist 100        debra      brown_ext_abtree_lf       200000     128       False  [ 159.36424 156.895753 150.911149 158.577548 155.240488 ] 156.1978, 7774494 KB
+deqalloc              100        debra      brown_ext_abtree_lf       200000     192       False  [ 199.260674 197.800473 193.700361 195.839798 196.819999 ] 196.6843, 7150613 KB
+deqalloc_localseglist 100        debra      brown_ext_abtree_lf       200000     192       False  [ 195.028594 191.789603 196.198271 196.91135 194.511293 ] 194.8878, 9615479 KB
+deqalloc              100        debra      brown_ext_abtree_lf       200000     384       False  [ 177.119712 183.252784 188.632039 185.395588 178.01669 ] 182.4834, 14243600 KB
+deqalloc_localseglist 100        debra      brown_ext_abtree_lf       200000     384       False  [ 176.223427 181.945509 177.010249 184.936852 185.061243 ] 181.0355, 18322469 KB
+deqalloc              100        debra      hm_hashtable              200000     1         False  [ 5.639876 5.545309 5.633812 5.515709 5.777872 ] 5.6225, 4471175 KB
+deqalloc_localseglist 100        debra      hm_hashtable              200000     1         False  [ 5.686642 5.558835 5.425846 5.497518 5.669181 ] 5.5676, 4473581 KB
+deqalloc              100        debra      hm_hashtable              200000     2         False  [ 8.140494 8.634088 8.13523 8.117871 8.022282 ] 8.2100, 4475542 KB
+deqalloc_localseglist 100        debra      hm_hashtable              200000     2         False  [ 8.219402 8.253152 5.112401 7.49024 8.3122 ] 7.4775, 4869928 KB
+deqalloc              100        debra      hm_hashtable              200000     4         False  [ 10.995317 10.847261 10.92909 11.23261 11.115937 ] 11.0240, 4485014 KB
+deqalloc_localseglist 100        debra      hm_hashtable              200000     4         False  [ 11.064292 10.876503 10.806484 10.693729 10.677772 ] 10.8238, 4902294 KB
+deqalloc              100        debra      hm_hashtable              200000     8         False  [ 19.774623 21.489404 21.425828 21.108286 21.908159 ] 21.1413, 4507199 KB
+deqalloc_localseglist 100        debra      hm_hashtable              200000     8         False  [ 21.970143 23.779726 21.619424 22.526833 21.764959 ] 22.3322, 4967877 KB
+deqalloc              100        debra      hm_hashtable              200000     16        False  [ 44.571078 43.528254 44.386632 46.27057 42.422356 ] 44.2358, 4538331 KB
+deqalloc_localseglist 100        debra      hm_hashtable              200000     16        False  [ 47.913049 46.575293 47.933931 40.940378 46.366921 ] 45.9459, 5081442 KB
+deqalloc              100        debra      hm_hashtable              200000     32        False  [ 91.372175 87.522033 89.299852 88.265003 88.14547 ] 88.9209, 4545436 KB
+deqalloc_localseglist 100        debra      hm_hashtable              200000     32        False  [ 92.760135 80.749181 90.283328 90.096431 81.457376 ] 87.0693, 5317075 KB
+deqalloc              100        debra      hm_hashtable              200000     64        False  [ 121.399717 121.2817 119.157209 135.35729 160.539066 ] 131.5470, 4662525 KB
+deqalloc_localseglist 100        debra      hm_hashtable              200000     64        False  [ 151.949517 157.994779 156.431335 157.070241 156.460551 ] 155.9813, 5751431 KB
+deqalloc              100        debra      hm_hashtable              200000     96        False  [ 180.831895 220.249965 216.564183 208.497339 208.320937 ] 206.8929, 4745875 KB
+deqalloc_localseglist 100        debra      hm_hashtable              200000     96        False  [ 210.95969 190.338881 215.632408 205.956335 211.847929 ] 206.9470, 6165865 KB
+deqalloc              100        debra      hm_hashtable              200000     128       False  [ 218.09602 218.650022 218.707649 231.465056 219.21612 ] 221.2270, 4730472 KB
+deqalloc_localseglist 100        debra      hm_hashtable              200000     128       False  [ 213.367986 214.594753 221.486127 227.77412 223.261532 ] 220.0969, 6525313 KB
+deqalloc              100        debra      hm_hashtable              200000     192       False  [ 310.277439 309.444695 309.395632 308.643136 309.449324 ] 309.4420, 5077699 KB
+deqalloc_localseglist 100        debra      hm_hashtable              200000     192       False  [ 301.421201 305.340887 305.193076 305.393057 305.680099 ] 304.6057, 7250664 KB
+deqalloc              100        debra      hm_hashtable              200000     384       False  [ 301.678068 291.573484 292.738416 297.950821 291.14658 ] 295.0175, 8064009 KB
+deqalloc_localseglist 100        debra      hm_hashtable              200000     384       False  [ 293.147689 291.827767 292.309171 299.471128 297.996118 ] 294.9504, 11636645 KB
+deqalloc              100        debra      hmlist                    2000       1         False  [ 1.178232 1.123825 1.1611 1.15797 1.147553 ] 1.1537, 4467090 KB
+deqalloc_localseglist 100        debra      hmlist                    2000       1         False  [ 1.14415 1.167227 1.162304 1.177012 1.173417 ] 1.1648, 4469514 KB
+deqalloc              100        debra      hmlist                    2000       2         False  [ 1.737227 1.593111 1.173914 1.502611 1.423647 ] 1.4861, 4466623 KB
+deqalloc_localseglist 100        debra      hmlist                    2000       2         False  [ 1.574855 1.416813 1.637376 1.605984 1.610168 ] 1.5690, 4860513 KB
+deqalloc              100        debra      hmlist                    2000       4         False  [ 2.342487 2.199247 2.318115 2.287432 2.2763 ] 2.2847, 4473586 KB
+deqalloc_localseglist 100        debra      hmlist                    2000       4         False  [ 2.274419 2.314167 2.317847 2.166363 2.381971 ] 2.2910, 4899901 KB
+deqalloc              100        debra      hmlist                    2000       8         False  [ 4.02509 3.682906 4.080011 4.151829 3.86026 ] 3.9600, 4496108 KB
+deqalloc_localseglist 100        debra      hmlist                    2000       8         False  [ 3.938974 3.923377 3.926177 3.973481 3.786069 ] 3.9096, 4953198 KB
+deqalloc              100        debra      hmlist                    2000       16        False  [ 5.890524 6.020936 5.733117 5.975176 6.20663 ] 5.9653, 4526062 KB
+deqalloc_localseglist 100        debra      hmlist                    2000       16        False  [ 5.886058 5.476645 5.799459 5.790502 5.736844 ] 5.7379, 5077361 KB
+deqalloc              100        debra      hmlist                    2000       32        False  [ 10.395487 10.165158 10.178986 10.410404 10.033327 ] 10.2367, 4549158 KB
+deqalloc_localseglist 100        debra      hmlist                    2000       32        False  [ 9.287045 9.916332 10.16476 9.664584 9.518778 ] 9.7103, 5284752 KB
+deqalloc              100        debra      hmlist                    2000       64        False  [ 16.115188 16.23994 16.138081 15.753785 15.998606 ] 16.0491, 4585498 KB
+deqalloc_localseglist 100        debra      hmlist                    2000       64        False  [ 12.98766 12.998733 12.876476 12.640637 12.882912 ] 12.8773, 5737612 KB
+deqalloc              100        debra      hmlist                    2000       96        False  [ 18.786754 19.714692 20.860783 18.584871 19.764855 ] 19.5424, 4750402 KB
+deqalloc_localseglist 100        debra      hmlist                    2000       96        False  [ 16.092734 16.143456 15.043944 15.977346 15.991856 ] 15.8499, 6156061 KB
+deqalloc              100        debra      hmlist                    2000       128       False  [ 20.575423 20.353511 20.183543 20.348715 20.590776 ] 20.4104, 4672767 KB
+deqalloc_localseglist 100        debra      hmlist                    2000       128       False  [ 16.827173 17.071896 16.842566 16.530408 17.104555 ] 16.8753, 6536832 KB
+deqalloc              100        debra      hmlist                    2000       192       False  [ 23.899111 23.881421 23.205786 23.618182 23.926848 ] 23.7063, 4871828 KB
+deqalloc_localseglist 100        debra      hmlist                    2000       192       False  [ 20.010461 19.140015 20.035876 18.317459 20.002737 ] 19.5013, 7219160 KB
+deqalloc              100        debra      hmlist                    2000       384       False  [ 21.8006 21.98614 22.115984 21.8147 22.169505 ] 21.9774, 5505111 KB
+deqalloc_localseglist 100        debra      hmlist                    2000       384       False  [ 18.768326 18.690238 18.817301 18.233244 18.620258 ] 18.6259, 9471439 KB
