@@ -418,7 +418,8 @@ def which_paper_ds(dss, experiment=None):
         assert(paper_ds == [])
         if not experiment:
             paper_ds = PAPER_DS_SETBENCH
-        elif experiment == "ablation_localseglist":
+        elif experiment == "ablation_localseglist" \
+            or experiment == "amortizedfree":
             paper_ds = PAPER_DS_LOCALSEGLIST_SETBENCH
     #assert(paper_ds != [])
     return paper_ds
@@ -1176,6 +1177,159 @@ def plot_ablation_localseglist(input_dir, suite, experiment, out_dir, fmt):
     merge_pdfs_horizontally(paper_ds_list, f"{out_dir}/paper/{experiment}.{fmt}")
 
 
+# -- Plot: Throughput vs key_size, normal vs amortized-free reclamation ------
+def plot_ablation_amortizedfree(input_dir, suite, experiment, out_dir, fmt):
+    """
+    Same layout as the other ablation plots (one panel per DS, x-axis is
+    key_size). For each DS this produces two figures:
+      - absolute:  every allocator gets two lines, a solid line for the
+                    normal reclamation scheme and a dashed line (same
+                    color/marker) for its amortized-free ("_df") counterpart.
+      - relative:  one line per allocator, plotting the ratio
+                    (amortized-free throughput / normal throughput), with a
+                    dotted reference line at 1.0 so speedups/regressions are
+                    visible directly.
+    """
+    data, crashes = load_file(input_dir, suite, experiment)
+
+    dss = sorted(set(r["ds"] for r in data))
+    paper_ds = which_paper_ds(dss, experiment)
+
+    allocators = [ "deqalloc", "mimalloc", "jemalloc", "hoard", "snmalloc" ] 
+
+    for paper_print in [True, False]: #print a paper version and a viewing version
+        write_dir = ("paper/" if paper_print else "readable/") + experiment + "/"
+        os.makedirs(f"{out_dir}/{write_dir}", exist_ok=True)
+
+        for i, ds in enumerate(dss):
+            ds_rows = [r for r in data if r["ds"] == ds]
+            allocs  = sorted(set(r["allocator"] for r in ds_rows).intersection(allocators))
+            sizes   = sorted(set(r["key_size"] for r in ds_rows))
+            xlabels = get_nice_scinot_labels(sizes)
+
+            #pre-compute normal/amortized-free points per allocator, shared
+            #by both the absolute and the relative panel below
+            per_alloc = {}
+            for alloc in allocs:
+                base_pts = {r["key_size"]: r["gmean"] for r in ds_rows
+                            if r["allocator"] == alloc and not r["df"]}
+                df_pts   = {r["key_size"]: r["gmean"] for r in ds_rows
+                            if r["allocator"] == alloc and r["df"]}
+                per_alloc[alloc] = (base_pts, df_pts)
+
+            # -- absolute throughput panel ---------------------------------
+            fig, ax = plt.subplots(figsize=FIG_CONFIGS["figsize"])
+
+            for alloc in allocs:
+                color  = ALLOC_PALETTE.get(alloc)
+                marker = ALLOC_MARKERS.get(alloc)
+                zorder = ALLOC_ZORDER.get(alloc)
+                base_pts, df_pts = per_alloc[alloc]
+
+                base_ys = [base_pts.get(s, None) for s in sizes]
+                df_ys   = [df_pts.get(s, None) for s in sizes]
+
+                if any(y is not None for y in base_ys):
+                    ax.plot(range(len(sizes)),
+                            base_ys,
+                            label=ALLOC_RENAMES.get(alloc, alloc),
+                            linewidth=FIG_CONFIGS["linewidth"],
+                            color=color,
+                            marker=marker,
+                            markersize=FIG_CONFIGS["markersize"],
+                            linestyle="-",
+                            zorder=zorder)
+
+                if any(y is not None for y in df_ys):
+                    ax.plot(range(len(sizes)),
+                            df_ys,
+                            label=None, #same allocator, avoid duplicate legend entries
+                            linewidth=FIG_CONFIGS["linewidth"],
+                            color=color,
+                            marker=marker,
+                            markersize=FIG_CONFIGS["markersize"],
+                            markerfacecolor="none",
+                            linestyle="--",
+                            zorder=zorder)
+
+            plt.xticks(range(len(sizes)), xlabels)
+            ax.set_xlabel("Size (n)")
+            ax.set_title(f'{DS_LABELS.get(ds, ds)}')
+
+            if not write_dir or ds == paper_ds[0]:
+                ax.set_ylabel('Throughput (Mops/s)', fontsize=FIG_CONFIGS["ylabel_fontsize"])
+                ylabel = ax.yaxis.label
+                ylabel.set_y(ylabel.get_position()[1] - 0.05)
+
+            style_fig(fig, ax, paper_print)
+
+            fig.savefig(f"{out_dir}/{write_dir}{experiment}_{ds}.{fmt}",
+                dpi=FIG_CONFIGS["dpi"],
+                bbox_inches="tight",
+                pad_inches=FIG_CONFIGS["pad_inches"])
+            plt.close(fig)
+
+            # -- relative throughput panel (amortized-free / normal) --------
+            fig_r, ax_r = plt.subplots(figsize=FIG_CONFIGS["figsize"])
+
+            for alloc in allocs:
+                color  = ALLOC_PALETTE.get(alloc)
+                marker = ALLOC_MARKERS.get(alloc)
+                zorder = ALLOC_ZORDER.get(alloc)
+                base_pts, df_pts = per_alloc[alloc]
+
+                relative_ys = []
+                for s in sizes:
+                    b = base_pts.get(s)
+                    d = df_pts.get(s)
+                    relative_ys.append(d / b if (d is not None and b not in (None, 0)) else None)
+
+                if any(y is not None for y in relative_ys):
+                    ax_r.plot(range(len(sizes)),
+                            relative_ys,
+                            label=ALLOC_RENAMES.get(alloc, alloc),
+                            linewidth=FIG_CONFIGS["linewidth"],
+                            color=color,
+                            marker=marker,
+                            markersize=FIG_CONFIGS["markersize"],
+                            linestyle=FIG_CONFIGS["linestyle"].get(alloc, "--"),
+                            zorder=zorder)
+
+            #reference line: 1.0 means amortized-free performs the same as normal
+            ax_r.axhline(1.0, color="black", linewidth=0.8, linestyle=":", zorder=0)
+
+            plt.xticks(range(len(sizes)), xlabels)
+            ax_r.set_xlabel("Size (n)")
+            ax_r.set_title(f'{DS_LABELS.get(ds, ds)}')
+
+            if not write_dir or ds == paper_ds[0]:
+                ax_r.set_ylabel('Relative Throughput (df / normal)',
+                                 fontsize=FIG_CONFIGS["ylabel_fontsize"])
+                ylabel_r = ax_r.yaxis.label
+                ylabel_r.set_y(ylabel_r.get_position()[1] - 0.05)
+
+            style_fig(fig_r, ax_r, paper_print)
+
+            #override style_fig's bottom=0 default: ratios legitimately live
+            #around 1, so anchor the bottom near the lowest ratio instead
+            min_y = min(ax_r.dataLim.ymin, 1)
+            if math.isnan(min_y) or math.isinf(min_y):
+                min_y = 0
+            ax_r.set_ylim(bottom=min_y * 0.95)
+
+            fig_r.savefig(f"{out_dir}/{write_dir}{experiment}_relative_{ds}.{fmt}",
+                dpi=FIG_CONFIGS["dpi"],
+                bbox_inches="tight",
+                pad_inches=FIG_CONFIGS["pad_inches"])
+            plt.close(fig_r)
+
+    paper_ds_list = [ f"{out_dir}/paper/{experiment}/{experiment}_{ds}.{fmt}" for ds in paper_ds ]
+    merge_pdfs_horizontally(paper_ds_list, f"{out_dir}/paper/{experiment}.{fmt}")
+
+    paper_ds_list_relative = [ f"{out_dir}/paper/{experiment}/{experiment}_relative_{ds}.{fmt}" for ds in paper_ds ]
+    merge_pdfs_horizontally(paper_ds_list_relative, f"{out_dir}/paper/{experiment}_relative.{fmt}")
+
+
 def plot_ablation_remotefree(input_dir, suite, experiment, out_dir, fmt):
     data, crashes = load_file(input_dir, suite, experiment)
 
@@ -1571,6 +1725,7 @@ def main():
                                 'memory',
                                 'hugepages',
                                 'ablation',
+                                'amortizedfree',
                                 'config',
                                 #'machines',
                                 'all'],
@@ -1616,6 +1771,8 @@ def main():
         if "config" in args.plots or do_all: plot_config(args.input_dir, "setbench", "config", out_dir, args.format)
         if "ablation"   in args.plots or do_all: plot_ablation_localseglist(args.input_dir, "setbench", \
             "ablation_localseglist", out_dir, args.format)
+        if "amortizedfree" in args.plots or do_all: plot_ablation_amortizedfree(args.input_dir, "setbench", \
+            "amortizedfree", out_dir, args.format)
 
     plot_temp_and_freq(f"{args.input_dir}/temperature.csv", args.output_dir, args.format)
 
