@@ -14,6 +14,8 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 add_compile_options(-ftls-model=initial-exec)
 
+find_package(Threads REQUIRED)
+
 # Include directories
 include_directories(.)
 
@@ -63,79 +65,61 @@ if(DEFAULT_LIST_BYTES)
   set(DEFINES "${DEFINES} DEFAULT_LIST_BYTES=${DEFAULT_LIST_BYTES}")
 endif()
 
-# Create shared library
-add_library(deqalloc SHARED ${ALL_SOURCES})
-target_compile_definitions(deqalloc PUBLIC -DNDEBUG -D_REENTRANT=1 ${DEFINES})
 
-add_library(deqalloc_localseglist SHARED ${ALL_SOURCES})
-target_compile_definitions(deqalloc_localseglist PUBLIC -DNDEBUG -D_REENTRANT=1 -DLOCAL_SEGLIST ${DEFINES})
+# Target directory for output symlinks
+set(ALLOCATORS_DIR "${CMAKE_BINARY_DIR}/allocators")
+file(MAKE_DIRECTORY "${ALLOCATORS_DIR}")
 
-add_library(deqalloc_genericdeque_fc SHARED ${ALL_SOURCES})
-target_compile_definitions(deqalloc_genericdeque_fc PUBLIC -DNDEBUG -D_REENTRANT=1 -DFC_DEQUE ${DEFINES})
+# Helper function to standardize variant target creation and symlinking
+function(add_deqalloc_variant TARGET_NAME)
+  cmake_parse_arguments(ARG "" "" "DEFINES" ${ARGN})
+  add_library(${TARGET_NAME} SHARED ${ALL_SOURCES})
+  target_include_directories(${TARGET_NAME} PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${heaplayers_SOURCE_DIR}
+    ${heaplayers_SOURCE_DIR}/utility
+    ${heaplayers_SOURCE_DIR}/heaps
+    ${printf_SOURCE_DIR}
+  )
+  target_compile_definitions(${TARGET_NAME} PRIVATE NDEBUG _REENTRANT=1 ${ARG_DEFINES})
+  if(DEFAULT_LIST_BYTES)
+    target_compile_definitions(${TARGET_NAME} PRIVATE DEFAULT_LIST_BYTES=${DEFAULT_LIST_BYTES})
+  endif()
+  target_link_libraries(${TARGET_NAME} PRIVATE Threads::Threads)
+  set_target_properties(${TARGET_NAME} PROPERTIES VERSION 1.0.0 SOVERSION 1)
+  # Post-build symlink creation into build/allocators/
+  add_custom_command(
+    TARGET ${TARGET_NAME} POST_BUILD
+    # Creates symlink for .so.1.0.0
+    COMMAND ${CMAKE_COMMAND} -E create_symlink
+      $<TARGET_FILE:${TARGET_NAME}>
+      "${ALLOCATORS_DIR}/$<TARGET_FILE_NAME:${TARGET_NAME}>"
+    # Creates symlink for .so (linker file)
+    COMMAND ${CMAKE_COMMAND} -E create_symlink
+      $<TARGET_LINKER_FILE:${TARGET_NAME}>
+      "${ALLOCATORS_DIR}/$<TARGET_LINKER_FILE_NAME:${TARGET_NAME}>"
+    COMMENT "Creating symlinks for ${TARGET_NAME} in allocators/"
+  )
+endfunction()
 
-add_library(deqalloc_genericdeque SHARED ${ALL_SOURCES})
-target_compile_definitions(deqalloc_genericdeque PUBLIC -DNDEBUG -D_REENTRANT=1 -DLOCKING_DEQUE ${DEFINES})
+# Standard Allocator Variants
+add_deqalloc_variant(deqalloc)
+add_deqalloc_variant(deqalloc_localseglist DEFINES LOCAL_SEGLIST)
+add_deqalloc_variant(deqalloc_genericdeque_fc DEFINES FC_DEQUE)
+add_deqalloc_variant(deqalloc_genericdeque DEFINES LOCKING_DEQUE)
+add_deqalloc_variant(deqalloc_genericdeque_localseglist_fc DEFINES FC_DEQUE LOCAL_SEGLIST)
+add_deqalloc_variant(deqalloc_genericdeque_localseglist DEFINES LOCKING_DEQUE LOCAL_SEGLIST)
+add_deqalloc_variant(deqalloc_remotefree_fc DEFINES REMOTE_FREE FC_DEQUE LOCAL_SEGLIST)
+add_deqalloc_variant(deqalloc_remotefree DEFINES REMOTE_FREE LOCKING_DEQUE LOCAL_SEGLIST)
 
-add_library(deqalloc_genericdeque_localseglist_fc SHARED ${ALL_SOURCES})
-target_compile_definitions(deqalloc_genericdeque_localseglist_fc PUBLIC -DNDEBUG -D_REENTRANT=1 -DFC_DEQUE -DLOCAL_SEGLIST ${DEFINES})
-
-add_library(deqalloc_genericdeque_localseglist SHARED ${ALL_SOURCES})
-target_compile_definitions(deqalloc_genericdeque_localseglist PUBLIC -DNDEBUG -D_REENTRANT=1 -DLOCKING_DEQUE -DLOCAL_SEGLIST ${DEFINES})
-
-add_library(deqalloc_remotefree_fc SHARED ${ALL_SOURCES})
-target_compile_definitions(deqalloc_remotefree_fc PUBLIC -DNDEBUG -D_REENTRANT=1 -DREMOTE_FREE -DFC_DEQUE -DLOCAL_SEGLIST ${DEFINES})
-
-add_library(deqalloc_remotefree SHARED ${ALL_SOURCES})
-target_compile_definitions(deqalloc_remotefree PUBLIC -DNDEBUG -D_REENTRANT=1 -DREMOTE_FREE -DLOCKING_DEQUE -DLOCAL_SEGLIST ${DEFINES})
-
+# Batch-size Allocator Variants
 foreach(BATCH_SIZE 512 1024 2048 4096 8192)
-  add_library(deqalloc_${BATCH_SIZE} SHARED ${ALL_SOURCES})
-  target_compile_definitions(deqalloc_${BATCH_SIZE} PUBLIC -DNDEBUG -D_REENTRANT=1 -DDEFAULT_LIST_BYTES=${BATCH_SIZE})
-
-  add_library(deqalloc_remotefree_fc_${BATCH_SIZE} SHARED ${ALL_SOURCES})
-  target_compile_definitions(deqalloc_remotefree_fc_${BATCH_SIZE} PUBLIC -DNDEBUG -D_REENTRANT=1 -DREMOTE_FREE -DFC_DEQUE -DLOCAL_SEGLIST -DDEFAULT_LIST_BYTES=${BATCH_SIZE})
-
-  add_library(deqalloc_genericdeque_${BATCH_SIZE} SHARED ${ALL_SOURCES})
-  target_compile_definitions(deqalloc_genericdeque_${BATCH_SIZE} PUBLIC -DNDEBUG -D_REENTRANT=1 -DLOCKING_DEQUE -DDEFAULT_LIST_BYTES=${BATCH_SIZE})
-
-  add_library(deqalloc_remotefree_${BATCH_SIZE} SHARED ${ALL_SOURCES})
-  target_compile_definitions(deqalloc_remotefree_${BATCH_SIZE} PUBLIC -DNDEBUG -D_REENTRANT=1 -DREMOTE_FREE -DLOCKING_DEQUE -DLOCAL_SEGLIST -DDEFAULT_LIST_BYTES=${BATCH_SIZE})
+  add_deqalloc_variant(deqalloc_${BATCH_SIZE} DEFINES DEFAULT_LIST_BYTES=${BATCH_SIZE})
+  add_deqalloc_variant(deqalloc_remotefree_fc_${BATCH_SIZE} DEFINES REMOTE_FREE FC_DEQUE LOCAL_SEGLIST DEFAULT_LIST_BYTES=${BATCH_SIZE})
+  add_deqalloc_variant(deqalloc_genericdeque_${BATCH_SIZE} DEFINES LOCKING_DEQUE DEFAULT_LIST_BYTES=${BATCH_SIZE})
+  add_deqalloc_variant(deqalloc_remotefree_${BATCH_SIZE} DEFINES REMOTE_FREE LOCKING_DEQUE LOCAL_SEGLIST DEFAULT_LIST_BYTES=${BATCH_SIZE})
 endforeach()
 
-# Let CMake handle platform-specific library settings
-set_target_properties(deqalloc PROPERTIES 
-    VERSION 1.0.0
-    SOVERSION 1)
-
-set_target_properties(deqalloc_genericdeque PROPERTIES
-  VERSION 1.0.0
-  SOVERSION 1)
-
-set_target_properties(deqalloc_genericdeque_localseglist PROPERTIES
-  VERSION 1.0.0
-  SOVERSION 1)
-
-set_target_properties(deqalloc_remotefree PROPERTIES
-  VERSION 1.0.0
-  SOVERSION 1)
-
-# Add threading support if needed
-find_package(Threads)
-if(Threads_FOUND)
-    target_link_libraries(deqalloc Threads::Threads)
-  target_link_libraries(deqalloc_genericdeque Threads::Threads)
-  target_link_libraries(deqalloc_localseglist Threads::Threads)
-  target_link_libraries(deqalloc_genericdeque_localseglist Threads::Threads)
-  target_link_libraries(deqalloc_remotefree Threads::Threads)
-  target_link_libraries(deqalloc_genericdeque Threads::Threads)
-  target_link_libraries(deqalloc_remotefree Threads::Threads)
-  foreach(BATCH_SIZE 512 1024 2048 4096 8192)
-    target_link_libraries(deqalloc_${BATCH_SIZE} Threads::Threads)
-    target_link_libraries(deqalloc_remotefree_${BATCH_SIZE} Threads::Threads)
-    target_link_libraries(deqalloc_genericdeque_${BATCH_SIZE} Threads::Threads)
-    target_link_libraries(deqalloc_remotefree_${BATCH_SIZE} Threads::Threads)
-  endforeach()
-endif()
 
 #NOTE: Uncomment the following line in case you need to link statically
 #target_link_libraries(deqalloc dl)
