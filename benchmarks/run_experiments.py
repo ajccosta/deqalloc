@@ -269,6 +269,24 @@ def get_numa_aware_thread_sequence(nproc: int, num_nodes: int) -> List[int]:
 def is_sudo():
     return os.geteuid() == 0
 
+#allocator variants for the remotefree batch-size ablation: deqalloc's local
+#free-list batch size and deqalloc_remotefree's remote-free batch size, each
+#swept against a plain baseline, plus an snmalloc batch-size sweep for
+#comparison. Shared by flock and setbench since both link against the same
+#precompiled allocator .so files.
+REMOTEFREE_BATCHSIZE_ALLOCATORS = [
+    "deqalloc_512", "deqalloc_1024", "deqalloc_2048", "deqalloc_4096", "deqalloc_8192",
+    "deqalloc",
+    "deqalloc_remotefree_512", "deqalloc_remotefree_1024", "deqalloc_remotefree_2048",
+    "deqalloc_remotefree_4096", "deqalloc_remotefree_8192",
+    "deqalloc_remotefree",
+    "deqalloc_genericdeque_512", "deqalloc_genericdeque_1024", "deqalloc_genericdeque_2048",
+    "deqalloc_genericdeque_4096", "deqalloc_genericdeque_8192",
+    "deqalloc_genericdeque",
+    "snmalloc_4096", "snmalloc_16384", "snmalloc_65536", "snmalloc_262144",
+    "snmalloc_1048576", "snmalloc_4194304",
+]
+
 OVERCOMMIT_FILE = '/proc/sys/vm/overcommit_memory'
 HUGEPAGES_FILE = '/sys/kernel/mm/transparent_hugepage/enabled'
 OS_CONFIG_STATES = {}
@@ -892,6 +910,13 @@ class FlockRunner:
         self.config.allocators_raw = prev_allocs
         self.rf.close()
 
+    def run_ablation_remotefree_batchsize(self):
+        prev_allocs = self.config.allocators_raw
+        self.config.allocators_raw = REMOTEFREE_BATCHSIZE_ALLOCATORS
+        self.run_sizes("ablation_remotefree_batchsize")
+        self.config.allocators_raw = prev_allocs
+        self.rf.close()
+
     #peak virtual memory across the size progression, incl. deqalloc_localseglist
     def run_vmem(self):
         prev_allocs = self.config.allocators_raw
@@ -934,6 +959,7 @@ class FlockRunner:
             if run_all_ab or "ablation_localseglist" in b: self.run_ablation_localseglist()
             if run_all_ab or "ablation_deque"        in b: self.run_ablation_deque()
             if run_all_ab or "ablation_remotefree"   in b: self.run_ablation_remotefree()
+            if run_all_ab or "ablation_remotefree_batchsize" in b: self.run_ablation_remotefree_batchsize()
         if run_all or "thread-perc" in b: self.run_thread_perc()
         if run_all or "upserts"     in b: self.run_upserts()
         if run_all or "vmem"        in b: self.run_vmem()
@@ -1162,6 +1188,13 @@ class SetbenchRunner:
         self.config.allocators_raw = prev_allocs
         self.rf.close()
 
+    def run_ablation_remotefree_batchsize(self):
+        prev_allocs = self.config.allocators_raw
+        self.config.allocators_raw = REMOTEFREE_BATCHSIZE_ALLOCATORS
+        self.run_sizes("ablation_remotefree_batchsize")
+        self.config.allocators_raw = prev_allocs
+        self.rf.close()
+
     #peak virtual memory across the size progression, incl. deqalloc_localseglist
     def run_vmem(self):
         prev_allocs = self.config.allocators_raw
@@ -1231,6 +1264,7 @@ class SetbenchRunner:
             if run_all_ab or "ablation_localseglist" in b: self.run_ablation_localseglist()
             if run_all_ab or "ablation_deque"        in b: self.run_ablation_deque()
             if run_all_ab or "ablation_remotefree"   in b: self.run_ablation_remotefree()
+            if run_all_ab or "ablation_remotefree_batchsize" in b: self.run_ablation_remotefree_batchsize()
         if run_all or "vmem"      in b: self.run_vmem()
         if run_all or "config" in b: self.run_config()
         if run_all or "amortizedfree" in b: self.run_amortizedfree()
@@ -1287,6 +1321,7 @@ def main():
                                                 "ablation_localseglist",
                                                 "ablation_deque",
                                                 "ablation_remotefree",
+                                                "ablation_remotefree_batchsize",
                                                 "vmem",
                                                 "config",
                                                 "amortizedfree",
