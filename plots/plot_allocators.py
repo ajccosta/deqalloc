@@ -228,6 +228,7 @@ PAPER_DS_REMOTEBATCHSIZE_FLOCK = ["btree_lck", "hash_block_lck", "leaftree_lck"]
 PAPER_DS_SETBENCH = ["guerraoui_ext_bst_ticket", "brown_ext_abtree_lf", "hmlist"]
 PAPER_TRACKERS_SETBENCH = ["ibr", "debra", "he", "hp", "ebr", "nbr+", "qsbr", "wfe"]
 PAPER_DS_LOCALSEGLIST_SETBENCH = ["guerraoui_ext_bst_ticket", "brown_ext_abtree_lf", "hmlist"]
+PAPER_DS_REMOTEBATCHSIZE_SETBENCH = ["guerraoui_ext_bst_ticket", "brown_ext_abtree_lf", "hmlist"]
 
 SUITES = ["flock", "setbench"]
 
@@ -421,6 +422,8 @@ def which_paper_ds(dss, experiment=None):
         elif experiment == "ablation_localseglist" \
             or experiment == "amortizedfree":
             paper_ds = PAPER_DS_LOCALSEGLIST_SETBENCH
+        elif experiment == "ablation_remotefree_batchsize":
+            paper_ds = PAPER_DS_REMOTEBATCHSIZE_SETBENCH
     #assert(paper_ds != [])
     return paper_ds
 
@@ -527,6 +530,8 @@ def plot_size(input_dir, suite, experiment, out_dir, fmt):
 
     paper_ds_list = [ f"{out_dir}/paper/{experiment}/size_{ds}.{fmt}" for ds in paper_ds ] 
     merge_pdfs_horizontally(paper_ds_list, f"{out_dir}/paper/size.{fmt}")
+    all_ds_list = [ f"{out_dir}/paper/{experiment}/size_{ds}.{fmt}" for ds in dss ]
+    merge_pdfs_horizontally(all_ds_list, f"{out_dir}/paper/size_all.{fmt}")
 
 
 # -- Plot 2: Throughput vs update rate -----------------------------
@@ -579,6 +584,8 @@ def plot_update(input_dir, suite, experiment, out_dir, fmt):
 
     paper_ds_list = [ f"{out_dir}/paper/{experiment}/update_{ds}.{fmt}" for ds in paper_ds ] 
     merge_pdfs_horizontally(paper_ds_list, f"{out_dir}/paper/update.{fmt}")
+    all_ds_list = [ f"{out_dir}/paper/{experiment}/update_{ds}.{fmt}" for ds in dss ]
+    merge_pdfs_horizontally(all_ds_list, f"{out_dir}/paper/update_all.{fmt}")
 
 
 # -- Plot 3: Throughput vs update rate -----------------------------
@@ -637,6 +644,8 @@ def plot_threads(input_dir, suite, experiment, out_dir, fmt):
 
     paper_ds_list = [ f"{out_dir}/paper/{experiment}/threads_{ds}.{fmt}" for ds in paper_ds ] 
     merge_pdfs_horizontally(paper_ds_list, f"{out_dir}/paper/threads.{fmt}")
+    all_ds_list = [ f"{out_dir}/paper/{experiment}/threads_{ds}.{fmt}" for ds in dss ]
+    merge_pdfs_horizontally(all_ds_list, f"{out_dir}/paper/threads_all.{fmt}")
 
 
 
@@ -984,6 +993,8 @@ def plot_memory(input_dir, suite, experiment, out_dir, fmt):
 
     paper_ds_list = [ f"{out_dir}/paper/{experiment}/memory_{ds}.{fmt}" for ds in paper_ds ] 
     merge_pdfs_horizontally(paper_ds_list, f"{out_dir}/paper/memory.{fmt}")
+    all_ds_list = [ f"{out_dir}/paper/{experiment}/memory_{ds}.{fmt}" for ds in dss ]
+    merge_pdfs_horizontally(all_ds_list, f"{out_dir}/paper/memory_all.{fmt}")
 
 
 def plot_hugepages(input_dir, suite, experiment, out_dir, fmt):
@@ -1095,6 +1106,12 @@ def plot_hugepages(input_dir, suite, experiment, out_dir, fmt):
     paper_ds_list = [ f"{out_dir}/paper/{experiment}/hugepages_relative_{ds}.{fmt}" for ds in paper_ds ] 
     merge_pdfs_horizontally(paper_ds_list, f"{out_dir}/paper/hugepages_relative.{fmt}")
 
+    all_ds_list = [ f"{out_dir}/paper/{experiment}/hugepages_{ds}.{fmt}" for ds in dss ]
+    merge_pdfs_horizontally(all_ds_list, f"{out_dir}/paper/hugepages_all.{fmt}")
+
+    all_ds_list = [ f"{out_dir}/paper/{experiment}/hugepages_relative_{ds}.{fmt}" for ds in dss ]
+    merge_pdfs_horizontally(all_ds_list, f"{out_dir}/paper/hugepages_relative_all.{fmt}")
+
 # -- plot ablation experiments
 def plot_ablation_localseglist(input_dir, suite, experiment, out_dir, fmt):
     data, crashes = load_file(input_dir, suite, experiment)
@@ -1175,6 +1192,8 @@ def plot_ablation_localseglist(input_dir, suite, experiment, out_dir, fmt):
 
     paper_ds_list = [ f"{out_dir}/paper/{experiment}/{experiment}_{ds}.{fmt}" for ds in paper_ds ] 
     merge_pdfs_horizontally(paper_ds_list, f"{out_dir}/paper/{experiment}.{fmt}")
+    all_ds_list = [ f"{out_dir}/paper/{experiment}/{experiment}_{ds}.{fmt}" for ds in dss ]
+    merge_pdfs_horizontally(all_ds_list, f"{out_dir}/paper/{experiment}_all.{fmt}")
 
 
 # -- Plot: Throughput vs key_size, normal vs amortized-free reclamation ------
@@ -1196,6 +1215,30 @@ def plot_ablation_amortizedfree(input_dir, suite, experiment, out_dir, fmt):
     paper_ds = which_paper_ds(dss, experiment)
 
     allocators = [ "deqalloc", "mimalloc", "jemalloc", "hoard", "snmalloc" ] 
+
+    #precompute a single shared y-axis floor for the *relative* panel, used
+    #for every ds, so that panels merged side by side (e.g. bst-tk next to
+    #abtree/hmlist) share the same scale instead of each getting its own
+    #independent bottom limit (which made some panels look "lower" than
+    #others once merged, purely because their own min ratio happened to be
+    #closer to/farther from 1.0)
+    global_min_relative = 1
+    for ds in dss:
+        ds_rows_g = [r for r in data if r["ds"] == ds]
+        allocs_g  = sorted(set(r["allocator"] for r in ds_rows_g).intersection(allocators))
+        sizes_g   = sorted(set(r["key_size"] for r in ds_rows_g))
+        for alloc in allocs_g:
+            base_pts_g = {r["key_size"]: r["gmean"] for r in ds_rows_g
+                          if r["allocator"] == alloc and not r["df"]}
+            df_pts_g   = {r["key_size"]: r["gmean"] for r in ds_rows_g
+                          if r["allocator"] == alloc and r["df"]}
+            for s in sizes_g:
+                b = base_pts_g.get(s)
+                d = df_pts_g.get(s)
+                if d is not None and b not in (None, 0):
+                    global_min_relative = min(global_min_relative, d / b)
+    if math.isnan(global_min_relative) or math.isinf(global_min_relative):
+        global_min_relative = 0
 
     for paper_print in [True, False]: #print a paper version and a viewing version
         write_dir = ("paper/" if paper_print else "readable/") + experiment + "/"
@@ -1303,7 +1346,7 @@ def plot_ablation_amortizedfree(input_dir, suite, experiment, out_dir, fmt):
             ax_r.set_title(f'{DS_LABELS.get(ds, ds)}')
 
             if not write_dir or ds == paper_ds[0]:
-                ax_r.set_ylabel('Relative Throughput (df / normal)',
+                ax_r.set_ylabel('Relative Throughput',
                                  fontsize=FIG_CONFIGS["ylabel_fontsize"])
                 ylabel_r = ax_r.yaxis.label
                 ylabel_r.set_y(ylabel_r.get_position()[1] - 0.05)
@@ -1311,11 +1354,10 @@ def plot_ablation_amortizedfree(input_dir, suite, experiment, out_dir, fmt):
             style_fig(fig_r, ax_r, paper_print)
 
             #override style_fig's bottom=0 default: ratios legitimately live
-            #around 1, so anchor the bottom near the lowest ratio instead
-            min_y = min(ax_r.dataLim.ymin, 1)
-            if math.isnan(min_y) or math.isinf(min_y):
-                min_y = 0
-            ax_r.set_ylim(bottom=min_y * 0.95)
+            #around 1, so anchor the bottom near the lowest ratio observed
+            #across ALL data structures (not just this one), so that every
+            #panel shares the same y-axis scale once merged side by side
+            ax_r.set_ylim(bottom=global_min_relative * 0.95)
 
             fig_r.savefig(f"{out_dir}/{write_dir}{experiment}_relative_{ds}.{fmt}",
                 dpi=FIG_CONFIGS["dpi"],
@@ -1328,6 +1370,12 @@ def plot_ablation_amortizedfree(input_dir, suite, experiment, out_dir, fmt):
 
     paper_ds_list_relative = [ f"{out_dir}/paper/{experiment}/{experiment}_relative_{ds}.{fmt}" for ds in paper_ds ]
     merge_pdfs_horizontally(paper_ds_list_relative, f"{out_dir}/paper/{experiment}_relative.{fmt}")
+
+    all_ds_list = [ f"{out_dir}/paper/{experiment}/{experiment}_{ds}.{fmt}" for ds in dss ]
+    merge_pdfs_horizontally(all_ds_list, f"{out_dir}/paper/{experiment}_all.{fmt}")
+
+    all_ds_list_relative = [ f"{out_dir}/paper/{experiment}/{experiment}_relative_{ds}.{fmt}" for ds in dss ]
+    merge_pdfs_horizontally(all_ds_list_relative, f"{out_dir}/paper/{experiment}_relative_all.{fmt}")
 
 
 def plot_ablation_remotefree(input_dir, suite, experiment, out_dir, fmt):
@@ -1405,6 +1453,8 @@ def plot_ablation_remotefree(input_dir, suite, experiment, out_dir, fmt):
 
     paper_ds_list = [ f"{out_dir}/paper/{experiment}/{experiment}_{ds}.{fmt}" for ds in paper_ds ] 
     merge_pdfs_horizontally(paper_ds_list, f"{out_dir}/paper/{experiment}.{fmt}")
+    all_ds_list = [ f"{out_dir}/paper/{experiment}/{experiment}_{ds}.{fmt}" for ds in dss ]
+    merge_pdfs_horizontally(all_ds_list, f"{out_dir}/paper/{experiment}_all.{fmt}")
 
 
 # -- Plot X: Throughput vs Remote Free Batch Size -----------------------------
@@ -1425,94 +1475,128 @@ def plot_remotefree_batchsize(input_dir, suite, experiment, out_dir, fmt):
             return m.group(1), int(m.group(2))
         return name, 16384 # fallback
 
-    for paper_print in [True, False]: # print a paper version and a viewing version
-        write_dir = ("paper/" if paper_print else "readable/") + experiment + "/"
-        os.makedirs(f"{out_dir}/{write_dir}", exist_ok=True)
+    # metric_key: which field in the row we plot on the y-axis.
+    # "gmean" -> throughput (Mops/s); "mem_kb" -> memory usage (GB, converted below).
+    def _run(metric_key, filename_prefix, ylabel_text, convert_gb=False):
+        for paper_print in [True, False]: # print a paper version and a viewing version
+            write_dir = ("paper/" if paper_print else "readable/") + experiment + "/"
+            os.makedirs(f"{out_dir}/{write_dir}", exist_ok=True)
 
-        for i, ds in enumerate(dss):
-            fig, ax = plt.subplots(figsize=FIG_CONFIGS["figsize"])
+            for i, ds in enumerate(dss):
+                fig, ax = plt.subplots(figsize=FIG_CONFIGS["figsize"])
 
+                default_size = DEFAULT_PARAMS["size"].get(DS_TYPES.get(ds))
+                ds_rows = [r for r in data if r["ds"] == ds and r["key_size"] == default_size]
 
-            default_size = DEFAULT_PARAMS["size"].get(DS_TYPES.get(ds))
-            ds_rows = [r for r in data if r["ds"] == ds and r["key_size"] == default_size]
-            
-            
-            parsed_rows = []
-            for r in ds_rows:
-                base_alloc, b_size = parse_allocator(r["allocator"])
-                r_new = dict(r)
-                r_new["base_allocator"] = base_alloc
-                r_new["batch_size"] = b_size
-                parsed_rows.append(r_new)
+                parsed_rows = []
+                for r in ds_rows:
+                    base_alloc, b_size = parse_allocator(r["allocator"])
+                    r_new = dict(r)
+                    r_new["base_allocator"] = base_alloc
+                    r_new["batch_size"] = b_size
+                    parsed_rows.append(r_new)
 
-            base_allocs = sorted(set(r["base_allocator"] for r in parsed_rows))
-            
-            # Find the max number of variants to size the X-axis properly
-            max_variants = max(len(set(r["batch_size"] for r in parsed_rows if r["base_allocator"] == alloc)) for alloc in base_allocs)
-            
-            # Grab deqalloc's sizes specifically to use as the baseline X-axis labels
-            deq_sizes = sorted(set(r["batch_size"] for r in parsed_rows if r["base_allocator"] == "deqalloc"))
-            if not deq_sizes: 
-                deq_sizes = list(range(max_variants)) # Fallback if deqalloc is missing
+                base_allocs = sorted(set(r["base_allocator"] for r in parsed_rows))
 
-            for alloc in base_allocs:
-                # Sort the batch sizes for THIS specific allocator
-                alloc_sizes = sorted(set(r["batch_size"] for r in parsed_rows if r["base_allocator"] == alloc))
-                
-                pts = {r["batch_size"]: r["gmean"] for r in parsed_rows if r["base_allocator"] == alloc}
-                
-                # ys are ordered from smallest variant to largest variant
-                ys = [pts.get(s, None) for s in alloc_sizes]
-                
-                color = ALLOC_PALETTE.get(alloc, "#9e9e9e") 
-                marker = ALLOC_MARKERS.get(alloc, "o")
-                linestyle = FIG_CONFIGS["linestyle"].get(alloc, "-") if "linestyle" in FIG_CONFIGS else "-"
-                zorder = ALLOC_ZORDER.get(alloc, 0)
+                # Find the max number of variants to size the X-axis properly
+                max_variants = max(len(set(r["batch_size"] for r in parsed_rows if r["base_allocator"] == alloc)) for alloc in base_allocs)
 
-                # Plot against rank (0, 1, 2...) instead of absolute byte size
-                ax.plot(range(len(alloc_sizes)),
-                        ys,
-                        label=ALLOC_RENAMES.get(alloc, alloc),
-                        linewidth=FIG_CONFIGS["linewidth"],
-                        color=color,
-                        marker=marker,
-                        markersize=FIG_CONFIGS["markersize"], 
-                        linestyle=linestyle,
-                        zorder=zorder)
+                # Grab deqalloc's sizes specifically to use as the baseline X-axis labels
+                deq_sizes = sorted(set(r["batch_size"] for r in parsed_rows if r["base_allocator"] == "deqalloc"))
+                if not deq_sizes:
+                    deq_sizes = list(range(max_variants)) # Fallback if deqalloc is missing
 
-            # Generate X-axis labels using deqalloc's byte scale
-            xlabels = [fmt_size(b) if isinstance(b, int) else str(b) for b in deq_sizes]
-            
-            # Pad labels in case another allocator has more variants than deqalloc
-            while len(xlabels) < max_variants: 
-                xlabels.append("")
-                
-            #plt.xticks(range(max_variants), xlabels[:max_variants])
-            plt.xticks(range(max_variants))
-            
-            # Adjust the x-axis label to clarify what the scale represents
-            ax.set_xlabel("Batch Size Rank")
-            ax.set_title(f'{DS_LABELS.get(ds, ds)}')
+                for alloc in base_allocs:
+                    # Sort the batch sizes for THIS specific allocator
+                    alloc_sizes = sorted(set(r["batch_size"] for r in parsed_rows if r["base_allocator"] == alloc))
 
-            if not write_dir or ds == paper_ds[0]:
-                ax.set_ylabel('Throughput (Mops/s)', fontsize=FIG_CONFIGS["ylabel_fontsize"])
-                ylabel = ax.yaxis.label
-                ylabel.set_y(ylabel.get_position()[1] - 0.05)
+                    if metric_key == "mem_kb":
+                        pts = {}
+                        for s in alloc_sizes:
+                            vals = [r["mem_kb"] for r in parsed_rows
+                                    if r["base_allocator"] == alloc and r["batch_size"] == s]
+                            pts[s] = stat.mean(vals) if vals else None
+                    else:
+                        pts = {r["batch_size"]: r["gmean"] for r in parsed_rows if r["base_allocator"] == alloc}
 
-            style_fig(fig, ax, paper_print)
-            
-            max_y = ax.dataLim.ymax
-            ax.set_ylim(top=max_y * 1.05)
+                    # ys are ordered from smallest variant to largest variant
+                    ys = [pts.get(s, None) for s in alloc_sizes]
+                    if convert_gb:
+                        ys = [ (y / (10**6)) if y is not None else None for y in ys ]
 
-            fig.savefig(f"{out_dir}/{write_dir}batchsize_{ds}.{fmt}",
-                dpi=FIG_CONFIGS["dpi"],
-                bbox_inches="tight",
-                pad_inches=FIG_CONFIGS["pad_inches"])
-            plt.close(fig)
+                    color = ALLOC_PALETTE.get(alloc, "#9e9e9e")
+                    marker = ALLOC_MARKERS.get(alloc, "o")
+                    linestyle = FIG_CONFIGS["linestyle"].get(alloc, "-") if "linestyle" in FIG_CONFIGS else "-"
+                    zorder = ALLOC_ZORDER.get(alloc, 0)
 
-        paper_ds_list = [ f"{out_dir}/paper/{experiment}/batchsize_{ds}.{fmt}" for ds in paper_ds if ds in dss] 
-        if paper_ds_list:
-            merge_pdfs_horizontally(paper_ds_list, f"{out_dir}/paper/{experiment}.{fmt}")
+                    # Plot against rank (0, 1, 2...) instead of absolute byte size
+                    ax.plot(range(len(alloc_sizes)),
+                            ys,
+                            label=ALLOC_RENAMES.get(alloc, alloc),
+                            linewidth=FIG_CONFIGS["linewidth"],
+                            color=color,
+                            marker=marker,
+                            markersize=FIG_CONFIGS["markersize"],
+                            linestyle=linestyle,
+                            zorder=zorder)
+
+                # Generate X-axis labels using deqalloc's byte scale
+                xlabels = [fmt_size(b) if isinstance(b, int) else str(b) for b in deq_sizes]
+
+                # Pad labels in case another allocator has more variants than deqalloc
+                while len(xlabels) < max_variants:
+                    xlabels.append("")
+
+                plt.xticks(range(max_variants))
+
+                # Adjust the x-axis label to clarify what the scale represents
+                ax.set_xlabel("Batch Size Rank")
+                ax.set_title(f'{DS_LABELS.get(ds, ds)}')
+
+                if not write_dir or ds == paper_ds[0]:
+                    ax.set_ylabel(ylabel_text, fontsize=FIG_CONFIGS["ylabel_fontsize"])
+                    ylabel = ax.yaxis.label
+                    ylabel.set_y(ylabel.get_position()[1] - 0.05)
+
+                style_fig(fig, ax, paper_print)
+
+                max_y = ax.dataLim.ymax
+                if max_y > 0:
+                    ax.set_ylim(top=max_y * 1.05)
+
+                #legend directly on the throughput panels, flock only (not the memory panels)
+                if suite == "flock" and filename_prefix == "batchsize":
+                    ax.legend(
+                        ncol=len(base_allocs),
+                        frameon=True,
+                        fontsize=FIG_CONFIGS.get("legend_fontsize"),
+                        loc="upper center",
+                        alignment="center",
+                        bbox_to_anchor=(0.5, 1.40),
+                        labelcolor="black",
+                        edgecolor="black",
+                        fancybox=False,
+                    )
+
+                fig.savefig(f"{out_dir}/{write_dir}{filename_prefix}_{ds}.{fmt}",
+                    dpi=FIG_CONFIGS["dpi"],
+                    bbox_inches="tight",
+                    pad_inches=FIG_CONFIGS["pad_inches"])
+                plt.close(fig)
+
+            paper_ds_list = [ f"{out_dir}/paper/{experiment}/{filename_prefix}_{ds}.{fmt}" for ds in paper_ds if ds in dss]
+            if paper_ds_list:
+                merge_pdfs_horizontally(paper_ds_list, f"{out_dir}/paper/{experiment}_{filename_prefix}.{fmt}" if filename_prefix != "batchsize" else f"{out_dir}/paper/{experiment}.{fmt}")
+
+            all_ds_list = [ f"{out_dir}/paper/{experiment}/{filename_prefix}_{ds}.{fmt}" for ds in dss ]
+            if all_ds_list:
+                merge_pdfs_horizontally(all_ds_list, f"{out_dir}/paper/{experiment}_{filename_prefix}_all.{fmt}" if filename_prefix != "batchsize" else f"{out_dir}/paper/{experiment}_all.{fmt}")
+
+    # throughput (existing behaviour, kept as "batchsize_*")
+    _run("gmean", "batchsize", "Throughput (Mops/s)", convert_gb=False)
+    # memory usage (new): "batchsize_memory_*", merged into "{experiment}_memory[.{fmt}|_all.{fmt}]"
+    _run("mem_kb", "batchsize_memory", "Memory Usage (GB)", convert_gb=True)
+
 
 #Function was mostly AI generated (Claude)
 def plot_config(input_dir, suite, experiment, out_dir, fmt):
@@ -1521,17 +1605,25 @@ def plot_config(input_dir, suite, experiment, out_dir, fmt):
     allocator. Within each group, one bar per (numa, df) variant so the
     viewer can immediately see which combination wins for each allocator.
     A geomean-across-all-DS chart is prepended as the leftmost panel.
+
+    Styled to match the other bar charts in this file (plot_geomean /
+    plot_trackers): same bar geometry constants, same hatch/edge treatment,
+    and the same style_fig() override block (grid off, matching font sizes).
     """
     data, crashes = load_file(input_dir, suite, experiment)
     has_df   = any(r["df"] for r in data)
     variants = ["base", "numa", "df", "numa+df"] if has_df else ["base", "numa"]
     nv       = len(variants)
 
+    #use the same palette family as the rest of the plots: reuse ALLOC_PALETTE
+    #hues is inappropriate here (variants aren't allocators), so keep a small
+    #dedicated palette but align hatches with the ALLOC_HATCHES vocabulary
+    #used everywhere else for visual consistency.
     VARIANT_COLORS = {
-        "base":    "#5b8dd9",
-        "numa":    "#57b894",
-        "df":      "#f4a742",
-        "numa+df": "#e0635a",
+        "base":    "#4fc3f7",
+        "numa":    "#81c784",
+        "df":      "#ffb74d",
+        "numa+df": "#ef5350",
     }
     VARIANT_HATCHES = {
         "base":    "",
@@ -1540,8 +1632,9 @@ def plot_config(input_dir, suite, experiment, out_dir, fmt):
         "numa+df": "xxx",
     }
 
+    #match plot_geomean's bar geometry
     bar_w     = 0.10
-    intra_gap = 0.015
+    intra_gap = 0.02
     inter_gap = 1.0
     group_w   = nv * bar_w + (nv - 1) * intra_gap
 
@@ -1577,31 +1670,65 @@ def plot_config(input_dir, suite, experiment, out_dir, fmt):
                        edgecolor="black",
                        linewidth=FIG_CONFIGS["bar_linewidth"],
                        label=vkey if vkey not in seen else None,
-                       zorder=2)
+                       zorder=ALLOC_ZORDER.get(alloc, 0))
                 seen.add(vkey)
                 if y > 0:
-                    ax.text(x + bar_w / 2, y * 1.012, f"{y:.2f}",
+                    ax.text(x + bar_w / 2, y * 1.015 + 0.01, f"{y:.2f}",
                             ha="center", va="bottom",
-                            fontsize=4.2, rotation=90, fontweight="bold")
+                            fontweight='bold',
+                            fontsize=4.5, rotation=90,
+                            zorder=ALLOC_ZORDER.get("deqalloc", 0) + 1)
             tick_xs.append(group_start + (group_w - intra_gap) / 2)
         return tick_xs
 
     def _save(fig, ax, allocs, tick_xs, title, path, show_legend):
-        ax.set_xticks(tick_xs)
-        ax.set_xticklabels([ALLOC_RENAMES.get(a, a) for a in allocs],
-                           rotation=35, ha="right",
-                           fontsize=FIG_CONFIGS["xtick_fontsize"] - 1)
-        ax.set_ylim(bottom=0, top=ax.dataLim.ymax * 1.42)
+        #labels sit below the axis, like plot_geomean's per-group labels,
+        #instead of matplotlib's default tick labels
+        plt.sca(ax)
+        plt.xticks([])
+        for x, alloc in zip(tick_xs, allocs):
+            ax.text(
+                x, -0.05,
+                ALLOC_RENAMES.get(alloc, alloc),
+                ha='center', va='top',
+                fontsize=FIG_CONFIGS.get("xtick_fontsize") - 3,
+                transform=ax.get_xaxis_transform(),
+            )
+
+        margin = bar_w / 2 + bar_w * inter_gap
+        ax.set_xlim(tick_xs[0] - group_w / 2 - margin, tick_xs[-1] + group_w / 2 + margin)
+
+        ax.set_ylim(bottom=0, top=ax.dataLim.ymax * 1.3)
         ax.set_ylabel("Throughput (Mops/s)")
-        ax.set_title(title, fontweight="bold")
+        ax.set_xlabel("Allocator", labelpad=13)
+        ax.set_title(title)
+
         if show_legend:
             ax.legend(
-                ncol=nv, fontsize=FIG_CONFIGS["legend_fontsize"],
-                loc="upper center", bbox_to_anchor=(0.9, 1),
-                frameon=True, edgecolor="black", fancybox=False,
+                ncol=nv,
+                frameon=True,
+                fontsize=FIG_CONFIGS.get("legend_fontsize"),
+                loc="upper center",
+                alignment="center",
+                bbox_to_anchor=(0.5, 1.24),
+                labelcolor="black",
+                edgecolor="black",
+                fancybox=False,
+                handlelength=2,
+                handleheight=1,
+                handletextpad=0.5,
+                columnspacing=0.63,
             )
+            ax.get_legend().get_frame().set_linewidth(0.8)
+
         style_fig(fig, ax, paper_print)
+
+        #override some style_fig, matching plot_geomean / plot_trackers exactly
         ax.grid(visible=False)
+        ax.yaxis.label.set_fontsize(FIG_CONFIGS["ylabel_fontsize"] - 2.7)
+        ax.xaxis.label.set_fontsize(FIG_CONFIGS["xlabel_fontsize"] - 4.5)
+        ax.tick_params(axis='y', labelsize=FIG_CONFIGS["ytick_fontsize"] - 3.5)
+
         fig.savefig(path, dpi=FIG_CONFIGS["dpi"], bbox_inches="tight",
                     pad_inches=FIG_CONFIGS["pad_inches"])
         plt.close(fig)
@@ -1616,7 +1743,7 @@ def plot_config(input_dir, suite, experiment, out_dir, fmt):
     gm_path       = f"{out_dir}/{write_dir}config_geomean.{fmt}"
     _save(fig_gm, ax_gm, all_allocs, tick_xs_gm, "Geomean", gm_path, show_legend=True)
 
-    # --- Per-DS panels ---
+    # --- Per-DS panels (already covers all data structures, not just PAPER_DS_X) ---
     per_ds_paths = []
     for ds in dss:
         ds_rows   = [r for r in data if r["ds"] == ds]
@@ -1773,6 +1900,8 @@ def main():
             "ablation_localseglist", out_dir, args.format)
         if "amortizedfree" in args.plots or do_all: plot_ablation_amortizedfree(args.input_dir, "setbench", \
             "amortizedfree", out_dir, args.format)
+        if "ablation" in args.plots or do_all: 
+            plot_remotefree_batchsize(args.input_dir, "setbench", "ablation_remotefree_batchsize", out_dir, args.format)
 
     plot_temp_and_freq(f"{args.input_dir}/temperature.csv", args.output_dir, args.format)
 
