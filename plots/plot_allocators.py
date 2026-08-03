@@ -30,6 +30,10 @@ except ImportError:
    print("ERROR: import fitz failed, not merging pdfs (pip install pymupdf)\n")
    pdfmerge = False
 
+#set from --verbose in main(); gates the "Reasonable difference in gmean"
+#diagnostic prints in parse_flock/parse_setbench
+VERBOSE = False
+
 # -- Aesthetics --------------------------------------------------------------
 DARK_BG   = "#0e1117"
 PANEL_BG  = "#161b25"
@@ -317,7 +321,7 @@ def parse_flock(path):
                         df=False,
                     )
                     rows.append(entry)
-                    if mean != 0 and gmean != 0 and \
+                    if VERBOSE and mean != 0 and gmean != 0 and \
                         abs(mean - gmean) / max(gmean, mean) > 0.05:
                         print("Reasonable difference in gmean", entry)
     except FileNotFoundError:
@@ -362,7 +366,7 @@ def parse_setbench(path):
                         df='_df' in m.group(3),
                     )
                     rows.append(entry)
-                    if mean != 0 and gmean != 0 and \
+                    if VERBOSE and mean != 0 and gmean != 0 and \
                         abs(mean - gmean) / max(gmean, mean) > 0.05:
                         print("Reasonable difference in gmean", entry)
     except FileNotFoundError:
@@ -1878,6 +1882,54 @@ def generate_legend(allocs, out_path, fmt):
     plt.close(fig)
 
 
+def collect_variance_stats(input_dir):
+    """Scan every raw results file under input_dir/{flock,setbench}/ exactly
+    once (independent of which plots were requested, so a run's stddev
+    isn't double-counted just because its file backs multiple plots), and
+    compute each row's stddev across its repeated throughput samples.
+
+    Returns (by_allocator, by_benchmark): dicts mapping allocator name /
+    "suite/filename" to the list of stddevs observed for it.
+    """
+    by_allocator = defaultdict(list)
+    by_benchmark = defaultdict(list)
+
+    for suite, parse_f in (("flock", parse_flock), ("setbench", parse_setbench)):
+        suite_dir = os.path.join(input_dir, suite)
+        if not os.path.isdir(suite_dir):
+            continue
+        for fname in sorted(os.listdir(suite_dir)):
+            path = os.path.join(suite_dir, fname)
+            if not os.path.isfile(path) or fname.startswith('.'):
+                continue
+            rows, _ = parse_f(path)
+            for r in rows:
+                if len(r["values"]) < 2:
+                    continue
+                sd = stat.stdev(r["values"])
+                by_allocator[r["allocator"]].append(sd)
+                by_benchmark[f"{suite}/{fname}"].append(sd)
+
+    return by_allocator, by_benchmark
+
+
+def print_variance_stats(input_dir):
+    by_allocator, by_benchmark = collect_variance_stats(input_dir)
+
+    if not by_allocator and not by_benchmark:
+        return
+
+    print("\n=== Average stddev by allocator (across all benchmarks) ===")
+    for alloc in sorted(by_allocator):
+        vals = by_allocator[alloc]
+        print(f"  {alloc:<24} {stat.mean(vals):>10.4f}  (n={len(vals)})")
+
+    print("\n=== Average stddev by benchmark (across all allocators) ===")
+    for bench in sorted(by_benchmark):
+        vals = by_benchmark[bench]
+        print(f"  {bench:<40} {stat.mean(vals):>10.4f}  (n={len(vals)})")
+
+
 # -- Main ----------------------------------------------------------------------
 def main():
     parser = argparse.ArgumentParser(description='Plot deqalloc experiments')
@@ -1906,10 +1958,15 @@ def main():
                        help='Which plots to generate (default: all)')
     parser.add_argument('--format', type=str, choices=['pdf', 'png', 'svg'],
                        default='pdf', help='Output format (default: pdf)')
+    parser.add_argument('--verbose', action='store_true',
+                       help='Show detailed diagnostic messages (e.g. gmean/mean discrepancies)')
     #parser.add_argument('--machine-dirs', nargs='+', metavar='LABEL:DIR',
     #                   help='Machine data dirs for multi-machine plot (e.g. Intel:/path/to/dir AMD:/path/to/dir)')
 
     args = parser.parse_args()
+
+    global VERBOSE
+    VERBOSE = args.verbose
 
     if len(sys.argv) < 2:
         parser.print_help()
@@ -1957,6 +2014,8 @@ def main():
 
     generate_legend(ALLOCS, f"{args.output_dir}/legend", args.format)
     generate_legend(["deqalloc", "deqalloc_remotefree", "deqalloc_genericdeque", "snmalloc"], f"{args.output_dir}/legend_batchsize", args.format)
+
+    print_variance_stats(args.input_dir)
 
 if __name__ == "__main__":
     main()
