@@ -106,9 +106,16 @@ DEFAULT_PARAMS = {
     "update": 100,
     "size": {
         "normal": 200000,
-        "list": 2000,
+        "list": 500,
     },
     "reclamation": "debra",
+    #for memory experiments larger sizes matter more
+    "memory": {
+        "size": {
+            "normal": 200000000,
+            "list": 10000,
+        }
+    }
 }
 
 ALLOC_MARKERS = {
@@ -222,7 +229,8 @@ FIG_CONFIGS = {
 #which data structures/trackers to show for the paper for the varying plots
 PAPER_DS_FLOCK = ["skiplist_lck", "leaftree_lck", "hash_block_lck"]
 PAPER_DS_LOCALSEGLIST_FLOCK = ["skiplist_lck", "leaftree_lck", "list_lck"]
-PAPER_DS_REMOTEBATCHSIZE_FLOCK = ["btree_lck", "hash_block_lck", "leaftree_lck"]
+#PAPER_DS_REMOTEBATCHSIZE_FLOCK = ["btree_lck", "hash_block_lck", "leaftree_lck"]
+PAPER_DS_REMOTEBATCHSIZE_FLOCK = ["skiplist_lck", "leaftree_lck", "hash_block_lck"]
 
 #PAPER_DS_SETBENCH = ["guerraoui_ext_bst_ticket", "brown_ext_abtree_lf", "hm_hashtable", "hmlist"]
 PAPER_DS_SETBENCH = ["guerraoui_ext_bst_ticket", "brown_ext_abtree_lf", "hmlist"]
@@ -404,6 +412,29 @@ def merge_pdfs_horizontally(pdf_list, output_path):
         doc.close()
     out_doc.close()
     print(f"merged {len(pdf_list)} pdfs to {output_path}")
+
+def merge_pdfs_vertically(pdf_list, output_path):
+    if pdf_list == []:
+        return
+    if not pdfmerge: #package not imported
+        return
+    docs = [fitz.open(pdf) for pdf in pdf_list]
+    pages = [doc[0] for doc in docs]
+    total_height = sum(page.rect.height for page in pages)
+    max_width = max(page.rect.width for page in pages)
+    out_doc = fitz.open()
+    out_page = out_doc.new_page(width=max_width, height=total_height)
+    current_y = 0
+    for i, page in enumerate(pages):
+        x_offset = (max_width - page.rect.width) / 2
+        rect = fitz.Rect(x_offset, current_y, x_offset + page.rect.width, current_y + page.rect.height)
+        out_page.show_pdf_page(rect, docs[i], 0)
+        current_y += page.rect.height
+    out_doc.save(output_path)
+    for doc in docs:
+        doc.close()
+    out_doc.close()
+    print(f"merged {len(pdf_list)} pdfs vertically to {output_path}")
 
 def which_paper_ds(dss, experiment=None):
     paper_ds = []
@@ -1475,9 +1506,14 @@ def plot_remotefree_batchsize(input_dir, suite, experiment, out_dir, fmt):
             return m.group(1), int(m.group(2))
         return name, 16384 # fallback
 
+    #base allocators appearing anywhere in this experiment's data, used to
+    #build a single legend for the aggregate (merged) throughput plot
+    base_allocs_global = sorted(set(parse_allocator(r["allocator"])[0] for r in data))
+
     # metric_key: which field in the row we plot on the y-axis.
     # "gmean" -> throughput (Mops/s); "mem_kb" -> memory usage (GB, converted below).
     def _run(metric_key, filename_prefix, ylabel_text, convert_gb=False):
+        rendered_dss = set()
         for paper_print in [True, False]: # print a paper version and a viewing version
             write_dir = ("paper/" if paper_print else "readable/") + experiment + "/"
             os.makedirs(f"{out_dir}/{write_dir}", exist_ok=True)
@@ -1485,8 +1521,14 @@ def plot_remotefree_batchsize(input_dir, suite, experiment, out_dir, fmt):
             for i, ds in enumerate(dss):
                 fig, ax = plt.subplots(figsize=FIG_CONFIGS["figsize"])
 
-                default_size = DEFAULT_PARAMS["size"].get(DS_TYPES.get(ds))
+                default_size = DEFAULT_PARAMS["memory"]["size"].get(DS_TYPES.get(ds))
                 ds_rows = [r for r in data if r["ds"] == ds and r["key_size"] == default_size]
+
+                if not ds_rows:
+                    print(f"WARNING: no rows for ds={ds} at key_size={default_size} "
+                          f"(experiment={experiment}, suite={suite}, metric={filename_prefix}); skipping panel")
+                    plt.close(fig)
+                    continue
 
                 parsed_rows = []
                 for r in ds_rows:
@@ -1564,33 +1606,37 @@ def plot_remotefree_batchsize(input_dir, suite, experiment, out_dir, fmt):
                 if max_y > 0:
                     ax.set_ylim(top=max_y * 1.05)
 
-                #legend directly on the throughput panels, flock only (not the memory panels)
-                if suite == "flock" and filename_prefix == "batchsize":
-                    ax.legend(
-                        ncol=len(base_allocs),
-                        frameon=True,
-                        fontsize=FIG_CONFIGS.get("legend_fontsize"),
-                        loc="upper center",
-                        alignment="center",
-                        bbox_to_anchor=(0.5, 1.40),
-                        labelcolor="black",
-                        edgecolor="black",
-                        fancybox=False,
-                    )
-
                 fig.savefig(f"{out_dir}/{write_dir}{filename_prefix}_{ds}.{fmt}",
                     dpi=FIG_CONFIGS["dpi"],
                     bbox_inches="tight",
                     pad_inches=FIG_CONFIGS["pad_inches"])
                 plt.close(fig)
+                rendered_dss.add(ds)
 
-            paper_ds_list = [ f"{out_dir}/paper/{experiment}/{filename_prefix}_{ds}.{fmt}" for ds in paper_ds if ds in dss]
+            paper_ds_list = [ f"{out_dir}/paper/{experiment}/{filename_prefix}_{ds}.{fmt}" for ds in paper_ds if ds in rendered_dss]
+            paper_merged_path = f"{out_dir}/paper/{experiment}_{filename_prefix}.{fmt}" if filename_prefix != "batchsize" else f"{out_dir}/paper/{experiment}.{fmt}"
             if paper_ds_list:
-                merge_pdfs_horizontally(paper_ds_list, f"{out_dir}/paper/{experiment}_{filename_prefix}.{fmt}" if filename_prefix != "batchsize" else f"{out_dir}/paper/{experiment}.{fmt}")
+                merge_pdfs_horizontally(paper_ds_list, paper_merged_path)
 
-            all_ds_list = [ f"{out_dir}/paper/{experiment}/{filename_prefix}_{ds}.{fmt}" for ds in dss ]
+            all_ds_list = [ f"{out_dir}/paper/{experiment}/{filename_prefix}_{ds}.{fmt}" for ds in dss if ds in rendered_dss ]
+            all_merged_path = f"{out_dir}/paper/{experiment}_{filename_prefix}_all.{fmt}" if filename_prefix != "batchsize" else f"{out_dir}/paper/{experiment}_all.{fmt}"
             if all_ds_list:
-                merge_pdfs_horizontally(all_ds_list, f"{out_dir}/paper/{experiment}_{filename_prefix}_all.{fmt}" if filename_prefix != "batchsize" else f"{out_dir}/paper/{experiment}_all.{fmt}")
+                merge_pdfs_horizontally(all_ds_list, all_merged_path)
+
+            #single legend on top of the aggregate plot (not on every individual
+            #ds panel), flock throughput only
+            if suite == "flock" and filename_prefix == "batchsize" and base_allocs_global:
+                legend_path = f"{out_dir}/paper/{experiment}/{filename_prefix}_legend.{fmt}"
+                generate_legend(base_allocs_global, legend_path.rsplit(f".{fmt}", 1)[0], fmt)
+
+                if paper_ds_list:
+                    tmp_path = paper_merged_path + ".tmp"
+                    merge_pdfs_vertically([legend_path, paper_merged_path], tmp_path)
+                    os.replace(tmp_path, paper_merged_path)
+                if all_ds_list:
+                    tmp_path = all_merged_path + ".tmp"
+                    merge_pdfs_vertically([legend_path, all_merged_path], tmp_path)
+                    os.replace(tmp_path, all_merged_path)
 
     # throughput (existing behaviour, kept as "batchsize_*")
     _run("gmean", "batchsize", "Throughput (Mops/s)", convert_gb=False)
