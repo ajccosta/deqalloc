@@ -445,7 +445,7 @@ def which_paper_ds(dss, experiment=None):
     if set(dss).intersection(set(PAPER_DS_FLOCK)):
         if not experiment:
             paper_ds = PAPER_DS_FLOCK
-        elif experiment == "ablation_localseglist" \
+        elif experiment.startswith("ablation_localseglist") \
             or experiment == "ablation_remotefree":
             paper_ds = PAPER_DS_LOCALSEGLIST_FLOCK
         elif experiment == "ablation_remotefree_batchsize":
@@ -454,7 +454,7 @@ def which_paper_ds(dss, experiment=None):
         assert(paper_ds == [])
         if not experiment:
             paper_ds = PAPER_DS_SETBENCH
-        elif experiment == "ablation_localseglist" \
+        elif experiment.startswith("ablation_localseglist") \
             or experiment == "amortizedfree":
             paper_ds = PAPER_DS_LOCALSEGLIST_SETBENCH
         elif experiment == "ablation_remotefree_batchsize":
@@ -1255,86 +1255,168 @@ def plot_hugepages(input_dir, suite, experiment, out_dir, fmt):
 
 # -- plot ablation experiments
 def plot_ablation_localseglist(input_dir, suite, experiment, out_dir, fmt):
+    """
+    Ablation of shared vs. thread-local Segment lists (deqalloc vs
+    deqalloc-lsl). One panel per data structure, and for each panel two
+    figures are produced:
+
+      - throughput: ratio deqalloc / variant, so >1 means deqalloc (shared
+                    Segments) is faster.
+      - memory:     ratio variant / deqalloc, so >1 means deqalloc (shared
+                    Segments) used LESS memory.
+
+    Both metrics are oriented so that "above the 1.0 reference line means
+    sharing Segments wins", which makes the two figures directly comparable
+    instead of having one inverted relative to the other.
+
+    The x-axis follows the experiment file: "*_threads" sweeps the thread
+    count, anything else sweeps key_size.
+    """
     data, crashes = load_file(input_dir, suite, experiment)
+    if not data:
+        print(f"WARNING: no data for experiment={experiment} suite={suite}; skipping")
+        return
 
     dss = sorted(set(r["ds"] for r in data))
     paper_ds = which_paper_ds(dss, experiment)
 
-    for paper_print in [True, False]: #print a paper version and a viewing version
-        write_dir = ("paper/" if paper_print else "readable/") + experiment + "/"
-        os.makedirs(f"{out_dir}/{write_dir}", exist_ok=True)
+    #the ablation is run both as a size sweep and as a thread sweep; pick the
+    #x-axis off the filename rather than always assuming key_size
+    if experiment.endswith("_threads"):
+        xfield, xaxis_label, xrotation = "threads", "Thread count", 90
+    else:
+        xfield, xaxis_label, xrotation = "key_size", "Size (n)", 0
 
-        for i, ds in enumerate(dss):
-            fig, ax = plt.subplots(figsize=FIG_CONFIGS["figsize"])
+    # metric_key: row field on the y-axis.
+    #   "gmean"  -> throughput, ratio deqalloc/variant
+    #   "mem_kb" -> peak RSS,   ratio variant/deqalloc (inverted: less is better)
+    def _run(metric_key, filename_infix, ylabel_text, invert):
+        rendered_dss = set()
 
-            ds_rows = [r for r in data if r["ds"] == ds]
-            allocs = sorted(set(r["allocator"] for r in ds_rows))
-            sizes  = sorted(set(r["key_size"] for r in ds_rows))
+        #shared y-axis floor across every ds so that panels merged side by
+        #side use the same scale, rather than each panel picking its own
+        global_min = 1.0
+        for ds in dss:
+            ds_rows_g = [r for r in data if r["ds"] == ds]
+            xs_g = sorted(set(r[xfield] for r in ds_rows_g))
+            for alloc in sorted(set(r["allocator"] for r in ds_rows_g)):
+                if alloc == "deqalloc":
+                    continue
+                for x in xs_g:
+                    a = _agg(ds_rows_g, "deqalloc", xfield, x, metric_key)
+                    b = _agg(ds_rows_g, alloc, xfield, x, metric_key)
+                    rat = _ratio(a, b, invert)
+                    if rat is not None:
+                        global_min = min(global_min, rat)
+        if math.isnan(global_min) or math.isinf(global_min):
+            global_min = 0
 
-            for alloc in allocs:
-                #dont plot deqalloc
-                if alloc == "deqalloc": continue
+        for paper_print in [True, False]: #paper version and viewing version
+            write_dir = ("paper/" if paper_print else "readable/") + experiment + "/"
+            os.makedirs(f"{out_dir}/{write_dir}", exist_ok=True)
 
-                pts = {r["key_size"]: r["gmean"] for r in ds_rows if r["allocator"] == alloc}
-                deqalloc_pts = {r["key_size"]: r["gmean"] for r in ds_rows if r["allocator"] == "deqalloc"}
-                ys = [pts.get(s, None) for s in sizes]
-                deqalloc_ys = [deqalloc_pts.get(s, None) for s in sizes]
+            for i, ds in enumerate(dss):
+                fig, ax = plt.subplots(figsize=FIG_CONFIGS["figsize"])
 
-                #benchmark crashed, skip it
-                if 0 in deqalloc_ys: continue
-                relative_ys = [a / b if b != 0 else 0 for a, b in zip(deqalloc_ys, ys)]
+                ds_rows = [r for r in data if r["ds"] == ds]
+                allocs = sorted(set(r["allocator"] for r in ds_rows))
+                xs = sorted(set(r[xfield] for r in ds_rows))
 
-                ax.plot(range(len(sizes)),
-                        relative_ys,
-                        label=ALLOC_RENAMES.get(alloc, alloc),
-                        linewidth=FIG_CONFIGS["linewidth"],
-                        color=ALLOC_PALETTE.get(alloc),
-                        marker=ALLOC_MARKERS.get(alloc),
-                        markersize=FIG_CONFIGS["markersize"], 
-                        linestyle=FIG_CONFIGS["linestyle"].get(alloc, "--"),
-                        zorder=ALLOC_ZORDER.get(alloc))
+                plotted_any = False
+                for alloc in allocs:
+                    #deqalloc is the baseline, it is the 1.0 line
+                    if alloc == "deqalloc": continue
 
-            xlabels = get_nice_scinot_labels(sizes)
-            plt.xticks(range(len(sizes)), xlabels)
-            ax.set_xlabel("Size (n)")
-            ax.set_title(f'{DS_LABELS.get(ds)}')
+                    relative_ys = []
+                    for x in xs:
+                        a = _agg(ds_rows, "deqalloc", xfield, x, metric_key)
+                        b = _agg(ds_rows, alloc, xfield, x, metric_key)
+                        relative_ys.append(_ratio(a, b, invert))
 
-            if not write_dir or ds == paper_ds[0]:
-                ax.set_ylabel('Throughput (Mops/s)', fontsize=FIG_CONFIGS["ylabel_fontsize"])
-                ylabel = ax.yaxis.label
-                ylabel.set_y(ylabel.get_position()[1] - 0.05)
+                    if not any(y is not None for y in relative_ys):
+                        continue
+                    plotted_any = True
+
+                    ax.plot(range(len(xs)),
+                            relative_ys,
+                            label=ALLOC_RENAMES.get(alloc, alloc),
+                            linewidth=FIG_CONFIGS["linewidth"],
+                            color=ALLOC_PALETTE.get(alloc),
+                            marker=ALLOC_MARKERS.get(alloc),
+                            markersize=FIG_CONFIGS["markersize"],
+                            linestyle=FIG_CONFIGS["linestyle"].get(alloc, "--"),
+                            zorder=ALLOC_ZORDER.get(alloc))
+
+                if not plotted_any:
+                    print(f"WARNING: no comparable rows for ds={ds} "
+                          f"(experiment={experiment}, metric={filename_infix}); skipping panel")
+                    plt.close(fig)
+                    continue
+
+                #1.0 means the two variants performed identically
+                ax.axhline(1.0, color="black", linewidth=0.8, linestyle=":", zorder=0)
+
+                if xfield == "key_size":
+                    xlabels = get_nice_scinot_labels(xs)
+                else:
+                    xlabels = [str(x) for x in xs]
+                plt.xticks(range(len(xs)), xlabels, rotation=xrotation)
+                ax.set_xlabel(xaxis_label)
+                ax.set_title(f'{DS_LABELS.get(ds, ds)}')
+
+                if not paper_ds or ds == paper_ds[0]:
+                    ax.set_ylabel(ylabel_text, fontsize=FIG_CONFIGS["ylabel_fontsize"])
+                    ylabel = ax.yaxis.label
+                    ylabel.set_y(ylabel.get_position()[1] - 0.05)
+
+                style_fig(fig, ax, paper_print)
+
+                #override style_fig's bottom=0: these are ratios living around
+                #1, so anchor on the smallest ratio seen across all panels
+                ax.set_ylim(bottom=global_min * 0.97)
+
+                fig.savefig(f"{out_dir}/{write_dir}{experiment}{filename_infix}_{ds}.{fmt}",
+                    dpi=FIG_CONFIGS["dpi"],
+                    bbox_inches="tight",
+                    pad_inches=FIG_CONFIGS["pad_inches"])
+                plt.close(fig)
+                rendered_dss.add(ds)
+
+        paper_list = [ f"{out_dir}/paper/{experiment}/{experiment}{filename_infix}_{ds}.{fmt}"
+                       for ds in paper_ds if ds in rendered_dss ]
+        merge_pdfs_horizontally(paper_list,
+            f"{out_dir}/paper/{experiment}{filename_infix}.{fmt}")
+
+        all_list = [ f"{out_dir}/paper/{experiment}/{experiment}{filename_infix}_{ds}.{fmt}"
+                     for ds in dss if ds in rendered_dss ]
+        merge_pdfs_horizontally(all_list,
+            f"{out_dir}/paper/{experiment}{filename_infix}_all.{fmt}")
+
+    #throughput: deqalloc/variant, >1 means sharing Segments is faster
+    _run("gmean",  "",        "Relative Throughput", invert=False)
+    #memory: variant/deqalloc, >1 means sharing Segments uses less memory
+    _run("mem_kb", "_memory", "Relative Memory",     invert=True)
 
 
-            style_fig(fig, ax, paper_print)
+def _agg(rows, alloc, xfield, x, metric_key):
+    """Mean of metric_key over every row for (alloc, x). Returns None if the
+    configuration was not run, 0 if it ran but produced nothing (a crash)."""
+    vals = [r[metric_key] for r in rows
+            if r["allocator"] == alloc and r[xfield] == x]
+    if not vals:
+        return None
+    return stat.mean(vals)
 
-            #override style_fig
-            min_y = min(ax.dataLim.ymin, 1)
-            if math.isnan(min_y) or math.isinf(min_y):
-                min_y = 0
-            ax.set_ylim(bottom=min_y * 0.99)
 
-            #ax.legend(
-            #    ncol=len(allocs),
-            #    frameon=True,
-            #    fontsize=FIG_CONFIGS.get("legend_fontsize"),
-            #    loc="upper center",
-            #    alignment="center",
-            #    #bbox_to_anchor=(0.5, 1.24),
-            #    labelcolor="black",
-            #    edgecolor="black",
-            #    fancybox=False,
-            #)
-
-            fig.savefig(f"{out_dir}/{write_dir}{experiment}_{ds}.{fmt}",
-                dpi=FIG_CONFIGS["dpi"],
-                bbox_inches="tight",
-                pad_inches=FIG_CONFIGS["pad_inches"])
-            plt.close(fig)
-
-    paper_ds_list = [ f"{out_dir}/paper/{experiment}/{experiment}_{ds}.{fmt}" for ds in paper_ds ] 
-    merge_pdfs_horizontally(paper_ds_list, f"{out_dir}/paper/{experiment}.{fmt}")
-    all_ds_list = [ f"{out_dir}/paper/{experiment}/{experiment}_{ds}.{fmt}" for ds in dss ]
-    merge_pdfs_horizontally(all_ds_list, f"{out_dir}/paper/{experiment}_all.{fmt}")
+def _ratio(deq, other, invert):
+    """deq/other, or other/deq when invert (i.e. for lower-is-better metrics
+    such as memory), so that >1 always means deqalloc won."""
+    if deq is None or other is None:
+        return None
+    num, den = (other, deq) if invert else (deq, other)
+    if den in (None, 0):
+        return None
+    return num / den
 
 
 # -- Plot: Throughput vs key_size, normal vs amortized-free reclamation ------
@@ -1992,17 +2074,14 @@ def collect_variance_stats(input_dir):
     """Scan every raw results file under input_dir/{flock,setbench}/ exactly
     once (independent of which plots were requested, so a run's stddev
     isn't double-counted just because its file backs multiple plots), and
-    compute each row's coefficient of variation (stddev / mean) across its
-    repeated throughput samples. Using the CV instead of the raw stddev
-    normalizes for the fact that different benchmarks/allocators have very
-    different absolute throughput scales, which would otherwise dominate a
-    plain average of stddevs.
+    compute each row's stddev across its repeated throughput samples.
 
     Returns (by_allocator, by_benchmark): dicts mapping allocator name /
-    "suite/filename" to the list of CVs observed for it.
+    "suite/filename" to the list of stddevs observed for it.
     """
     by_allocator = defaultdict(list)
     by_benchmark = defaultdict(list)
+
     for suite, parse_f in (("flock", parse_flock), ("setbench", parse_setbench)):
         suite_dir = os.path.join(input_dir, suite)
         if not os.path.isdir(suite_dir):
@@ -2175,7 +2254,8 @@ def main():
         if "hugepages" in args.plots or do_all: plot_hugepages(args.input_dir, "flock", "hugepages", out_dir, args.format)
         if "config" in args.plots or do_all: plot_config(args.input_dir, "flock", "config", out_dir, args.format)
         if "ablation"   in args.plots or do_all:
-            plot_ablation_localseglist(args.input_dir, "flock", "ablation_localseglist", out_dir, args.format)
+            for exp in ["ablation_localseglist_sizes", "ablation_localseglist_threads"]:
+                plot_ablation_localseglist(args.input_dir, "flock", exp, out_dir, args.format)
         if "ablation" in args.plots or do_all: 
             plot_remotefree_batchsize(args.input_dir, "flock", "ablation_remotefree_batchsize", out_dir, args.format)
 
@@ -2190,8 +2270,10 @@ def main():
         if "geomean"     in args.plots or do_all: plot_geomean(args.input_dir, "setbench", "geomean", out_dir, args.format)
         if "hugepages" in args.plots or do_all: plot_hugepages(args.input_dir, "setbench", "hugepages", out_dir, args.format)
         if "config" in args.plots or do_all: plot_config(args.input_dir, "setbench", "config", out_dir, args.format)
-        if "ablation"   in args.plots or do_all: plot_ablation_localseglist(args.input_dir, "setbench", \
-            "ablation_localseglist", out_dir, args.format)
+        if "ablation"   in args.plots or do_all:
+            for exp in ["ablation_localseglist_sizes", "ablation_localseglist_threads"]:
+                plot_ablation_localseglist(args.input_dir, "setbench", exp, out_dir, args.format)
+            #plot_ablation_localseglist(args.input_dir, "setbench", "ablation_localseglist", out_dir, args.format)
         if "amortizedfree" in args.plots or do_all: plot_ablation_amortizedfree(args.input_dir, "setbench", \
             "amortizedfree", out_dir, args.format)
         if "ablation" in args.plots or do_all: 
