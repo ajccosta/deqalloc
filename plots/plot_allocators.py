@@ -504,8 +504,8 @@ def load_file(input_dir, suite, experiment):
     else:
         experiment_set = ["sizes", "updates", "threads"]
         #also add trackers experiments for setbench
-        if suite == "setbench":
-            experiment_set.append("trackers")
+        #if suite == "setbench":
+        #    experiment_set.append("trackers")
         data = []
         crashes = []
         for exp in experiment_set:
@@ -2180,7 +2180,7 @@ def main():
         if "threads"     in args.plots or do_all: plot_threads(args.input_dir, "setbench", "threads", out_dir, args.format)
         if "memory"      in args.plots  or do_all: plot_memory(args.input_dir, "setbench", "sizes", out_dir, args.format)
         if "trackers"   in args.plots or do_all: plot_trackers(args.input_dir, "setbench", "trackers", out_dir, args.format)
-        if "geomean"     in args.plots or do_all: plot_geomean(args.input_dir, "setbench", "sizes", out_dir, args.format)
+        if "geomean"     in args.plots or do_all: plot_geomean(args.input_dir, "setbench", "geomean", out_dir, args.format)
         if "hugepages" in args.plots or do_all: plot_hugepages(args.input_dir, "setbench", "hugepages", out_dir, args.format)
         if "config" in args.plots or do_all: plot_config(args.input_dir, "setbench", "config", out_dir, args.format)
         if "ablation"   in args.plots or do_all: plot_ablation_localseglist(args.input_dir, "setbench", \
