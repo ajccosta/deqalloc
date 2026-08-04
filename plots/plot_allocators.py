@@ -234,7 +234,7 @@ FIG_CONFIGS = {
 PAPER_DS_FLOCK = ["skiplist_lck", "leaftree_lck", "hash_block_lck"]
 PAPER_DS_LOCALSEGLIST_FLOCK = ["skiplist_lck", "leaftree_lck", "list_lck"]
 #PAPER_DS_REMOTEBATCHSIZE_FLOCK = ["btree_lck", "hash_block_lck", "leaftree_lck"]
-PAPER_DS_REMOTEBATCHSIZE_FLOCK = ["skiplist_lck", "leaftree_lck", "hash_block_lck"]
+PAPER_DS_REMOTEBATCHSIZE_FLOCK = ["skiplist_lck", "btree_lck", "hash_block_lck"]
 
 #PAPER_DS_SETBENCH = ["guerraoui_ext_bst_ticket", "brown_ext_abtree_lf", "hm_hashtable", "hmlist"]
 PAPER_DS_SETBENCH = ["guerraoui_ext_bst_ticket", "brown_ext_abtree_lf", "hmlist"]
@@ -621,6 +621,77 @@ def plot_update(input_dir, suite, experiment, out_dir, fmt):
     merge_pdfs_horizontally(paper_ds_list, f"{out_dir}/paper/update.{fmt}")
     all_ds_list = [ f"{out_dir}/paper/{experiment}/update_{ds}.{fmt}" for ds in dss ]
     merge_pdfs_horizontally(all_ds_list, f"{out_dir}/paper/update_all.{fmt}")
+
+
+# -- Plot 2b: Throughput vs zipfian skew (-z parameter) -----------------------
+def parse_zipfian_skew(thread_flags):
+    """Extract the zipfian skew value from a thread_flags string like '-z 0.6'."""
+    m = re.search(r"-z\s*([\d.]+)", thread_flags or "")
+    if m:
+        return float(m.group(1))
+    return None
+
+def plot_zipfian(input_dir, suite, experiment, out_dir, fmt):
+    data, crashes = load_file(input_dir, suite, experiment)
+    if not data:
+        return
+
+    #zipfian skew comes from the thread_flags field (e.g. "-z 0.6"), not a
+    #dedicated column, so parse it out here rather than in parse_flock
+    for r in data:
+        r["zipf"] = parse_zipfian_skew(r.get("thread_flags", ""))
+    data = [r for r in data if r["zipf"] is not None]
+    if not data:
+        return
+
+    for paper_print in [True, False]: #print a paper version and a viewing version
+        write_dir = ("paper/" if paper_print else "readable/") + experiment + "/"
+        os.makedirs(f"{out_dir}/{write_dir}", exist_ok=True)
+
+        dss = sorted(set(r["ds"] for r in data))
+        paper_ds = which_paper_ds(dss)
+
+        for i, ds in enumerate(dss):
+            fig, ax = plt.subplots(figsize=FIG_CONFIGS["figsize"])
+
+            ds_rows = [r for r in data if r["ds"] == ds]
+            allocs = sorted(set(r["allocator"] for r in ds_rows).intersection(ALLOCS))
+            zipfs  = sorted(set(r["zipf"] for r in ds_rows))
+
+            for alloc in allocs:
+                pts = {r["zipf"]: r["gmean"] for r in ds_rows if r["allocator"] == alloc}
+                ys = [pts.get(s, None) for s in zipfs]
+                ax.plot(range(len(zipfs)),
+                        ys,
+                        label=alloc,
+                        linewidth=FIG_CONFIGS["linewidth"],
+                        color=ALLOC_PALETTE.get(alloc),
+                        marker=ALLOC_MARKERS.get(alloc),
+                        markersize=FIG_CONFIGS["markersize"],
+                        linestyle=FIG_CONFIGS["linestyle"].get(alloc),
+                        zorder=ALLOC_ZORDER.get(alloc))
+
+            xlabels = [str(z) for z in zipfs]
+            plt.xticks(range(len(zipfs)), xlabels)
+            ax.set_xlabel("Zipfian skew")
+            ax.set_title(f'{DS_LABELS.get(ds)}')
+
+            if not write_dir or ds == paper_ds[0]:
+                ax.set_ylabel('Throughput (Mops/s)', fontsize=FIG_CONFIGS["ylabel_fontsize"])
+                ylabel = ax.yaxis.label
+                ylabel.set_y(ylabel.get_position()[1] - 0.05)
+
+            style_fig(fig, ax, paper_print)
+            fig.savefig(f"{out_dir}/{write_dir}zipfian_{ds}.{fmt}",
+                dpi=FIG_CONFIGS["dpi"],
+                bbox_inches="tight",
+                pad_inches=FIG_CONFIGS["pad_inches"])
+            plt.close(fig)
+
+    paper_ds_list = [ f"{out_dir}/paper/{experiment}/zipfian_{ds}.{fmt}" for ds in paper_ds ]
+    merge_pdfs_horizontally(paper_ds_list, f"{out_dir}/paper/zipfian.{fmt}")
+    all_ds_list = [ f"{out_dir}/paper/{experiment}/zipfian_{ds}.{fmt}" for ds in dss ]
+    merge_pdfs_horizontally(all_ds_list, f"{out_dir}/paper/zipfian_all.{fmt}")
 
 
 # -- Plot 3: Throughput vs update rate -----------------------------
@@ -1965,6 +2036,81 @@ def print_variance_stats(input_dir):
         print(f"  {bench:<40} {stat.mean(vals):>10.4f}  (n={len(vals)})")
 
 
+# -- Biggest deqalloc improvement over each allocator, across everything -----
+def _config_key(r, suite):
+    """Config identity (everything except the allocator/values/derived
+    fields) used to match up deqalloc against another allocator run under
+    otherwise identical settings."""
+    if suite == "flock":
+        return (r["update"], r["ds"], r["key_size"], r["threads"], r["numa"], r["thread_flags"])
+    else:
+        return (r["update"], r["ds"], r["key_size"], r["threads"], r["numa"], r["reclamation"], r["df"])
+
+
+def collect_best_improvements(input_dir):
+    """Scan every raw results file (same set collect_variance_stats scans)
+    and, for every config where both deqalloc and some other allocator were
+    run, compute deqalloc's speedup (gmean ratio) over that allocator. Keep
+    the single biggest speedup seen per allocator, with enough context to
+    report where it came from.
+
+    Returns: dict allocator -> dict(ratio, suite, file, ds, config_key)
+    """
+    best = {}
+
+    for suite, parse_f in (("flock", parse_flock), ("setbench", parse_setbench)):
+        suite_dir = os.path.join(input_dir, suite)
+        if not os.path.isdir(suite_dir):
+            continue
+        for fname in sorted(os.listdir(suite_dir)):
+            path = os.path.join(suite_dir, fname)
+            if not os.path.isfile(path) or fname.startswith('.'):
+                continue
+            rows, _ = parse_f(path)
+            if not rows:
+                continue
+
+            by_config = defaultdict(dict) #config_key -> {allocator: row}
+            for r in rows:
+                if r["gmean"] <= 0:
+                    continue
+                by_config[_config_key(r, suite)][r["allocator"]] = r
+
+            for cfg, alloc_rows in by_config.items():
+                deq_row = alloc_rows.get("deqalloc")
+                if deq_row is None:
+                    continue
+                for alloc, r in alloc_rows.items():
+                    if alloc == "deqalloc" or r["gmean"] <= 0:
+                        continue
+                    ratio = deq_row["gmean"] / r["gmean"]
+                    prev = best.get(alloc)
+                    if prev is None or ratio > prev["ratio"]:
+                        best[alloc] = dict(
+                            ratio=ratio,
+                            suite=suite,
+                            file=fname,
+                            ds=r["ds"],
+                            deq_gmean=deq_row["gmean"],
+                            other_gmean=r["gmean"],
+                            config=cfg,
+                        )
+    return best
+
+
+def print_best_improvements(input_dir):
+    best = collect_best_improvements(input_dir)
+    if not best:
+        return
+
+    print("\n=== Biggest deqalloc speedup over each allocator (across all experiments) ===")
+    for alloc in sorted(best, key=lambda a: -best[a]["ratio"]):
+        b = best[alloc]
+        print(f"  deqalloc vs {alloc:<22} {b['ratio']:>7.2f}x  "
+              f"({b['deq_gmean']:.2f} vs {b['other_gmean']:.2f} Mops/s)  "
+              f"[{b['suite']}/{b['file']}, ds={b['ds']}]")
+
+
 # -- Main ----------------------------------------------------------------------
 def main():
     parser = argparse.ArgumentParser(description='Plot deqalloc experiments')
@@ -1979,6 +2125,7 @@ def main():
     parser.add_argument('--plots', nargs='+',
                        choices=['size',
                                 'update',
+                                'zipfian',
                                 'geomean',
                                 'threads',
                                 'trackers',
@@ -2014,6 +2161,7 @@ def main():
         out_dir = f"{args.output_dir}/flock"
         if "size"        in args.plots or do_all:    plot_size(args.input_dir, "flock", "sizes", out_dir, args.format)
         if "update"      in args.plots or do_all:  plot_update(args.input_dir, "flock", "updates", out_dir, args.format)
+        if "zipfian"     in args.plots or do_all: plot_zipfian(args.input_dir, "flock", "zipfian", out_dir, args.format)
         if "threads"     in args.plots or do_all: plot_threads(args.input_dir, "flock", "threads", out_dir, args.format)
         if "memory"      in args.plots or do_all:  plot_memory(args.input_dir, "flock", "sizes", out_dir, args.format)
         if "geomean"     in args.plots or do_all: plot_geomean(args.input_dir, "flock", "geomean", out_dir, args.format)
@@ -2028,6 +2176,7 @@ def main():
         out_dir = f"{args.output_dir}/setbench"
         if "size"        in args.plots    or do_all: plot_size(args.input_dir, "setbench", "sizes", out_dir, args.format)
         if "update"      in args.plots  or do_all: plot_update(args.input_dir, "setbench", "updates", out_dir, args.format)
+        if "zipfian"     in args.plots or do_all: plot_zipfian(args.input_dir, "setbench", "zipfian", out_dir, args.format)
         if "threads"     in args.plots or do_all: plot_threads(args.input_dir, "setbench", "threads", out_dir, args.format)
         if "memory"      in args.plots  or do_all: plot_memory(args.input_dir, "setbench", "sizes", out_dir, args.format)
         if "trackers"   in args.plots or do_all: plot_trackers(args.input_dir, "setbench", "trackers", out_dir, args.format)
@@ -2051,6 +2200,7 @@ def main():
     generate_legend(["deqalloc", "deqalloc_remotefree", "deqalloc_genericdeque", "snmalloc"], f"{args.output_dir}/legend_batchsize", args.format)
 
     print_variance_stats(args.input_dir)
+    print_best_improvements(args.input_dir)
 
 if __name__ == "__main__":
     main()

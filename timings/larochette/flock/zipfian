@@ -1,0 +1,473 @@
+Command: ./run_experiments.py flock -o zipfian --benchmark zipfian --nohugepages
+Date: 08-03-2026
+Experiment: flock zipfian
+Model name:                              INTEL(R) XEON(R) PLATINUM 8568Y+
+Git: cd03ec0
+allocator versions:
+	jemalloc: 04aad97f
+	mesh: 2987f88
+	mimalloc: a3ca0e5e
+	hoard: 1cd9101
+	scalloc: 1a11827
+	tcmalloc: a30fe5e6
+	snmalloc: 481b648
+	lockfree: 915f51b
+	rpmalloc: 5dacae8
+	tbbmalloc: 82bfdfe3
+	mimalloc-batchit: da52048
+	llheap: 6e43540
+	glibc: GNU C Library (Debian GLIBC 2.31-13+deb11u14) stable release version 2.31.
+---
+allocator             update% ds                   key_size   #threads  numa   thread-perc           results
+deqalloc_genericdeque 100     btree_lck            200000     192       False  -z 0                  [ 194.5 196.5 184.3 185.1 181.6 ] 188.4000, 2479728 KB, vmem_peak=N/A
+deqalloc_localseglist 100     btree_lck            200000     192       False  -z 0                  [ 194.5 194.0 196.9 192.8 210.1 ] 197.6600, 4536860 KB, vmem_peak=N/A
+mimalloc              100     btree_lck            200000     192       False  -z 0                  [ 61.08 61.63 43.37 58.75 58.22 ] 56.6100, 1948688 KB, vmem_peak=N/A
+jemalloc              100     btree_lck            200000     192       True   -z 0                  [ 19.83 18.31 18.08 20.27 19.08 ] 19.1140, 2087368 KB, vmem_peak=N/A
+# CRASH: btree_lck alloc=hoard u=100 n=200000
+tcmalloc              100     btree_lck            200000     192       False  -z 0                  [ 8.778 6.914 7.545 8.529 8.329 ] 8.0190, 471992 KB, vmem_peak=N/A
+# CRASH: btree_lck alloc=tcmalloc u=100 n=200000
+lockfree              100     btree_lck            200000     192       False  -z 0                  [ 29.9 24.53 30.37 29.37 30.63 ] 28.9600, 905092 KB, vmem_peak=N/A
+rpmalloc              100     btree_lck            200000     192       False  -z 0                  [ 74.26 72.57 73.08 77.64 69.75 ] 73.4600, 1464084 KB, vmem_peak=N/A
+deqalloc              100     btree_lck            200000     192       False  -z 0.6                [ 184.8 163.7 208.8 186.3 190.5 ] 186.8200, 2825828 KB, vmem_peak=N/A
+deqalloc_genericdeque 100     btree_lck            200000     192       False  -z 0.6                [ 193.5 207.6 200.3 196.6 206.3 ] 200.8600, 2301488 KB, vmem_peak=N/A
+deqalloc_localseglist 100     btree_lck            200000     192       False  -z 0.6                [ 183.7 170.0 204.6 176.2 185.3 ] 183.9600, 4482068 KB, vmem_peak=N/A
+mimalloc              100     btree_lck            200000     192       False  -z 0.6                [ 79.18 73.86 76.16 68.66 72.6 ] 74.0920, 1371124 KB, vmem_peak=N/A
+jemalloc              100     btree_lck            200000     192       True   -z 0.6                [ 25.35 23.03 20.43 23.55 20.27 ] 22.5260, 2054996 KB, vmem_peak=N/A
+# CRASH: btree_lck alloc=hoard u=100 n=200000
+tcmalloc              100     btree_lck            200000     192       False  -z 0.6                [ 8.523 8.054 7.644 8.17 7.993 ] 8.0768, 480600 KB, vmem_peak=N/A
+# CRASH: btree_lck alloc=tcmalloc u=100 n=200000
+lockfree              100     btree_lck            200000     192       False  -z 0.6                [ 31.92 30.78 33.42 31.4 32.54 ] 32.0120, 885144 KB, vmem_peak=N/A
+rpmalloc              100     btree_lck            200000     192       False  -z 0.6                [ 120.5 110.7 108.9 120.1 102.1 ] 112.4600, 1152128 KB, vmem_peak=N/A
+jemalloc              100     btree_lck            200000     192       True   -z 0.8                [ 23.29 28.12 22.37 26.27 22.38 ] 24.4860, 2184416 KB, vmem_peak=N/A
+# CRASH: btree_lck alloc=hoard u=100 n=200000
+# CRASH: btree_lck alloc=tcmalloc u=100 n=200000
+lockfree              100     btree_lck            200000     192       False  -z 0.8                [ 41.22 47.16 36.23 42.16 41.29 ] 41.6120, 819536 KB, vmem_peak=N/A
+rpmalloc              100     btree_lck            200000     192       False  -z 0.8                [ 123.0 128.8 114.0 123.4 122.1 ] 122.2600, 1386836 KB, vmem_peak=N/A
+deqalloc              100     btree_lck            200000     192       False  -z 0                  [ 55.7 160.0 199.9 189.1 205.6 ] 162.0600, 2969180 KB, vmem_peak=N/A
+deqalloc_remotefree   100     btree_lck            200000     192       False  -z 0                  [ 52.45 45.31 48.04 182.6 132.0 ] 92.0800, 4617948 KB, vmem_peak=N/A
+snmalloc              100     btree_lck            200000     192       False  -z 0                  [ 60.18 55.15 46.38 45.95 45.31 ] 50.5940, 2402656 KB, vmem_peak=N/A
+hoard                 100     btree_lck            200000     192       True   -z 0                  [ 189.2 186.7 182.9 200.8 61.32 ] 164.1840, 1314276 KB, vmem_peak=N/A
+# CRASH: btree_lck alloc=hoard u=100 n=200000
+tbbmalloc             100     btree_lck            200000     192       False  -z 0                  [ 3.779 3.724 4.83 5.506 6.783 ] 4.9244, 1234676 KB, vmem_peak=N/A
+glibc                 100     btree_lck            200000     192       False  -z 0                  [ 6.099 3.887 3.062 4.689 8.025 ] 5.1524, 1236592 KB, vmem_peak=N/A
+deqalloc_remotefree   100     btree_lck            200000     192       False  -z 0.6                [ 47.4 159.7 146.9 117.6 57.17 ] 105.7540, 4530084 KB, vmem_peak=N/A
+snmalloc              100     btree_lck            200000     192       False  -z 0.6                [ 60.47 59.71 46.75 43.05 54.04 ] 52.8040, 2905920 KB, vmem_peak=N/A
+hoard                 100     btree_lck            200000     192       True   -z 0.6                [ 185.7 66.74 75.61 85.61 74.87 ] 97.7060, 1928640 KB, vmem_peak=N/A
+# CRASH: btree_lck alloc=hoard u=100 n=200000
+tbbmalloc             100     btree_lck            200000     192       False  -z 0.6                [ 4.407 6.249 6.753 7.494 6.312 ] 6.2430, 1350100 KB, vmem_peak=N/A
+glibc                 100     btree_lck            200000     192       False  -z 0.6                [ 4.873 2.986 3.526 6.374 6.136 ] 4.7790, 1265984 KB, vmem_peak=N/A
+deqalloc              100     btree_lck            200000     192       False  -z 0.8                [ 185.9 112.0 100.9 82.56 113.1 ] 118.8920, 3053164 KB, vmem_peak=N/A
+deqalloc_genericdeque 100     btree_lck            200000     192       False  -z 0.8                [ 200.6 177.7 173.8 135.5 177.1 ] 172.9400, 2012832 KB, vmem_peak=N/A
+deqalloc_localseglist 100     btree_lck            200000     192       False  -z 0.8                [ 114.6 191.3 104.1 170.4 173.8 ] 150.8400, 4489144 KB, vmem_peak=N/A
+deqalloc_remotefree   100     btree_lck            200000     192       False  -z 0.8                [ 59.23 160.0 139.6 161.0 144.3 ] 132.8260, 4599516 KB, vmem_peak=N/A
+mimalloc              100     btree_lck            200000     192       False  -z 0.8                [ 56.75 102.5 101.1 89.93 106.0 ] 91.2560, 1991124 KB, vmem_peak=N/A
+snmalloc              100     btree_lck            200000     192       False  -z 0.8                [ 108.1 84.16 85.75 54.05 85.15 ] 83.4420, 2774456 KB, vmem_peak=N/A
+hoard                 100     btree_lck            200000     192       True   -z 0.8                [ 184.9 152.2 58.5 177.1 177.8 ] 150.1000, 1240948 KB, vmem_peak=N/A
+# CRASH: btree_lck alloc=hoard u=100 n=200000
+tcmalloc              100     btree_lck            200000     192       False  -z 0.8                [ 7.159 6.635 6.344 9.845 6.586 ] 7.3138, 423428 KB, vmem_peak=N/A
+# CRASH: btree_lck alloc=tcmalloc u=100 n=200000
+tbbmalloc             100     btree_lck            200000     192       False  -z 0.8                [ 2.237 4.537 3.578 6.619 7.985 ] 4.9912, 1109460 KB, vmem_peak=N/A
+glibc                 100     btree_lck            200000     192       False  -z 0.8                [ 3.553 5.331 4.027 2.641 6.515 ] 4.4134, 1467400 KB, vmem_peak=N/A
+deqalloc              100     btree_lck            200000     192       False  -z 0.9                [ 161.5 169.2 172.9 160.1 135.6 ] 159.8600, 2597392 KB, vmem_peak=N/A
+deqalloc_genericdeque 100     btree_lck            200000     192       False  -z 0.9                [ 163.3 104.6 140.4 166.8 101.5 ] 135.3200, 2145552 KB, vmem_peak=N/A
+deqalloc_localseglist 100     btree_lck            200000     192       False  -z 0.9                [ 150.2 145.5 147.9 175.5 164.6 ] 156.7400, 4463576 KB, vmem_peak=N/A
+deqalloc_remotefree   100     btree_lck            200000     192       False  -z 0.9                [ 65.11 129.9 127.4 150.4 146.0 ] 123.7620, 4603676 KB, vmem_peak=N/A
+mimalloc              100     btree_lck            200000     192       False  -z 0.9                [ 106.7 107.6 109.3 109.3 63.15 ] 99.2100, 2115028 KB, vmem_peak=N/A
+jemalloc              100     btree_lck            200000     192       True   -z 0.9                [ 27.42 26.52 33.5 27.21 26.96 ] 28.3220, 2147848 KB, vmem_peak=N/A
+snmalloc              100     btree_lck            200000     192       False  -z 0.9                [ 95.74 92.22 75.64 73.84 106.4 ] 88.7680, 2489916 KB, vmem_peak=N/A
+hoard                 100     btree_lck            200000     192       True   -z 0.9                [ 89.54 98.17 85.6 132.9 103.9 ] 102.0220, 778320 KB, vmem_peak=N/A
+# CRASH: btree_lck alloc=hoard u=100 n=200000
+tcmalloc              100     btree_lck            200000     192       False  -z 0.9                [ 6.702 6.148 5.721 6.17 6.484 ] 6.2450, 415844 KB, vmem_peak=N/A
+# CRASH: btree_lck alloc=tcmalloc u=100 n=200000
+tbbmalloc             100     btree_lck            200000     192       False  -z 0.9                [ 4.189 5.076 8.136 4.85 8.957 ] 6.2416, 1201584 KB, vmem_peak=N/A
+lockfree              100     btree_lck            200000     192       False  -z 0.9                [ 30.87 56.82 60.61 56.65 59.74 ] 52.9380, 676616 KB, vmem_peak=N/A
+rpmalloc              100     btree_lck            200000     192       False  -z 0.9                [ 116.8 116.7 111.9 117.0 102.8 ] 113.0400, 1760268 KB, vmem_peak=N/A
+glibc                 100     btree_lck            200000     192       False  -z 0.9                [ 2.778 5.84 3.642 6.729 7.572 ] 5.3122, 1440184 KB, vmem_peak=N/A
+deqalloc              100     btree_lck            200000     192       False  -z 0.99               [ 99.63 152.7 161.8 149.6 163.4 ] 145.4260, 2830416 KB, vmem_peak=N/A
+deqalloc_genericdeque 100     btree_lck            200000     192       False  -z 0.99               [ 137.9 147.0 147.7 145.9 158.6 ] 147.4200, 2248352 KB, vmem_peak=N/A
+deqalloc_localseglist 100     btree_lck            200000     192       False  -z 0.99               [ 93.77 111.6 107.5 108.2 139.1 ] 112.0340, 4520464 KB, vmem_peak=N/A
+deqalloc_remotefree   100     btree_lck            200000     192       False  -z 0.99               [ 79.82 127.1 138.7 143.1 135.7 ] 124.8840, 4464444 KB, vmem_peak=N/A
+mimalloc              100     btree_lck            200000     192       False  -z 0.99               [ 113.8 94.51 102.4 108.0 110.7 ] 105.8820, 1567392 KB, vmem_peak=N/A
+jemalloc              100     btree_lck            200000     192       True   -z 0.99               [ 30.16 30.94 29.51 59.14 50.94 ] 40.1380, 1993944 KB, vmem_peak=N/A
+snmalloc              100     btree_lck            200000     192       False  -z 0.99               [ 106.6 84.42 78.01 87.69 99.33 ] 91.2100, 2285740 KB, vmem_peak=N/A
+hoard                 100     btree_lck            200000     192       True   -z 0.99               [ 102.9 132.1 141.3 97.23 152.0 ] 125.1060, 695560 KB, vmem_peak=N/A
+# CRASH: btree_lck alloc=hoard u=100 n=200000
+tcmalloc              100     btree_lck            200000     192       False  -z 0.99               [ 6.069 5.805 4.905 5.246 9.334 ] 6.2718, 412244 KB, vmem_peak=N/A
+# CRASH: btree_lck alloc=tcmalloc u=100 n=200000
+tbbmalloc             100     btree_lck            200000     192       False  -z 0.99               [ 4.366 6.923 6.556 9.782 7.723 ] 7.0700, 1115212 KB, vmem_peak=N/A
+lockfree              100     btree_lck            200000     192       False  -z 0.99               [ 68.4 61.36 68.1 66.84 67.76 ] 66.4920, 542888 KB, vmem_peak=N/A
+rpmalloc              100     btree_lck            200000     192       False  -z 0.99               [ 113.7 110.8 118.6 116.7 80.03 ] 107.9660, 1497780 KB, vmem_peak=N/A
+glibc                 100     btree_lck            200000     192       False  -z 0.99               [ 1.167 6.003 3.378 3.758 7.449 ] 4.3510, 1009544 KB, vmem_peak=N/A
+deqalloc              100     hash_block_lck       200000     192       False  -z 0                  [ 506.7 507.8 518.6 510.5 504.2 ] 509.5600, 2196328 KB, vmem_peak=N/A
+deqalloc_genericdeque 100     hash_block_lck       200000     192       False  -z 0                  [ 506.3 508.2 507.1 504.5 508.5 ] 506.9200, 2098872 KB, vmem_peak=N/A
+deqalloc_localseglist 100     hash_block_lck       200000     192       False  -z 0                  [ 513.3 483.3 512.5 515.1 516.7 ] 508.1800, 4006240 KB, vmem_peak=N/A
+deqalloc_remotefree   100     hash_block_lck       200000     192       False  -z 0                  [ 500.2 506.9 515.8 516.4 516.7 ] 511.2000, 4142876 KB, vmem_peak=N/A
+mimalloc              100     hash_block_lck       200000     192       False  -z 0                  [ 321.4 395.6 297.6 404.1 410.5 ] 365.8400, 1187668 KB, vmem_peak=N/A
+jemalloc              100     hash_block_lck       200000     192       True   -z 0                  [ 134.0 194.5 251.1 187.2 249.7 ] 203.3000, 30402912 KB, vmem_peak=N/A
+snmalloc              100     hash_block_lck       200000     192       False  -z 0                  [ 445.2 434.2 444.7 445.6 434.9 ] 440.9200, 1207148 KB, vmem_peak=N/A
+hoard                 100     hash_block_lck       200000     192       True   -z 0                  [ 494.4 496.2 471.5 486.4 497.7 ] 489.2400, 1393464 KB, vmem_peak=N/A
+# CRASH: hash_block_lck alloc=hoard u=100 n=200000
+tcmalloc              100     hash_block_lck       200000     192       False  -z 0                  [ 63.62 64.78 57.35 61.95 61.85 ] 61.9100, 1589196 KB, vmem_peak=N/A
+# CRASH: hash_block_lck alloc=tcmalloc u=100 n=200000
+tbbmalloc             100     hash_block_lck       200000     192       False  -z 0                  [ 332.1 335.1 338.5 331.2 311.2 ] 329.6200, 704320 KB, vmem_peak=N/A
+lockfree              100     hash_block_lck       200000     192       False  -z 0                  [ 74.72 75.23 76.03 75.56 76.14 ] 75.5360, 335384 KB, vmem_peak=N/A
+rpmalloc              100     hash_block_lck       200000     192       False  -z 0                  [ 397.9 361.8 335.3 395.6 320.1 ] 362.1400, 1184232 KB, vmem_peak=N/A
+glibc                 100     hash_block_lck       200000     192       False  -z 0                  [ 339.8 335.5 337.9 319.4 332.8 ] 333.0800, 440708 KB, vmem_peak=N/A
+deqalloc              100     hash_block_lck       200000     192       False  -z 0.6                [ 521.7 518.8 509.0 513.1 491.2 ] 510.7600, 2452448 KB, vmem_peak=N/A
+deqalloc_genericdeque 100     hash_block_lck       200000     192       False  -z 0.6                [ 514.3 508.1 509.0 511.4 510.4 ] 510.6400, 2315896 KB, vmem_peak=N/A
+deqalloc_localseglist 100     hash_block_lck       200000     192       False  -z 0.6                [ 503.7 480.9 524.8 494.2 468.1 ] 494.3400, 4243572 KB, vmem_peak=N/A
+deqalloc_remotefree   100     hash_block_lck       200000     192       False  -z 0.6                [ 487.3 507.7 511.1 509.4 511.3 ] 505.3600, 4235092 KB, vmem_peak=N/A
+mimalloc              100     hash_block_lck       200000     192       False  -z 0.6                [ 318.5 322.7 407.8 349.1 402.2 ] 360.0600, 1079052 KB, vmem_peak=N/A
+jemalloc              100     hash_block_lck       200000     192       True   -z 0.6                [ 218.8 222.5 211.2 179.2 202.7 ] 206.8800, 40262332 KB, vmem_peak=N/A
+snmalloc              100     hash_block_lck       200000     192       False  -z 0.6                [ 435.5 449.0 440.9 447.2 448.7 ] 444.2600, 1198200 KB, vmem_peak=N/A
+hoard                 100     hash_block_lck       200000     192       True   -z 0.6                [ 469.9 498.6 461.2 466.0 500.0 ] 479.1400, 1333824 KB, vmem_peak=N/A
+# CRASH: hash_block_lck alloc=hoard u=100 n=200000
+tcmalloc              100     hash_block_lck       200000     192       False  -z 0.6                [ 69.46 68.47 68.52 61.01 67.14 ] 66.9200, 1582036 KB, vmem_peak=N/A
+# CRASH: hash_block_lck alloc=tcmalloc u=100 n=200000
+tbbmalloc             100     hash_block_lck       200000     192       False  -z 0.6                [ 333.5 312.8 340.6 313.4 339.6 ] 327.9800, 861896 KB, vmem_peak=N/A
+lockfree              100     hash_block_lck       200000     192       False  -z 0.6                [ 74.76 76.26 77.36 77.17 78.48 ] 76.8060, 291352 KB, vmem_peak=N/A
+rpmalloc              100     hash_block_lck       200000     192       False  -z 0.6                [ 357.8 408.9 367.8 417.6 357.5 ] 381.9200, 1150176 KB, vmem_peak=N/A
+glibc                 100     hash_block_lck       200000     192       False  -z 0.6                [ 329.1 335.9 342.3 342.8 339.2 ] 337.8600, 516904 KB, vmem_peak=N/A
+deqalloc              100     hash_block_lck       200000     192       False  -z 0.8                [ 445.4 420.1 440.6 441.1 436.0 ] 436.6400, 2376568 KB, vmem_peak=N/A
+deqalloc_genericdeque 100     hash_block_lck       200000     192       False  -z 0.8                [ 447.0 435.4 442.2 393.4 438.3 ] 431.2600, 2338968 KB, vmem_peak=N/A
+deqalloc_localseglist 100     hash_block_lck       200000     192       False  -z 0.8                [ 445.3 393.6 398.2 433.4 399.4 ] 413.9800, 3873908 KB, vmem_peak=N/A
+deqalloc_remotefree   100     hash_block_lck       200000     192       False  -z 0.8                [ 451.9 358.8 436.5 435.8 435.9 ] 423.7800, 4331396 KB, vmem_peak=N/A
+mimalloc              100     hash_block_lck       200000     192       False  -z 0.8                [ 276.4 328.6 285.1 281.0 324.8 ] 299.1800, 856340 KB, vmem_peak=N/A
+jemalloc              100     hash_block_lck       200000     192       True   -z 0.8                [ 206.7 233.0 192.2 193.6 208.7 ] 206.8400, 17413248 KB, vmem_peak=N/A
+snmalloc              100     hash_block_lck       200000     192       False  -z 0.8                [ 377.2 400.5 378.2 366.9 392.4 ] 383.0400, 863608 KB, vmem_peak=N/A
+hoard                 100     hash_block_lck       200000     192       True   -z 0.8                [ 421.1 420.7 374.9 420.2 380.1 ] 403.4000, 1512408 KB, vmem_peak=N/A
+# CRASH: hash_block_lck alloc=hoard u=100 n=200000
+tcmalloc              100     hash_block_lck       200000     192       False  -z 0.8                [ 67.76 60.34 66.97 63.27 64.96 ] 64.6600, 1592888 KB, vmem_peak=N/A
+# CRASH: hash_block_lck alloc=tcmalloc u=100 n=200000
+tbbmalloc             100     hash_block_lck       200000     192       False  -z 0.8                [ 295.8 298.2 274.0 297.5 293.9 ] 291.8800, 615080 KB, vmem_peak=N/A
+lockfree              100     hash_block_lck       200000     192       False  -z 0.8                [ 75.75 77.09 78.11 79.27 80.3 ] 78.1040, 286652 KB, vmem_peak=N/A
+rpmalloc              100     hash_block_lck       200000     192       False  -z 0.8                [ 282.9 313.1 285.3 322.0 286.3 ] 297.9200, 944816 KB, vmem_peak=N/A
+glibc                 100     hash_block_lck       200000     192       False  -z 0.8                [ 291.9 294.8 302.6 294.5 298.0 ] 296.3600, 660396 KB, vmem_peak=N/A
+deqalloc              100     hash_block_lck       200000     192       False  -z 0.9                [ 260.2 288.0 265.8 277.1 253.1 ] 268.8400, 2495260 KB, vmem_peak=N/A
+deqalloc_genericdeque 100     hash_block_lck       200000     192       False  -z 0.9                [ 272.8 241.5 281.6 250.8 279.3 ] 265.2000, 2486208 KB, vmem_peak=N/A
+deqalloc_localseglist 100     hash_block_lck       200000     192       False  -z 0.9                [ 271.7 273.3 241.1 217.5 270.6 ] 254.8400, 3607880 KB, vmem_peak=N/A
+deqalloc_remotefree   100     hash_block_lck       200000     192       False  -z 0.9                [ 247.2 283.3 263.9 285.5 275.7 ] 271.1200, 4200320 KB, vmem_peak=N/A
+mimalloc              100     hash_block_lck       200000     192       False  -z 0.9                [ 227.0 222.4 231.5 225.9 229.1 ] 227.1800, 778288 KB, vmem_peak=N/A
+jemalloc              100     hash_block_lck       200000     192       True   -z 0.9                [ 165.4 170.5 164.5 184.8 179.3 ] 172.9000, 3672196 KB, vmem_peak=N/A
+snmalloc              100     hash_block_lck       200000     192       False  -z 0.9                [ 259.3 257.9 260.0 254.1 267.8 ] 259.8200, 802928 KB, vmem_peak=N/A
+hoard                 100     hash_block_lck       200000     192       True   -z 0.9                [ 286.5 264.5 267.6 285.7 281.8 ] 277.2200, 925512 KB, vmem_peak=N/A
+# CRASH: hash_block_lck alloc=hoard u=100 n=200000
+tcmalloc              100     hash_block_lck       200000     192       False  -z 0.9                [ 67.66 67.08 65.58 71.98 69.89 ] 68.4380, 1574948 KB, vmem_peak=N/A
+# CRASH: hash_block_lck alloc=tcmalloc u=100 n=200000
+tbbmalloc             100     hash_block_lck       200000     192       False  -z 0.9                [ 243.4 242.3 244.7 244.2 220.5 ] 239.0200, 478972 KB, vmem_peak=N/A
+lockfree              100     hash_block_lck       200000     192       False  -z 0.9                [ 75.33 77.02 77.63 80.62 79.75 ] 78.0700, 286396 KB, vmem_peak=N/A
+rpmalloc              100     hash_block_lck       200000     192       False  -z 0.9                [ 216.3 216.3 216.2 216.4 214.5 ] 215.9400, 538292 KB, vmem_peak=N/A
+glibc                 100     hash_block_lck       200000     192       False  -z 0.9                [ 214.0 239.2 242.6 243.8 223.3 ] 232.5800, 495988 KB, vmem_peak=N/A
+deqalloc              100     hash_block_lck       200000     192       False  -z 0.99               [ 196.2 164.4 171.4 171.7 169.3 ] 174.6000, 1982948 KB, vmem_peak=N/A
+deqalloc_genericdeque 100     hash_block_lck       200000     192       False  -z 0.99               [ 190.8 162.7 170.0 171.2 179.5 ] 174.8400, 1985824 KB, vmem_peak=N/A
+deqalloc_localseglist 100     hash_block_lck       200000     192       False  -z 0.99               [ 179.1 182.6 184.2 181.7 181.1 ] 181.7400, 3628304 KB, vmem_peak=N/A
+deqalloc_remotefree   100     hash_block_lck       200000     192       False  -z 0.99               [ 173.3 158.5 156.4 158.2 161.6 ] 161.6000, 4235128 KB, vmem_peak=N/A
+mimalloc              100     hash_block_lck       200000     192       False  -z 0.99               [ 161.9 163.9 161.6 162.1 162.2 ] 162.3400, 459968 KB, vmem_peak=N/A
+jemalloc              100     hash_block_lck       200000     192       True   -z 0.99               [ 141.6 167.9 137.1 137.3 143.8 ] 145.5400, 990588 KB, vmem_peak=N/A
+snmalloc              100     hash_block_lck       200000     192       False  -z 0.99               [ 171.1 171.9 167.3 178.3 165.8 ] 170.8800, 697320 KB, vmem_peak=N/A
+hoard                 100     hash_block_lck       200000     192       True   -z 0.99               [ 173.8 183.9 183.8 170.2 183.0 ] 178.9400, 721244 KB, vmem_peak=N/A
+# CRASH: hash_block_lck alloc=hoard u=100 n=200000
+tcmalloc              100     hash_block_lck       200000     192       False  -z 0.99               [ 64.27 70.03 69.14 58.71 71.58 ] 66.7460, 1143776 KB, vmem_peak=N/A
+# CRASH: hash_block_lck alloc=tcmalloc u=100 n=200000
+tbbmalloc             100     hash_block_lck       200000     192       False  -z 0.99               [ 155.8 160.3 159.7 147.1 161.5 ] 156.8800, 371264 KB, vmem_peak=N/A
+lockfree              100     hash_block_lck       200000     192       False  -z 0.99               [ 77.43 80.0 79.08 80.99 79.82 ] 79.4640, 261904 KB, vmem_peak=N/A
+rpmalloc              100     hash_block_lck       200000     192       False  -z 0.99               [ 160.3 162.8 156.7 162.3 161.5 ] 160.7200, 417032 KB, vmem_peak=N/A
+glibc                 100     hash_block_lck       200000     192       False  -z 0.99               [ 163.2 176.7 158.1 174.7 176.2 ] 169.7800, 396132 KB, vmem_peak=N/A
+deqalloc              100     leaftree_lck         200000     192       False  -z 0                  [ 199.6 228.6 227.7 200.0 232.1 ] 217.6000, 2232900 KB, vmem_peak=N/A
+deqalloc_genericdeque 100     leaftree_lck         200000     192       False  -z 0                  [ 218.8 232.2 225.7 231.2 200.7 ] 221.7200, 2394500 KB, vmem_peak=N/A
+deqalloc_localseglist 100     leaftree_lck         200000     192       False  -z 0                  [ 229.1 207.5 201.2 221.9 221.8 ] 216.3000, 3480152 KB, vmem_peak=N/A
+deqalloc_remotefree   100     leaftree_lck         200000     192       False  -z 0                  [ 223.6 214.7 230.8 231.5 225.9 ] 225.3000, 3751816 KB, vmem_peak=N/A
+mimalloc              100     leaftree_lck         200000     192       False  -z 0                  [ 126.5 143.2 143.8 136.0 146.1 ] 139.1200, 814564 KB, vmem_peak=N/A
+jemalloc              100     leaftree_lck         200000     192       True   -z 0                  [ 59.96 57.98 59.67 59.38 57.55 ] 58.9080, 991528 KB, vmem_peak=N/A
+snmalloc              100     leaftree_lck         200000     192       False  -z 0                  [ 179.4 178.8 179.5 180.3 178.6 ] 179.3200, 825768 KB, vmem_peak=N/A
+hoard                 100     leaftree_lck         200000     192       True   -z 0                  [ 180.4 177.4 160.6 173.5 176.1 ] 173.6000, 871768 KB, vmem_peak=N/A
+# CRASH: leaftree_lck alloc=hoard u=100 n=200000
+tcmalloc              100     leaftree_lck         200000     192       False  -z 0                  [ 22.01 20.26 20.0 22.33 19.4 ] 20.8000, 257140 KB, vmem_peak=N/A
+# CRASH: leaftree_lck alloc=tcmalloc u=100 n=200000
+tbbmalloc             100     leaftree_lck         200000     192       False  -z 0                  [ 130.1 130.2 132.8 131.5 132.3 ] 131.3800, 496572 KB, vmem_peak=N/A
+lockfree              100     leaftree_lck         200000     192       False  -z 0                  [ 53.85 54.48 54.35 54.24 53.63 ] 54.1100, 275084 KB, vmem_peak=N/A
+rpmalloc              100     leaftree_lck         200000     192       False  -z 0                  [ 144.5 131.6 149.8 149.5 151.4 ] 145.3600, 928156 KB, vmem_peak=N/A
+glibc                 100     leaftree_lck         200000     192       False  -z 0                  [ 121.4 131.8 133.3 132.9 132.2 ] 130.3200, 535020 KB, vmem_peak=N/A
+deqalloc              100     leaftree_lck         200000     192       False  -z 0.6                [ 217.3 181.0 232.2 186.1 228.1 ] 208.9400, 2462572 KB, vmem_peak=N/A
+deqalloc_genericdeque 100     leaftree_lck         200000     192       False  -z 0.6                [ 229.5 229.6 232.4 231.4 182.6 ] 221.1000, 2306720 KB, vmem_peak=N/A
+deqalloc_localseglist 100     leaftree_lck         200000     192       False  -z 0.6                [ 226.9 188.9 201.7 231.4 191.5 ] 208.0800, 3557992 KB, vmem_peak=N/A
+deqalloc_remotefree   100     leaftree_lck         200000     192       False  -z 0.6                [ 219.0 221.6 231.0 229.4 202.8 ] 220.7600, 3833532 KB, vmem_peak=N/A
+mimalloc              100     leaftree_lck         200000     192       False  -z 0.6                [ 141.0 139.1 129.8 138.2 135.7 ] 136.7600, 800936 KB, vmem_peak=N/A
+jemalloc              100     leaftree_lck         200000     192       True   -z 0.6                [ 55.61 56.75 56.79 54.8 55.49 ] 55.8880, 1027116 KB, vmem_peak=N/A
+snmalloc              100     leaftree_lck         200000     192       False  -z 0.6                [ 185.0 182.7 182.5 184.2 179.5 ] 182.7800, 810388 KB, vmem_peak=N/A
+hoard                 100     leaftree_lck         200000     192       True   -z 0.6                [ 176.5 155.2 173.0 152.8 172.4 ] 165.9800, 899148 KB, vmem_peak=N/A
+# CRASH: leaftree_lck alloc=hoard u=100 n=200000
+tcmalloc              100     leaftree_lck         200000     192       False  -z 0.6                [ 19.16 18.39 18.15 19.44 19.58 ] 18.9440, 270620 KB, vmem_peak=N/A
+# CRASH: leaftree_lck alloc=tcmalloc u=100 n=200000
+tbbmalloc             100     leaftree_lck         200000     192       False  -z 0.6                [ 126.0 135.9 115.0 134.5 135.2 ] 129.3200, 520940 KB, vmem_peak=N/A
+lockfree              100     leaftree_lck         200000     192       False  -z 0.6                [ 53.48 55.26 55.7 54.4 54.67 ] 54.7020, 291968 KB, vmem_peak=N/A
+rpmalloc              100     leaftree_lck         200000     192       False  -z 0.6                [ 132.1 140.0 136.5 145.0 143.7 ] 139.4600, 931088 KB, vmem_peak=N/A
+glibc                 100     leaftree_lck         200000     192       False  -z 0.6                [ 132.9 132.1 133.6 134.7 133.9 ] 133.4400, 512256 KB, vmem_peak=N/A
+deqalloc              100     leaftree_lck         200000     192       False  -z 0.8                [ 190.0 221.0 173.8 220.4 175.0 ] 196.0400, 2373196 KB, vmem_peak=N/A
+deqalloc_genericdeque 100     leaftree_lck         200000     192       False  -z 0.8                [ 216.3 181.8 218.3 216.4 188.5 ] 204.2600, 2323796 KB, vmem_peak=N/A
+deqalloc_localseglist 100     leaftree_lck         200000     192       False  -z 0.8                [ 210.6 216.3 164.0 217.8 194.6 ] 200.6600, 3321048 KB, vmem_peak=N/A
+deqalloc_remotefree   100     leaftree_lck         200000     192       False  -z 0.8                [ 204.6 219.3 166.4 215.9 221.4 ] 205.5200, 3858176 KB, vmem_peak=N/A
+mimalloc              100     leaftree_lck         200000     192       False  -z 0.8                [ 124.1 126.9 125.6 126.3 126.5 ] 125.8800, 804228 KB, vmem_peak=N/A
+jemalloc              100     leaftree_lck         200000     192       True   -z 0.8                [ 115.4 55.12 57.42 54.78 101.3 ] 76.8040, 1032848 KB, vmem_peak=N/A
+snmalloc              100     leaftree_lck         200000     192       False  -z 0.8                [ 155.6 173.4 155.3 162.8 174.9 ] 164.4000, 813140 KB, vmem_peak=N/A
+hoard                 100     leaftree_lck         200000     192       True   -z 0.8                [ 174.7 150.4 146.2 168.5 147.6 ] 157.4800, 844416 KB, vmem_peak=N/A
+# CRASH: leaftree_lck alloc=hoard u=100 n=200000
+tcmalloc              100     leaftree_lck         200000     192       False  -z 0.8                [ 14.67 17.02 15.76 16.46 13.88 ] 15.5580, 268540 KB, vmem_peak=N/A
+# CRASH: leaftree_lck alloc=tcmalloc u=100 n=200000
+tbbmalloc             100     leaftree_lck         200000     192       False  -z 0.8                [ 137.7 134.0 135.9 135.4 137.9 ] 136.1800, 486456 KB, vmem_peak=N/A
+lockfree              100     leaftree_lck         200000     192       False  -z 0.8                [ 56.19 56.99 50.31 56.46 57.52 ] 55.4940, 273792 KB, vmem_peak=N/A
+rpmalloc              100     leaftree_lck         200000     192       False  -z 0.8                [ 133.6 132.4 134.8 133.1 131.0 ] 132.9800, 527400 KB, vmem_peak=N/A
+glibc                 100     leaftree_lck         200000     192       False  -z 0.8                [ 136.2 136.2 137.4 135.2 136.6 ] 136.3200, 481800 KB, vmem_peak=N/A
+deqalloc              100     leaftree_lck         200000     192       False  -z 0.9                [ 157.6 201.4 198.8 165.6 190.5 ] 182.7800, 1938788 KB, vmem_peak=N/A
+deqalloc_genericdeque 100     leaftree_lck         200000     192       False  -z 0.9                [ 201.4 201.6 159.3 192.8 163.9 ] 183.8000, 1954828 KB, vmem_peak=N/A
+deqalloc_localseglist 100     leaftree_lck         200000     192       False  -z 0.9                [ 193.8 196.6 196.5 197.5 199.1 ] 196.7000, 3236220 KB, vmem_peak=N/A
+deqalloc_remotefree   100     leaftree_lck         200000     192       False  -z 0.9                [ 198.3 187.9 93.84 202.6 179.3 ] 172.3880, 3868452 KB, vmem_peak=N/A
+mimalloc              100     leaftree_lck         200000     192       False  -z 0.9                [ 121.0 120.0 117.4 122.4 115.9 ] 119.3400, 816572 KB, vmem_peak=N/A
+jemalloc              100     leaftree_lck         200000     192       True   -z 0.9                [ 61.43 55.72 61.12 58.54 59.36 ] 59.2340, 1011296 KB, vmem_peak=N/A
+snmalloc              100     leaftree_lck         200000     192       False  -z 0.9                [ 131.1 141.6 156.8 137.8 156.9 ] 144.8400, 803400 KB, vmem_peak=N/A
+hoard                 100     leaftree_lck         200000     192       True   -z 0.9                [ 135.8 155.1 142.0 132.3 145.5 ] 142.1400, 786892 KB, vmem_peak=N/A
+# CRASH: leaftree_lck alloc=hoard u=100 n=200000
+tcmalloc              100     leaftree_lck         200000     192       False  -z 0.9                [ 12.97 15.61 18.62 11.01 10.99 ] 13.8400, 248544 KB, vmem_peak=N/A
+# CRASH: leaftree_lck alloc=tcmalloc u=100 n=200000
+tbbmalloc             100     leaftree_lck         200000     192       False  -z 0.9                [ 131.6 128.3 132.1 130.2 122.1 ] 128.8600, 458480 KB, vmem_peak=N/A
+lockfree              100     leaftree_lck         200000     192       False  -z 0.9                [ 51.49 54.02 54.19 57.73 55.76 ] 54.6380, 290280 KB, vmem_peak=N/A
+rpmalloc              100     leaftree_lck         200000     192       False  -z 0.9                [ 121.2 120.3 129.1 122.5 128.2 ] 124.2600, 470708 KB, vmem_peak=N/A
+glibc                 100     leaftree_lck         200000     192       False  -z 0.9                [ 129.9 103.0 133.3 130.1 129.3 ] 125.1200, 454032 KB, vmem_peak=N/A
+deqalloc              100     leaftree_lck         200000     192       False  -z 0.99               [ 182.1 142.2 139.4 178.5 177.9 ] 164.0200, 2255808 KB, vmem_peak=N/A
+deqalloc_genericdeque 100     leaftree_lck         200000     192       False  -z 0.99               [ 183.0 178.3 143.2 141.0 180.6 ] 165.2200, 1918612 KB, vmem_peak=N/A
+deqalloc_localseglist 100     leaftree_lck         200000     192       False  -z 0.99               [ 173.2 170.4 153.5 131.6 120.0 ] 149.7400, 3218176 KB, vmem_peak=N/A
+deqalloc_remotefree   100     leaftree_lck         200000     192       False  -z 0.99               [ 180.1 178.2 174.6 168.0 177.7 ] 175.7200, 3878700 KB, vmem_peak=N/A
+mimalloc              100     leaftree_lck         200000     192       False  -z 0.99               [ 107.7 115.3 109.3 115.1 115.9 ] 112.6600, 753040 KB, vmem_peak=N/A
+jemalloc              100     leaftree_lck         200000     192       True   -z 0.99               [ 67.59 62.8 65.44 64.44 130.5 ] 78.1540, 923028 KB, vmem_peak=N/A
+snmalloc              100     leaftree_lck         200000     192       False  -z 0.99               [ 144.8 128.8 128.1 127.3 145.3 ] 134.8600, 784124 KB, vmem_peak=N/A
+hoard                 100     leaftree_lck         200000     192       True   -z 0.99               [ 153.4 154.8 128.7 150.4 132.0 ] 143.8600, 704412 KB, vmem_peak=N/A
+# CRASH: leaftree_lck alloc=hoard u=100 n=200000
+tcmalloc              100     leaftree_lck         200000     192       False  -z 0.99               [ 9.794 9.849 9.236 8.699 9.45 ] 9.4056, 253412 KB, vmem_peak=N/A
+# CRASH: leaftree_lck alloc=tcmalloc u=100 n=200000
+tbbmalloc             100     leaftree_lck         200000     192       False  -z 0.99               [ 126.3 124.3 125.9 123.3 103.7 ] 120.7000, 418352 KB, vmem_peak=N/A
+lockfree              100     leaftree_lck         200000     192       False  -z 0.99               [ 62.41 63.49 57.7 63.75 58.71 ] 61.2120, 289564 KB, vmem_peak=N/A
+rpmalloc              100     leaftree_lck         200000     192       False  -z 0.99               [ 111.4 115.4 114.7 123.5 117.6 ] 116.5200, 435388 KB, vmem_peak=N/A
+glibc                 100     leaftree_lck         200000     192       False  -z 0.99               [ 124.2 123.9 123.2 123.6 123.8 ] 123.7400, 413364 KB, vmem_peak=N/A
+deqalloc              100     skiplist_lck         200000     192       False  -z 0                  [ 161.2 167.3 165.4 170.0 171.3 ] 167.0400, 2286608 KB, vmem_peak=N/A
+deqalloc_genericdeque 100     skiplist_lck         200000     192       False  -z 0                  [ 157.5 165.2 159.3 167.5 168.4 ] 163.5800, 2757736 KB, vmem_peak=N/A
+deqalloc_localseglist 100     skiplist_lck         200000     192       False  -z 0                  [ 156.5 159.6 160.1 154.5 165.9 ] 159.3200, 4851660 KB, vmem_peak=N/A
+deqalloc_remotefree   100     skiplist_lck         200000     192       False  -z 0                  [ 162.9 165.6 164.7 164.6 162.5 ] 164.0600, 5168112 KB, vmem_peak=N/A
+mimalloc              100     skiplist_lck         200000     192       False  -z 0                  [ 134.4 139.0 138.2 139.4 134.4 ] 137.0800, 1513724 KB, vmem_peak=N/A
+jemalloc              100     skiplist_lck         200000     192       True   -z 0                  [ 117.5 115.3 145.9 152.3 119.9 ] 130.1800, 1934484 KB, vmem_peak=N/A
+snmalloc              100     skiplist_lck         200000     192       False  -z 0                  [ 158.1 158.4 149.7 156.3 157.8 ] 156.0600, 2066008 KB, vmem_peak=N/A
+hoard                 100     skiplist_lck         200000     192       True   -z 0                  [ 144.9 143.9 109.7 134.1 141.2 ] 134.7600, 1916928 KB, vmem_peak=N/A
+# CRASH: skiplist_lck alloc=hoard u=100 n=200000
+tcmalloc              100     skiplist_lck         200000     192       False  -z 0                  [ 66.51 67.18 67.31 67.07 67.29 ] 67.0720, 490160 KB, vmem_peak=N/A
+# CRASH: skiplist_lck alloc=tcmalloc u=100 n=200000
+tbbmalloc             100     skiplist_lck         200000     192       False  -z 0                  [ 103.4 103.7 103.9 105.2 113.7 ] 105.9800, 1760740 KB, vmem_peak=N/A
+lockfree              100     skiplist_lck         200000     192       False  -z 0                  [ 70.76 70.15 70.85 70.17 70.85 ] 70.5560, 426924 KB, vmem_peak=N/A
+rpmalloc              100     skiplist_lck         200000     192       False  -z 0                  [ 134.7 139.0 138.2 138.0 137.7 ] 137.5200, 1022508 KB, vmem_peak=N/A
+glibc                 100     skiplist_lck         200000     192       False  -z 0                  [ 110.6 110.7 110.7 103.6 106.3 ] 108.3800, 1528480 KB, vmem_peak=N/A
+deqalloc              100     skiplist_lck         200000     192       False  -z 0.6                [ 168.1 168.2 154.0 154.1 156.4 ] 160.1600, 4103140 KB, vmem_peak=N/A
+deqalloc_genericdeque 100     skiplist_lck         200000     192       False  -z 0.6                [ 156.7 169.5 170.2 171.5 172.0 ] 167.9800, 3150788 KB, vmem_peak=N/A
+deqalloc_localseglist 100     skiplist_lck         200000     192       False  -z 0.6                [ 146.8 145.6 155.4 153.0 159.5 ] 152.0600, 6023252 KB, vmem_peak=N/A
+deqalloc_remotefree   100     skiplist_lck         200000     192       False  -z 0.6                [ 162.2 164.0 162.9 159.3 150.7 ] 159.8200, 6014668 KB, vmem_peak=N/A
+mimalloc              100     skiplist_lck         200000     192       False  -z 0.6                [ 141.7 139.8 132.7 140.1 139.3 ] 138.7200, 1896388 KB, vmem_peak=N/A
+jemalloc              100     skiplist_lck         200000     192       True   -z 0.6                [ 157.5 120.2 114.7 115.8 149.0 ] 131.4400, 2236224 KB, vmem_peak=N/A
+snmalloc              100     skiplist_lck         200000     192       False  -z 0.6                [ 151.3 157.4 157.7 158.8 147.7 ] 154.5800, 2991864 KB, vmem_peak=N/A
+hoard                 100     skiplist_lck         200000     192       True   -z 0.6                [ 146.7 127.7 142.5 143.1 128.4 ] 137.6800, 2056324 KB, vmem_peak=N/A
+# CRASH: skiplist_lck alloc=hoard u=100 n=200000
+tcmalloc              100     skiplist_lck         200000     192       False  -z 0.6                [ 67.51 67.86 67.05 67.57 67.0 ] 67.3980, 514668 KB, vmem_peak=N/A
+# CRASH: skiplist_lck alloc=tcmalloc u=100 n=200000
+tbbmalloc             100     skiplist_lck         200000     192       False  -z 0.6                [ 102.2 103.3 106.7 106.7 102.1 ] 104.2000, 2271088 KB, vmem_peak=N/A
+lockfree              100     skiplist_lck         200000     192       False  -z 0.6                [ 70.91 71.73 71.01 72.8 68.98 ] 71.0860, 675320 KB, vmem_peak=N/A
+rpmalloc              100     skiplist_lck         200000     192       False  -z 0.6                [ 139.7 138.6 136.4 135.1 135.3 ] 137.0200, 1328884 KB, vmem_peak=N/A
+glibc                 100     skiplist_lck         200000     192       False  -z 0.6                [ 110.7 104.2 105.5 103.1 109.5 ] 106.6000, 2191896 KB, vmem_peak=N/A
+deqalloc              100     skiplist_lck         200000     192       False  -z 0.8                [ 164.5 164.5 168.6 169.1 168.1 ] 166.9600, 10510408 KB, vmem_peak=N/A
+deqalloc_genericdeque 100     skiplist_lck         200000     192       False  -z 0.8                [ 166.7 149.6 155.4 165.7 152.9 ] 158.0600, 10629200 KB, vmem_peak=N/A
+deqalloc_localseglist 100     skiplist_lck         200000     192       False  -z 0.8                [ 153.2 153.8 153.4 158.5 159.0 ] 155.5800, 11697976 KB, vmem_peak=N/A
+deqalloc_remotefree   100     skiplist_lck         200000     192       False  -z 0.8                [ 154.1 150.3 153.4 148.4 156.6 ] 152.5600, 12290636 KB, vmem_peak=N/A
+mimalloc              100     skiplist_lck         200000     192       False  -z 0.8                [ 139.2 139.9 141.4 138.0 138.2 ] 139.3400, 7319052 KB, vmem_peak=N/A
+jemalloc              100     skiplist_lck         200000     192       True   -z 0.8                [ 106.8 158.0 159.7 158.3 109.1 ] 138.3800, 9064048 KB, vmem_peak=N/A
+snmalloc              100     skiplist_lck         200000     192       False  -z 0.8                [ 155.5 155.9 156.4 140.4 138.0 ] 149.2400, 11655160 KB, vmem_peak=N/A
+hoard                 100     skiplist_lck         200000     192       True   -z 0.8                [ 115.1 132.7 138.0 104.5 138.3 ] 125.7200, 6864688 KB, vmem_peak=N/A
+# CRASH: skiplist_lck alloc=hoard u=100 n=200000
+tcmalloc              100     skiplist_lck         200000     192       False  -z 0.8                [ 64.22 63.93 63.95 63.88 64.38 ] 64.0720, 1827908 KB, vmem_peak=N/A
+# CRASH: skiplist_lck alloc=tcmalloc u=100 n=200000
+tbbmalloc             100     skiplist_lck         200000     192       False  -z 0.8                [ 40.54 98.28 102.8 95.35 95.99 ] 86.5920, 6322276 KB, vmem_peak=N/A
+lockfree              100     skiplist_lck         200000     192       False  -z 0.8                [ 64.7 61.26 64.41 64.64 64.01 ] 63.8040, 2851724 KB, vmem_peak=N/A
+rpmalloc              100     skiplist_lck         200000     192       False  -z 0.8                [ 133.2 135.0 135.4 135.0 136.3 ] 134.9800, 7145608 KB, vmem_peak=N/A
+glibc                 100     skiplist_lck         200000     192       False  -z 0.8                [ 27.16 32.57 70.58 99.77 101.6 ] 66.3360, 9330364 KB, vmem_peak=N/A
+deqalloc              100     skiplist_lck         200000     192       False  -z 0.9                [ 152.7 156.0 138.4 136.5 154.9 ] 147.7000, 23576376 KB, vmem_peak=N/A
+deqalloc_genericdeque 100     skiplist_lck         200000     192       False  -z 0.9                [ 142.2 154.0 138.0 154.1 145.0 ] 146.6600, 22615932 KB, vmem_peak=N/A
+deqalloc_localseglist 100     skiplist_lck         200000     192       False  -z 0.9                [ 133.0 143.2 142.0 142.1 134.0 ] 138.8600, 23619740 KB, vmem_peak=N/A
+deqalloc_remotefree   100     skiplist_lck         200000     192       False  -z 0.9                [ 135.5 143.4 135.6 142.5 144.5 ] 140.3000, 23476696 KB, vmem_peak=N/A
+mimalloc              100     skiplist_lck         200000     192       False  -z 0.9                [ 120.4 131.8 123.5 131.3 129.1 ] 127.2200, 18751404 KB, vmem_peak=N/A
+jemalloc              100     skiplist_lck         200000     192       True   -z 0.9                [ 148.7 114.8 107.1 107.8 107.7 ] 117.2200, 19334348 KB, vmem_peak=N/A
+snmalloc              100     skiplist_lck         200000     192       False  -z 0.9                [ 146.5 146.4 144.8 146.5 145.9 ] 146.0200, 25079236 KB, vmem_peak=N/A
+hoard                 100     skiplist_lck         200000     192       True   -z 0.9                [ 115.0 104.6 97.28 87.69 120.4 ] 104.9940, 13683168 KB, vmem_peak=N/A
+# CRASH: skiplist_lck alloc=hoard u=100 n=200000
+tcmalloc              100     skiplist_lck         200000     192       False  -z 0.9                [ 71.08 71.41 68.97 70.0 69.29 ] 70.1500, 6715852 KB, vmem_peak=N/A
+# CRASH: skiplist_lck alloc=tcmalloc u=100 n=200000
+tbbmalloc             100     skiplist_lck         200000     192       False  -z 0.9                [ 67.75 25.13 88.32 60.75 90.04 ] 66.3980, 11699628 KB, vmem_peak=N/A
+lockfree              100     skiplist_lck         200000     192       False  -z 0.9                [ 52.92 53.43 53.78 53.07 53.45 ] 53.3300, 5885372 KB, vmem_peak=N/A
+rpmalloc              100     skiplist_lck         200000     192       False  -z 0.9                [ 128.4 128.3 129.3 129.8 130.1 ] 129.1800, 18240728 KB, vmem_peak=N/A
+glibc                 100     skiplist_lck         200000     192       False  -z 0.9                [ 70.31 48.04 87.21 72.27 86.82 ] 72.9300, 11853908 KB, vmem_peak=N/A
+deqalloc              100     skiplist_lck         200000     192       False  -z 0.99               [ 139.0 139.2 135.8 139.9 133.6 ] 137.5000, 37375920 KB, vmem_peak=N/A
+deqalloc_genericdeque 100     skiplist_lck         200000     192       False  -z 0.99               [ 140.0 140.6 136.4 133.9 136.1 ] 137.4000, 37602836 KB, vmem_peak=N/A
+deqalloc_localseglist 100     skiplist_lck         200000     192       False  -z 0.99               [ 133.1 133.5 125.1 129.3 131.3 ] 130.4600, 36590180 KB, vmem_peak=N/A
+deqalloc_remotefree   100     skiplist_lck         200000     192       False  -z 0.99               [ 127.5 129.4 126.8 130.6 128.5 ] 128.5600, 36608852 KB, vmem_peak=N/A
+mimalloc              100     skiplist_lck         200000     192       False  -z 0.99               [ 122.7 118.6 117.3 111.6 114.1 ] 116.8600, 31570860 KB, vmem_peak=N/A
+jemalloc              100     skiplist_lck         200000     192       True   -z 0.99               [ 105.3 103.9 105.1 104.3 98.56 ] 103.4320, 30787328 KB, vmem_peak=N/A
+snmalloc              100     skiplist_lck         200000     192       False  -z 0.99               [ 120.7 133.8 132.1 132.4 120.9 ] 127.9800, 41209432 KB, vmem_peak=N/A
+hoard                 100     skiplist_lck         200000     192       True   -z 0.99               [ 74.85 27.95 92.85 58.76 76.63 ] 66.2080, 15351404 KB, vmem_peak=N/A
+# CRASH: skiplist_lck alloc=hoard u=100 n=200000
+tcmalloc              100     skiplist_lck         200000     192       False  -z 0.99               [ 75.97 76.44 75.62 75.56 76.14 ] 75.9460, 16310632 KB, vmem_peak=N/A
+# CRASH: skiplist_lck alloc=tcmalloc u=100 n=200000
+tbbmalloc             100     skiplist_lck         200000     192       False  -z 0.99               [ 43.63 34.19 62.69 26.98 56.05 ] 44.7080, 18371960 KB, vmem_peak=N/A
+lockfree              100     skiplist_lck         200000     192       False  -z 0.99               [ 47.28 46.33 45.76 46.22 46.71 ] 46.4600, 9296852 KB, vmem_peak=N/A
+rpmalloc              100     skiplist_lck         200000     192       False  -z 0.99               [ 118.7 120.4 121.6 119.5 121.4 ] 120.3200, 31956696 KB, vmem_peak=N/A
+glibc                 100     skiplist_lck         200000     192       False  -z 0.99               [ 36.92 30.05 43.0 64.69 88.26 ] 52.5840, 14376232 KB, vmem_peak=N/A
+deqalloc              100     arttree_lck          200000     192       False  -z 0                  [ 98.75 254.8 231.5 217.1 255.8 ] 211.5900, 2546504 KB, vmem_peak=N/A
+deqalloc_genericdeque 100     arttree_lck          200000     192       False  -z 0                  [ 241.3 63.14 243.6 223.9 67.27 ] 167.8420, 2565816 KB, vmem_peak=N/A
+deqalloc_localseglist 100     arttree_lck          200000     192       False  -z 0                  [ 235.8 228.0 91.94 225.8 237.8 ] 203.8680, 5412172 KB, vmem_peak=N/A
+deqalloc_remotefree   100     arttree_lck          200000     192       False  -z 0                  [ 215.3 225.4 221.3 232.1 238.9 ] 226.6000, 5654280 KB, vmem_peak=N/A
+mimalloc              100     arttree_lck          200000     192       False  -z 0                  [ 107.0 106.2 90.86 106.7 103.8 ] 102.9120, 1148228 KB, vmem_peak=N/A
+jemalloc              100     arttree_lck          200000     192       True   -z 0                  [ 62.58 63.44 44.17 95.44 62.58 ] 65.6420, 1415092 KB, vmem_peak=N/A
+snmalloc              100     arttree_lck          200000     192       False  -z 0                  [ 153.7 159.6 150.7 155.3 52.39 ] 134.3380, 1113660 KB, vmem_peak=N/A
+hoard                 100     arttree_lck          200000     192       True   -z 0                  [ 60.41 235.2 229.0 74.2 235.7 ] 166.9020, 1539516 KB, vmem_peak=N/A
+# CRASH: arttree_lck alloc=hoard u=100 n=200000
+tcmalloc              100     arttree_lck          200000     192       False  -z 0                  [ 10.45 8.963 8.516 8.998 9.337 ] 9.2528, 380036 KB, vmem_peak=N/A
+# CRASH: arttree_lck alloc=tcmalloc u=100 n=200000
+tbbmalloc             100     arttree_lck          200000     192       False  -z 0                  [ 14.13 13.95 16.08 14.26 22.6 ] 16.2040, 661392 KB, vmem_peak=N/A
+lockfree              100     arttree_lck          200000     192       False  -z 0                  [ 63.45 31.98 66.82 58.17 40.49 ] 52.1820, 481120 KB, vmem_peak=N/A
+rpmalloc              100     arttree_lck          200000     192       False  -z 0                  [ 176.7 163.6 61.12 173.1 163.0 ] 147.5040, 1388144 KB, vmem_peak=N/A
+glibc                 100     arttree_lck          200000     192       False  -z 0                  [ 13.39 14.41 13.17 13.41 13.82 ] 13.6400, 645708 KB, vmem_peak=N/A
+deqalloc              100     arttree_lck          200000     192       False  -z 0.6                [ 109.8 205.7 79.14 223.8 219.5 ] 167.5880, 2708728 KB, vmem_peak=N/A
+deqalloc_genericdeque 100     arttree_lck          200000     192       False  -z 0.6                [ 230.1 232.3 240.6 222.0 96.77 ] 204.3540, 2711724 KB, vmem_peak=N/A
+deqalloc_localseglist 100     arttree_lck          200000     192       False  -z 0.6                [ 73.26 216.5 231.3 72.07 88.59 ] 136.3440, 5480068 KB, vmem_peak=N/A
+deqalloc_remotefree   100     arttree_lck          200000     192       False  -z 0.6                [ 223.3 231.1 237.1 238.4 226.5 ] 231.2800, 6607416 KB, vmem_peak=N/A
+mimalloc              100     arttree_lck          200000     192       False  -z 0.6                [ 108.7 109.1 113.3 108.6 109.5 ] 109.8400, 1104260 KB, vmem_peak=N/A
+jemalloc              100     arttree_lck          200000     192       True   -z 0.6                [ 178.4 43.64 47.89 49.44 149.8 ] 93.8340, 1778680 KB, vmem_peak=N/A
+snmalloc              100     arttree_lck          200000     192       False  -z 0.6                [ 160.0 159.8 158.6 160.0 160.7 ] 159.8200, 1654348 KB, vmem_peak=N/A
+hoard                 100     arttree_lck          200000     192       True   -z 0.6                [ 67.18 76.79 67.02 100.7 88.73 ] 80.0840, 1295952 KB, vmem_peak=N/A
+# CRASH: arttree_lck alloc=hoard u=100 n=200000
+tcmalloc              100     arttree_lck          200000     192       False  -z 0.6                [ 9.655 9.636 8.68 9.321 9.297 ] 9.3178, 399372 KB, vmem_peak=N/A
+# CRASH: arttree_lck alloc=tcmalloc u=100 n=200000
+tbbmalloc             100     arttree_lck          200000     192       False  -z 0.6                [ 15.43 15.31 23.69 14.3 16.01 ] 16.9480, 758588 KB, vmem_peak=N/A
+lockfree              100     arttree_lck          200000     192       False  -z 0.6                [ 66.15 74.42 68.42 35.67 75.98 ] 64.1280, 514664 KB, vmem_peak=N/A
+rpmalloc              100     arttree_lck          200000     192       False  -z 0.6                [ 175.1 62.54 92.05 55.36 70.83 ] 91.1760, 1408256 KB, vmem_peak=N/A
+glibc                 100     arttree_lck          200000     192       False  -z 0.6                [ 15.33 20.08 15.8 15.45 16.17 ] 16.5660, 691944 KB, vmem_peak=N/A
+deqalloc              100     arttree_lck          200000     192       False  -z 0.8                [ 102.3 106.4 138.6 153.7 149.9 ] 130.1800, 2986712 KB, vmem_peak=N/A
+deqalloc_genericdeque 100     arttree_lck          200000     192       False  -z 0.8                [ 90.09 147.9 131.8 83.0 121.7 ] 114.8980, 3023032 KB, vmem_peak=N/A
+deqalloc_localseglist 100     arttree_lck          200000     192       False  -z 0.8                [ 124.4 122.0 145.2 161.4 139.8 ] 138.5600, 5395404 KB, vmem_peak=N/A
+deqalloc_remotefree   100     arttree_lck          200000     192       False  -z 0.8                [ 92.03 102.1 116.6 145.3 86.59 ] 108.5240, 6672908 KB, vmem_peak=N/A
+mimalloc              100     arttree_lck          200000     192       False  -z 0.8                [ 117.2 118.0 115.2 115.3 121.3 ] 117.4000, 907164 KB, vmem_peak=N/A
+jemalloc              100     arttree_lck          200000     192       True   -z 0.8                [ 49.96 56.08 99.78 95.5 79.47 ] 76.1580, 1685308 KB, vmem_peak=N/A
+snmalloc              100     arttree_lck          200000     192       False  -z 0.8                [ 119.5 126.2 123.3 109.7 106.8 ] 117.1000, 956296 KB, vmem_peak=N/A
+hoard                 100     arttree_lck          200000     192       True   -z 0.8                [ 152.3 126.9 159.1 117.4 137.3 ] 138.6000, 1203632 KB, vmem_peak=N/A
+# CRASH: arttree_lck alloc=hoard u=100 n=200000
+tcmalloc              100     arttree_lck          200000     192       False  -z 0.8                [ 8.664 9.067 9.234 8.699 8.672 ] 8.8672, 388380 KB, vmem_peak=N/A
+# CRASH: arttree_lck alloc=tcmalloc u=100 n=200000
+tbbmalloc             100     arttree_lck          200000     192       False  -z 0.8                [ 16.84 19.65 18.05 20.52 19.25 ] 18.8620, 649040 KB, vmem_peak=N/A
+lockfree              100     arttree_lck          200000     192       False  -z 0.8                [ 65.13 41.62 73.71 51.78 74.65 ] 61.3780, 507352 KB, vmem_peak=N/A
+rpmalloc              100     arttree_lck          200000     192       False  -z 0.8                [ 128.6 128.8 121.0 133.4 65.59 ] 115.4780, 1326952 KB, vmem_peak=N/A
+glibc                 100     arttree_lck          200000     192       False  -z 0.8                [ 15.21 15.72 16.95 16.0 17.43 ] 16.2620, 670156 KB, vmem_peak=N/A
+deqalloc              100     arttree_lck          200000     192       False  -z 0.9                [ 125.8 119.2 140.5 148.7 154.3 ] 137.7000, 2781872 KB, vmem_peak=N/A
+deqalloc_genericdeque 100     arttree_lck          200000     192       False  -z 0.9                [ 148.3 139.2 136.8 131.9 124.7 ] 136.1800, 2887860 KB, vmem_peak=N/A
+deqalloc_localseglist 100     arttree_lck          200000     192       False  -z 0.9                [ 133.5 122.9 146.6 118.3 139.1 ] 132.0800, 5648420 KB, vmem_peak=N/A
+deqalloc_remotefree   100     arttree_lck          200000     192       False  -z 0.9                [ 88.59 141.9 146.0 103.3 136.7 ] 123.2980, 6711820 KB, vmem_peak=N/A
+mimalloc              100     arttree_lck          200000     192       False  -z 0.9                [ 102.2 106.4 105.8 105.9 106.2 ] 105.3000, 1417312 KB, vmem_peak=N/A
+jemalloc              100     arttree_lck          200000     192       True   -z 0.9                [ 93.81 83.98 63.23 89.0 64.62 ] 78.9280, 1494888 KB, vmem_peak=N/A
+snmalloc              100     arttree_lck          200000     192       False  -z 0.9                [ 86.34 108.3 99.38 103.1 95.84 ] 98.5920, 1275404 KB, vmem_peak=N/A
+hoard                 100     arttree_lck          200000     192       True   -z 0.9                [ 145.5 146.6 143.8 143.3 78.57 ] 131.5540, 1280556 KB, vmem_peak=N/A
+# CRASH: arttree_lck alloc=hoard u=100 n=200000
+tcmalloc              100     arttree_lck          200000     192       False  -z 0.9                [ 8.9 18.09 8.799 8.434 9.197 ] 10.6840, 387764 KB, vmem_peak=N/A
+# CRASH: arttree_lck alloc=tcmalloc u=100 n=200000
+tbbmalloc             100     arttree_lck          200000     192       False  -z 0.9                [ 26.3 21.97 21.91 21.51 21.59 ] 22.6560, 657328 KB, vmem_peak=N/A
+lockfree              100     arttree_lck          200000     192       False  -z 0.9                [ 67.67 72.36 72.43 68.09 71.97 ] 70.5040, 468152 KB, vmem_peak=N/A
+rpmalloc              100     arttree_lck          200000     192       False  -z 0.9                [ 120.7 119.4 123.3 118.3 126.8 ] 121.7000, 930720 KB, vmem_peak=N/A
+glibc                 100     arttree_lck          200000     192       False  -z 0.9                [ 34.2 29.45 17.91 19.67 21.67 ] 24.5800, 635044 KB, vmem_peak=N/A
+deqalloc              100     arttree_lck          200000     192       False  -z 0.99               [ 125.2 90.01 103.0 126.6 137.3 ] 116.4220, 2599536 KB, vmem_peak=N/A
+deqalloc_genericdeque 100     arttree_lck          200000     192       False  -z 0.99               [ 133.4 98.56 132.2 137.0 128.2 ] 125.8720, 2689872 KB, vmem_peak=N/A
+deqalloc_localseglist 100     arttree_lck          200000     192       False  -z 0.99               [ 132.8 129.0 109.3 132.0 127.6 ] 126.1400, 5514236 KB, vmem_peak=N/A
+deqalloc_remotefree   100     arttree_lck          200000     192       False  -z 0.99               [ 114.9 117.6 127.9 106.8 104.5 ] 114.3400, 6668812 KB, vmem_peak=N/A
+mimalloc              100     arttree_lck          200000     192       False  -z 0.99               [ 100.7 93.68 102.0 102.5 77.18 ] 95.2120, 1120032 KB, vmem_peak=N/A
+jemalloc              100     arttree_lck          200000     192       True   -z 0.99               [ 68.71 68.12 73.85 78.81 68.5 ] 71.5980, 1334824 KB, vmem_peak=N/A
+snmalloc              100     arttree_lck          200000     192       False  -z 0.99               [ 110.0 89.62 91.59 104.0 106.6 ] 100.3620, 1316232 KB, vmem_peak=N/A
+hoard                 100     arttree_lck          200000     192       True   -z 0.99               [ 124.1 127.9 80.65 130.9 130.1 ] 118.7300, 1096304 KB, vmem_peak=N/A
+# CRASH: arttree_lck alloc=hoard u=100 n=200000
+tcmalloc              100     arttree_lck          200000     192       False  -z 0.99               [ 9.867 7.899 9.156 9.494 25.37 ] 12.3572, 396924 KB, vmem_peak=N/A
+# CRASH: arttree_lck alloc=tcmalloc u=100 n=200000
+tbbmalloc             100     arttree_lck          200000     192       False  -z 0.99               [ 20.82 24.66 24.3 30.54 24.38 ] 24.9400, 668736 KB, vmem_peak=N/A
+lockfree              100     arttree_lck          200000     192       False  -z 0.99               [ 73.1 70.92 76.72 66.94 74.97 ] 72.5300, 453428 KB, vmem_peak=N/A
+rpmalloc              100     arttree_lck          200000     192       False  -z 0.99               [ 87.27 110.1 107.0 111.4 106.6 ] 104.4740, 1127696 KB, vmem_peak=N/A
+glibc                 100     arttree_lck          200000     192       False  -z 0.99               [ 19.92 23.82 24.23 23.08 22.87 ] 22.7840, 642928 KB, vmem_peak=N/A
+deqalloc              100     list_lck             2000       192       False  -z 0                  [ 31.06 31.44 31.41 31.31 30.79 ] 31.2020, 454368 KB, vmem_peak=N/A
+deqalloc_genericdeque 100     list_lck             2000       192       False  -z 0                  [ 31.82 31.65 31.55 31.69 30.91 ] 31.5240, 426588 KB, vmem_peak=N/A
+deqalloc_localseglist 100     list_lck             2000       192       False  -z 0                  [ 26.76 27.35 27.15 27.31 27.43 ] 27.2000, 1812292 KB, vmem_peak=N/A
+deqalloc_remotefree   100     list_lck             2000       192       False  -z 0                  [ 27.46 28.0 28.15 28.09 28.32 ] 28.0040, 2974768 KB, vmem_peak=N/A
+mimalloc              100     list_lck             2000       192       False  -z 0                  [ 20.23 20.26 20.28 21.56 22.67 ] 21.0000, 409288 KB, vmem_peak=N/A
+jemalloc              100     list_lck             2000       192       True   -z 0                  [ 24.51 23.86 24.05 25.71 24.5 ] 24.5260, 805764 KB, vmem_peak=N/A
+snmalloc              100     list_lck             2000       192       False  -z 0                  [ 29.58 29.66 29.34 30.17 29.44 ] 29.6380, 105128 KB, vmem_peak=N/A
+hoard                 100     list_lck             2000       192       True   -z 0                  [ 23.26 23.04 23.94 23.02 23.92 ] 23.4360, 129396 KB, vmem_peak=N/A
+# CRASH: list_lck alloc=hoard u=100 n=2000
+tcmalloc              100     list_lck             2000       192       False  -z 0                  [ 10.44 10.4 9.984 9.265 9.593 ] 9.9364, 68100 KB, vmem_peak=N/A
+# CRASH: list_lck alloc=tcmalloc u=100 n=2000
+tbbmalloc             100     list_lck             2000       192       False  -z 0                  [ 18.1 18.32 18.59 18.24 18.47 ] 18.3440, 47104 KB, vmem_peak=N/A
+lockfree              100     list_lck             2000       192       False  -z 0                  [ 24.07 23.64 23.3 24.17 24.1 ] 23.8560, 40008 KB, vmem_peak=N/A
+rpmalloc              100     list_lck             2000       192       False  -z 0                  [ 22.94 22.61 21.68 21.9 21.82 ] 22.1900, 67652 KB, vmem_peak=N/A
+glibc                 100     list_lck             2000       192       False  -z 0                  [ 18.21 18.22 18.09 17.94 18.36 ] 18.1640, 46172 KB, vmem_peak=N/A
+deqalloc              100     list_lck             2000       192       False  -z 0.6                [ 31.19 30.46 31.13 30.52 31.24 ] 30.9080, 499712 KB, vmem_peak=N/A
+deqalloc_genericdeque 100     list_lck             2000       192       False  -z 0.6                [ 31.11 30.23 30.73 29.44 30.78 ] 30.4580, 451620 KB, vmem_peak=N/A
+deqalloc_localseglist 100     list_lck             2000       192       False  -z 0.6                [ 27.58 27.37 27.52 27.05 27.45 ] 27.3940, 1827252 KB, vmem_peak=N/A
+deqalloc_remotefree   100     list_lck             2000       192       False  -z 0.6                [ 28.09 28.5 28.27 28.55 28.02 ] 28.2860, 2889308 KB, vmem_peak=N/A
+mimalloc              100     list_lck             2000       192       False  -z 0.6                [ 22.63 21.48 21.4 21.28 22.29 ] 21.8160, 414828 KB, vmem_peak=N/A
+jemalloc              100     list_lck             2000       192       True   -z 0.6                [ 24.55 25.48 24.55 25.11 24.77 ] 24.8920, 804516 KB, vmem_peak=N/A
+snmalloc              100     list_lck             2000       192       False  -z 0.6                [ 29.78 30.55 29.93 30.55 30.06 ] 30.1740, 79316 KB, vmem_peak=N/A
+hoard                 100     list_lck             2000       192       True   -z 0.6                [ 25.48 23.73 24.44 23.21 24.28 ] 24.2280, 123872 KB, vmem_peak=N/A
+# CRASH: list_lck alloc=hoard u=100 n=2000
+tcmalloc              100     list_lck             2000       192       False  -z 0.6                [ 8.963 9.476 9.096 8.887 9.25 ] 9.1344, 65164 KB, vmem_peak=N/A
+tbbmalloc             100     list_lck             2000       192       False  -z 0.6                [ 18.49 18.19 18.46 18.32 18.48 ] 18.3880, 46712 KB, vmem_peak=N/A
+lockfree              100     list_lck             2000       192       False  -z 0.6                [ 24.45 23.4 24.27 22.95 24.43 ] 23.9000, 50572 KB, vmem_peak=N/A
+rpmalloc              100     list_lck             2000       192       False  -z 0.6                [ 19.52 19.49 20.11 20.17 19.46 ] 19.7500, 58432 KB, vmem_peak=N/A
+glibc                 100     list_lck             2000       192       False  -z 0.6                [ 18.61 18.54 19.62 18.36 18.1 ] 18.6460, 42700 KB, vmem_peak=N/A
+deqalloc              100     list_lck             2000       192       False  -z 0.8                [ 31.45 31.36 31.11 30.52 31.42 ] 31.1720, 430144 KB, vmem_peak=N/A
+deqalloc_genericdeque 100     list_lck             2000       192       False  -z 0.8                [ 31.07 31.48 31.79 30.5 29.38 ] 30.8440, 443416 KB, vmem_peak=N/A
+deqalloc_localseglist 100     list_lck             2000       192       False  -z 0.8                [ 27.88 27.81 26.95 27.9 25.54 ] 27.2160, 1831400 KB, vmem_peak=N/A
+deqalloc_remotefree   100     list_lck             2000       192       False  -z 0.8                [ 27.76 28.84 29.01 27.96 28.84 ] 28.4820, 2944516 KB, vmem_peak=N/A
+mimalloc              100     list_lck             2000       192       False  -z 0.8                [ 20.55 21.73 22.14 23.48 23.5 ] 22.2800, 409252 KB, vmem_peak=N/A
+jemalloc              100     list_lck             2000       192       True   -z 0.8                [ 25.13 24.78 24.55 24.91 24.68 ] 24.8100, 807180 KB, vmem_peak=N/A
+snmalloc              100     list_lck             2000       192       False  -z 0.8                [ 29.96 30.1 29.87 30.32 30.06 ] 30.0620, 78576 KB, vmem_peak=N/A
+hoard                 100     list_lck             2000       192       True   -z 0.8                [ 25.68 25.39 24.07 24.03 24.76 ] 24.7860, 115124 KB, vmem_peak=N/A
+# CRASH: list_lck alloc=hoard u=100 n=2000
+tcmalloc              100     list_lck             2000       192       False  -z 0.8                [ 7.92 8.342 8.15 7.963 8.146 ] 8.1042, 73152 KB, vmem_peak=N/A
+# CRASH: list_lck alloc=tcmalloc u=100 n=2000
+tbbmalloc             100     list_lck             2000       192       False  -z 0.8                [ 20.94 20.62 21.49 20.6 20.74 ] 20.8780, 61804 KB, vmem_peak=N/A
+lockfree              100     list_lck             2000       192       False  -z 0.8                [ 23.51 24.67 24.61 23.26 24.66 ] 24.1420, 44912 KB, vmem_peak=N/A
+rpmalloc              100     list_lck             2000       192       False  -z 0.8                [ 19.67 20.4 20.03 20.22 20.18 ] 20.1000, 60252 KB, vmem_peak=N/A
+glibc                 100     list_lck             2000       192       False  -z 0.8                [ 19.59 19.24 18.42 18.65 18.96 ] 18.9720, 41488 KB, vmem_peak=N/A
+deqalloc              100     list_lck             2000       192       False  -z 0.9                [ 32.18 30.88 31.81 31.09 31.78 ] 31.5480, 448516 KB, vmem_peak=N/A
+deqalloc_genericdeque 100     list_lck             2000       192       False  -z 0.9                [ 31.68 31.63 31.79 31.89 30.74 ] 31.5460, 439756 KB, vmem_peak=N/A
+deqalloc_localseglist 100     list_lck             2000       192       False  -z 0.9                [ 27.73 27.04 27.73 25.86 27.63 ] 27.1980, 1825180 KB, vmem_peak=N/A
+deqalloc_remotefree   100     list_lck             2000       192       False  -z 0.9                [ 28.49 28.6 29.04 28.91 28.89 ] 28.7860, 2880720 KB, vmem_peak=N/A
+mimalloc              100     list_lck             2000       192       False  -z 0.9                [ 20.36 21.14 22.56 22.27 22.17 ] 21.7000, 415372 KB, vmem_peak=N/A
+jemalloc              100     list_lck             2000       192       True   -z 0.9                [ 24.01 25.47 25.44 24.33 24.8 ] 24.8100, 807356 KB, vmem_peak=N/A
+snmalloc              100     list_lck             2000       192       False  -z 0.9                [ 30.57 30.17 30.57 29.73 29.75 ] 30.1580, 90988 KB, vmem_peak=N/A
+hoard                 100     list_lck             2000       192       True   -z 0.9                [ 24.45 24.93 24.05 24.14 24.98 ] 24.5100, 123840 KB, vmem_peak=N/A
+# CRASH: list_lck alloc=hoard u=100 n=2000
+tcmalloc              100     list_lck             2000       192       False  -z 0.9                [ 7.785 8.099 8.021 7.621 8.104 ] 7.9260, 65928 KB, vmem_peak=N/A
+# CRASH: list_lck alloc=tcmalloc u=100 n=2000
+tbbmalloc             100     list_lck             2000       192       False  -z 0.9                [ 18.81 18.96 18.62 19.32 19.9 ] 19.1220, 43796 KB, vmem_peak=N/A
+lockfree              100     list_lck             2000       192       False  -z 0.9                [ 24.74 23.34 23.66 24.7 23.28 ] 23.9440, 38020 KB, vmem_peak=N/A
+rpmalloc              100     list_lck             2000       192       False  -z 0.9                [ 18.47 20.11 20.86 20.84 21.42 ] 20.3400, 60184 KB, vmem_peak=N/A
+glibc                 100     list_lck             2000       192       False  -z 0.9                [ 19.17 19.51 18.54 19.51 19.31 ] 19.2080, 41988 KB, vmem_peak=N/A
+deqalloc              100     list_lck             2000       192       False  -z 0.99               [ 30.78 30.74 30.73 30.67 29.98 ] 30.5800, 421840 KB, vmem_peak=N/A
+deqalloc_genericdeque 100     list_lck             2000       192       False  -z 0.99               [ 30.47 30.84 29.94 30.77 29.74 ] 30.3520, 414192 KB, vmem_peak=N/A
+deqalloc_localseglist 100     list_lck             2000       192       False  -z 0.99               [ 27.11 24.95 27.21 27.16 27.06 ] 26.6980, 1829468 KB, vmem_peak=N/A
+deqalloc_remotefree   100     list_lck             2000       192       False  -z 0.99               [ 27.77 27.97 28.47 28.26 28.42 ] 28.1780, 2921896 KB, vmem_peak=N/A
+mimalloc              100     list_lck             2000       192       False  -z 0.99               [ 20.93 20.87 21.84 22.36 21.54 ] 21.5080, 409232 KB, vmem_peak=N/A
+jemalloc              100     list_lck             2000       192       True   -z 0.99               [ 24.14 24.09 24.11 23.86 23.96 ] 24.0320, 806216 KB, vmem_peak=N/A
+snmalloc              100     list_lck             2000       192       False  -z 0.99               [ 29.3 28.77 29.18 29.27 28.68 ] 29.0400, 72104 KB, vmem_peak=N/A
+hoard                 100     list_lck             2000       192       True   -z 0.99               [ 24.91 23.77 24.48 24.4 23.44 ] 24.2000, 114508 KB, vmem_peak=N/A
+# CRASH: list_lck alloc=hoard u=100 n=2000
+tcmalloc              100     list_lck             2000       192       False  -z 0.99               [ 27.53 7.864 8.273 17.15 7.84 ] 13.7314, 65816 KB, vmem_peak=N/A
+tbbmalloc             100     list_lck             2000       192       False  -z 0.99               [ 19.19 19.02 19.29 19.8 19.09 ] 19.2780, 49208 KB, vmem_peak=N/A
+lockfree              100     list_lck             2000       192       False  -z 0.99               [ 24.28 22.57 24.38 24.42 23.6 ] 23.8500, 37120 KB, vmem_peak=N/A
+rpmalloc              100     list_lck             2000       192       False  -z 0.99               [ 19.8 20.15 19.86 19.94 20.18 ] 19.9860, 64504 KB, vmem_peak=N/A
+glibc                 100     list_lck             2000       192       False  -z 0.99               [ 19.36 19.39 19.36 18.95 18.92 ] 19.1960, 46448 KB, vmem_peak=N/A
