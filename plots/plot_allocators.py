@@ -1864,9 +1864,9 @@ def plot_config(input_dir, suite, experiment, out_dir, fmt):
                 ncol=nv,
                 frameon=True,
                 fontsize=FIG_CONFIGS.get("legend_fontsize"),
-                loc="upper center",
+                loc="upper right",
                 alignment="center",
-                bbox_to_anchor=(0.5, 1.24),
+                bbox_to_anchor=(1, 1),
                 labelcolor="black",
                 edgecolor="black",
                 fancybox=False,
@@ -1894,7 +1894,7 @@ def plot_config(input_dir, suite, experiment, out_dir, fmt):
     dss        = sorted(set(r["ds"] for r in data))
 
     # --- Geomean across all DS (leftmost panel) ---
-    fig_gm, ax_gm = plt.subplots(figsize=(max(len(all_allocs) * 1.0, 3.5), szy * 1.15))
+    fig_gm, ax_gm = plt.subplots(figsize=(max(len(all_allocs) * 1.0, 2.5), szy * 0.95))
     tick_xs_gm    = _draw_bars(ax_gm, all_allocs, data)
     gm_path       = f"{out_dir}/{write_dir}config_geomean.{fmt}"
     _save(fig_gm, ax_gm, all_allocs, tick_xs_gm, "Geomean", gm_path, show_legend=True)
