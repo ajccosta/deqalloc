@@ -1992,14 +1992,17 @@ def collect_variance_stats(input_dir):
     """Scan every raw results file under input_dir/{flock,setbench}/ exactly
     once (independent of which plots were requested, so a run's stddev
     isn't double-counted just because its file backs multiple plots), and
-    compute each row's stddev across its repeated throughput samples.
+    compute each row's coefficient of variation (stddev / mean) across its
+    repeated throughput samples. Using the CV instead of the raw stddev
+    normalizes for the fact that different benchmarks/allocators have very
+    different absolute throughput scales, which would otherwise dominate a
+    plain average of stddevs.
 
     Returns (by_allocator, by_benchmark): dicts mapping allocator name /
-    "suite/filename" to the list of stddevs observed for it.
+    "suite/filename" to the list of CVs observed for it.
     """
     by_allocator = defaultdict(list)
     by_benchmark = defaultdict(list)
-
     for suite, parse_f in (("flock", parse_flock), ("setbench", parse_setbench)):
         suite_dir = os.path.join(input_dir, suite)
         if not os.path.isdir(suite_dir):
@@ -2010,12 +2013,16 @@ def collect_variance_stats(input_dir):
                 continue
             rows, _ = parse_f(path)
             for r in rows:
-                if len(r["values"]) < 2:
+                samples = r["values"]
+                if len(samples) < 2:
                     continue
-                sd = stat.stdev(r["values"])
-                by_allocator[r["allocator"]].append(sd)
-                by_benchmark[f"{suite}/{fname}"].append(sd)
-
+                mean = stat.mean(samples)
+                if mean == 0:
+                    continue
+                stddev = stat.stdev(samples)
+                cv = stddev / mean  # coefficient of variation
+                by_allocator[r["allocator"]].append(cv)
+                by_benchmark[f"{suite}/{fname}"].append(cv)
     return by_allocator, by_benchmark
 
 
@@ -2025,15 +2032,15 @@ def print_variance_stats(input_dir):
     if not by_allocator and not by_benchmark:
         return
 
-    print("\n=== Average stddev by allocator (across all benchmarks) ===")
+    print("\n=== Average relative stddev (CV) by allocator (across all benchmarks) ===")
     for alloc in sorted(by_allocator):
         vals = by_allocator[alloc]
-        print(f"  {alloc:<24} {stat.mean(vals):>10.4f}  (n={len(vals)})")
+        print(f"  {alloc:<24} {stat.mean(vals) * 100:>9.2f}%  (n={len(vals)})")
 
-    print("\n=== Average stddev by benchmark (across all allocators) ===")
+    print("\n=== Average relative stddev (CV) by benchmark (across all allocators) ===")
     for bench in sorted(by_benchmark):
         vals = by_benchmark[bench]
-        print(f"  {bench:<40} {stat.mean(vals):>10.4f}  (n={len(vals)})")
+        print(f"  {bench:<40} {stat.mean(vals) * 100:>9.2f}%  (n={len(vals)})")
 
 
 # -- Biggest deqalloc improvement over each allocator, across everything -----
