@@ -395,6 +395,15 @@ def get_nice_scinot_labels(x_vals):
         labels.append(f"${mant:.0f}\\!\\!\\times\\!\\!10^{{{exp}}}$")
     return labels
 
+def order_with_paper_first(dss, paper_ds):
+    """Return dss reordered so that paper_ds[0] (the data structure used in
+    the paper version of the plot) comes first, keeping the relative order
+    of everything else unchanged."""
+    if not paper_ds or paper_ds[0] not in dss:
+        return dss
+    first = paper_ds[0]
+    return [first] + [ds for ds in dss if ds != first]
+
 def merge_pdfs_horizontally(pdf_list, output_path):
     if pdf_list == []:
         return
@@ -565,7 +574,7 @@ def plot_size(input_dir, suite, experiment, out_dir, fmt):
 
     paper_ds_list = [ f"{out_dir}/paper/{experiment}/size_{ds}.{fmt}" for ds in paper_ds ] 
     merge_pdfs_horizontally(paper_ds_list, f"{out_dir}/paper/size.{fmt}")
-    all_ds_list = [ f"{out_dir}/paper/{experiment}/size_{ds}.{fmt}" for ds in dss ]
+    all_ds_list = [ f"{out_dir}/paper/{experiment}/size_{ds}.{fmt}" for ds in order_with_paper_first(dss, paper_ds) ]
     merge_pdfs_horizontally(all_ds_list, f"{out_dir}/paper/size_all.{fmt}")
 
 
@@ -619,7 +628,7 @@ def plot_update(input_dir, suite, experiment, out_dir, fmt):
 
     paper_ds_list = [ f"{out_dir}/paper/{experiment}/update_{ds}.{fmt}" for ds in paper_ds ] 
     merge_pdfs_horizontally(paper_ds_list, f"{out_dir}/paper/update.{fmt}")
-    all_ds_list = [ f"{out_dir}/paper/{experiment}/update_{ds}.{fmt}" for ds in dss ]
+    all_ds_list = [ f"{out_dir}/paper/{experiment}/update_{ds}.{fmt}" for ds in order_with_paper_first(dss, paper_ds) ]
     merge_pdfs_horizontally(all_ds_list, f"{out_dir}/paper/update_all.{fmt}")
 
 
@@ -690,7 +699,7 @@ def plot_zipfian(input_dir, suite, experiment, out_dir, fmt):
 
     paper_ds_list = [ f"{out_dir}/paper/{experiment}/zipfian_{ds}.{fmt}" for ds in paper_ds ]
     merge_pdfs_horizontally(paper_ds_list, f"{out_dir}/paper/zipfian.{fmt}")
-    all_ds_list = [ f"{out_dir}/paper/{experiment}/zipfian_{ds}.{fmt}" for ds in dss ]
+    all_ds_list = [ f"{out_dir}/paper/{experiment}/zipfian_{ds}.{fmt}" for ds in order_with_paper_first(dss, paper_ds) ]
     merge_pdfs_horizontally(all_ds_list, f"{out_dir}/paper/zipfian_all.{fmt}")
 
 
@@ -750,7 +759,7 @@ def plot_threads(input_dir, suite, experiment, out_dir, fmt):
 
     paper_ds_list = [ f"{out_dir}/paper/{experiment}/threads_{ds}.{fmt}" for ds in paper_ds ] 
     merge_pdfs_horizontally(paper_ds_list, f"{out_dir}/paper/threads.{fmt}")
-    all_ds_list = [ f"{out_dir}/paper/{experiment}/threads_{ds}.{fmt}" for ds in dss ]
+    all_ds_list = [ f"{out_dir}/paper/{experiment}/threads_{ds}.{fmt}" for ds in order_with_paper_first(dss, paper_ds) ]
     merge_pdfs_horizontally(all_ds_list, f"{out_dir}/paper/threads_all.{fmt}")
 
 
@@ -1134,7 +1143,7 @@ def plot_memory(input_dir, suite, experiment, out_dir, fmt):
 
     paper_ds_list = [ f"{out_dir}/paper/{experiment}/memory_{ds}.{fmt}" for ds in paper_ds ] 
     merge_pdfs_horizontally(paper_ds_list, f"{out_dir}/paper/memory.{fmt}")
-    all_ds_list = [ f"{out_dir}/paper/{experiment}/memory_{ds}.{fmt}" for ds in dss ]
+    all_ds_list = [ f"{out_dir}/paper/{experiment}/memory_{ds}.{fmt}" for ds in order_with_paper_first(dss, paper_ds) ]
     merge_pdfs_horizontally(all_ds_list, f"{out_dir}/paper/memory_all.{fmt}")
 
 
@@ -1247,10 +1256,10 @@ def plot_hugepages(input_dir, suite, experiment, out_dir, fmt):
     paper_ds_list = [ f"{out_dir}/paper/{experiment}/hugepages_relative_{ds}.{fmt}" for ds in paper_ds ] 
     merge_pdfs_horizontally(paper_ds_list, f"{out_dir}/paper/hugepages_relative.{fmt}")
 
-    all_ds_list = [ f"{out_dir}/paper/{experiment}/hugepages_{ds}.{fmt}" for ds in dss ]
+    all_ds_list = [ f"{out_dir}/paper/{experiment}/hugepages_{ds}.{fmt}" for ds in order_with_paper_first(dss, paper_ds) ]
     merge_pdfs_horizontally(all_ds_list, f"{out_dir}/paper/hugepages_all.{fmt}")
 
-    all_ds_list = [ f"{out_dir}/paper/{experiment}/hugepages_relative_{ds}.{fmt}" for ds in dss ]
+    all_ds_list = [ f"{out_dir}/paper/{experiment}/hugepages_relative_{ds}.{fmt}" for ds in order_with_paper_first(dss, paper_ds) ]
     merge_pdfs_horizontally(all_ds_list, f"{out_dir}/paper/hugepages_relative_all.{fmt}")
 
 # -- plot ablation experiments
@@ -1388,7 +1397,7 @@ def plot_ablation_localseglist(input_dir, suite, experiment, out_dir, fmt):
             f"{out_dir}/paper/{experiment}{filename_infix}.{fmt}")
 
         all_list = [ f"{out_dir}/paper/{experiment}/{experiment}{filename_infix}_{ds}.{fmt}"
-                     for ds in dss if ds in rendered_dss ]
+                     for ds in order_with_paper_first(dss, paper_ds) if ds in rendered_dss ]
         merge_pdfs_horizontally(all_list,
             f"{out_dir}/paper/{experiment}{filename_infix}_all.{fmt}")
 
@@ -1594,10 +1603,10 @@ def plot_ablation_amortizedfree(input_dir, suite, experiment, out_dir, fmt):
     paper_ds_list_relative = [ f"{out_dir}/paper/{experiment}/{experiment}_relative_{ds}.{fmt}" for ds in paper_ds ]
     merge_pdfs_horizontally(paper_ds_list_relative, f"{out_dir}/paper/{experiment}_relative.{fmt}")
 
-    all_ds_list = [ f"{out_dir}/paper/{experiment}/{experiment}_{ds}.{fmt}" for ds in dss ]
+    all_ds_list = [ f"{out_dir}/paper/{experiment}/{experiment}_{ds}.{fmt}" for ds in order_with_paper_first(dss, paper_ds) ]
     merge_pdfs_horizontally(all_ds_list, f"{out_dir}/paper/{experiment}_all.{fmt}")
 
-    all_ds_list_relative = [ f"{out_dir}/paper/{experiment}/{experiment}_relative_{ds}.{fmt}" for ds in dss ]
+    all_ds_list_relative = [ f"{out_dir}/paper/{experiment}/{experiment}_relative_{ds}.{fmt}" for ds in order_with_paper_first(dss, paper_ds) ]
     merge_pdfs_horizontally(all_ds_list_relative, f"{out_dir}/paper/{experiment}_relative_all.{fmt}")
 
 
@@ -1676,7 +1685,7 @@ def plot_ablation_remotefree(input_dir, suite, experiment, out_dir, fmt):
 
     paper_ds_list = [ f"{out_dir}/paper/{experiment}/{experiment}_{ds}.{fmt}" for ds in paper_ds ] 
     merge_pdfs_horizontally(paper_ds_list, f"{out_dir}/paper/{experiment}.{fmt}")
-    all_ds_list = [ f"{out_dir}/paper/{experiment}/{experiment}_{ds}.{fmt}" for ds in dss ]
+    all_ds_list = [ f"{out_dir}/paper/{experiment}/{experiment}_{ds}.{fmt}" for ds in order_with_paper_first(dss, paper_ds) ]
     merge_pdfs_horizontally(all_ds_list, f"{out_dir}/paper/{experiment}_all.{fmt}")
 
 
@@ -1810,7 +1819,7 @@ def plot_remotefree_batchsize(input_dir, suite, experiment, out_dir, fmt):
             if paper_ds_list:
                 merge_pdfs_horizontally(paper_ds_list, paper_merged_path)
 
-            all_ds_list = [ f"{out_dir}/paper/{experiment}/{filename_prefix}_{ds}.{fmt}" for ds in dss if ds in rendered_dss ]
+            all_ds_list = [ f"{out_dir}/paper/{experiment}/{filename_prefix}_{ds}.{fmt}" for ds in order_with_paper_first(dss, paper_ds) if ds in rendered_dss ]
             all_merged_path = f"{out_dir}/paper/{experiment}_{filename_prefix}_all.{fmt}" if filename_prefix != "batchsize" else f"{out_dir}/paper/{experiment}_all.{fmt}"
             if all_ds_list:
                 merge_pdfs_horizontally(all_ds_list, all_merged_path)
